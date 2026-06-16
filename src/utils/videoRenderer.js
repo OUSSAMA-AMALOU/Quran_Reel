@@ -1,0 +1,465 @@
+/**
+ * Helper to wrap and draw text on canvas with centering and shadows
+ */
+export function wrapText(ctx, text, x, y, maxWidth, lineHeight, align = 'center') {
+  if (!text) return 0;
+  
+  const words = text.split(' ');
+  const lines = [];
+  let currentLine = '';
+
+  for (let i = 0; i < words.length; i++) {
+    const testLine = currentLine + words[i] + ' ';
+    const metrics = ctx.measureText(testLine);
+    const testWidth = metrics.width;
+    
+    if (testWidth > maxWidth && i > 0) {
+      lines.push(currentLine.trim());
+      currentLine = words[i] + ' ';
+    } else {
+      currentLine = testLine;
+    }
+  }
+  lines.push(currentLine.trim());
+
+  ctx.textAlign = align;
+  
+  lines.forEach((line, index) => {
+    ctx.fillText(line, x, y + (index * lineHeight));
+  });
+
+  return lines.length * lineHeight;
+}
+
+/**
+ * Main function to draw a single frame of the reel onto the canvas.
+ * Handles background cropping (object-fit: cover), text wrapping,
+ * vignettes, watermarks, and audio visualizers.
+ */
+export function drawFrame({
+  ctx,
+  canvas,
+  videoElement,
+  audioAnalyser,
+  currentAyah,
+  config,
+  isPlaying,
+  currentTime
+}) {
+  const width = canvas.width; // 1080
+  const height = canvas.height; // 1920
+
+  // 1. Draw Background
+  const t = currentTime || 0;
+
+  // Uploaded custom video takes priority
+  if (config.backgroundType === 'upload' && videoElement && videoElement.readyState >= 2) {
+    const canvasAspect = width / height;
+    const videoAspect = videoElement.videoWidth / videoElement.videoHeight;
+    let sx, sy, sWidth, sHeight;
+    if (videoAspect > canvasAspect) {
+      sHeight = videoElement.videoHeight;
+      sWidth = sHeight * canvasAspect;
+      sx = (videoElement.videoWidth - sWidth) / 2;
+      sy = 0;
+    } else {
+      sWidth = videoElement.videoWidth;
+      sHeight = sWidth / canvasAspect;
+      sx = 0;
+      sy = (videoElement.videoHeight - sHeight) / 2;
+    }
+    ctx.drawImage(videoElement, sx, sy, sWidth, sHeight, 0, 0, width, height);
+  } else {
+    // Programmatic backgrounds
+    const bgId = config.backgroundId || 'starfield';
+
+    if (bgId === 'stars') {
+    // Starry Sky: dark gradient sky with twinkling stars
+    const grad = ctx.createLinearGradient(0, 0, 0, height);
+    grad.addColorStop(0, '#0a0e1a');
+    grad.addColorStop(0.4, '#0f1428');
+    grad.addColorStop(0.7, '#090b14');
+    grad.addColorStop(1, '#020306');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, width, height);
+
+    ctx.save();
+    const starCount = 80;
+    for (let i = 0; i < starCount; i++) {
+      const x = ((i * 137.5 + 50) % 1) * width;
+      const yBase = (i * 83.3) % height;
+      const size = 1 + (i % 4);
+      const baseOpacity = 0.2 + (i % 6) * 0.1;
+      const twinkle = 0.5 + 0.5 * Math.sin(t * (0.5 + (i % 3) * 0.3) + i * 2.1);
+      const opacity = baseOpacity * twinkle;
+
+      ctx.beginPath();
+      ctx.arc(x, yBase, size, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
+      if (i % 10 === 0) {
+        ctx.shadowColor = 'rgba(200, 220, 255, 0.6)';
+        ctx.shadowBlur = 8;
+      } else {
+        ctx.shadowBlur = 0;
+      }
+      ctx.fill();
+    }
+    ctx.restore();
+  } else if (bgId === 'forest') {
+    // Sunlit Forest: deep green with animated light rays
+    const grad = ctx.createLinearGradient(0, 0, 0, height);
+    grad.addColorStop(0, '#0a1a0e');
+    grad.addColorStop(0.3, '#0d2412');
+    grad.addColorStop(0.6, '#081a0e');
+    grad.addColorStop(1, '#030a06');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, width, height);
+
+    // Tree silhouettes
+    ctx.save();
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+    for (let i = 0; i < 12; i++) {
+      const tx = (i * 95 + 20) % width;
+      const tw = 40 + (i % 5) * 20;
+      const th = 400 + (i % 4) * 200;
+      ctx.beginPath();
+      ctx.moveTo(tx - tw / 2, height);
+      ctx.lineTo(tx - tw / 4, height - th * 0.7);
+      ctx.lineTo(tx, height - th);
+      ctx.lineTo(tx + tw / 4, height - th * 0.7);
+      ctx.lineTo(tx + tw / 2, height);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // Animated light rays
+    for (let r = 0; r < 5; r++) {
+      const rx = (r * 250 + 80) % width;
+      const rayShift = Math.sin(t * 0.3 + r * 1.7) * 40;
+      ctx.fillStyle = `rgba(180, 230, 150, ${0.02 + 0.02 * Math.sin(t * 0.5 + r * 2.1)})`;
+      ctx.beginPath();
+      ctx.moveTo(rx + rayShift, 0);
+      ctx.lineTo(rx - 30 + rayShift, height * 0.4);
+      ctx.lineTo(rx + 30 + rayShift, height * 0.4);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
+  } else if (bgId === 'rain') {
+    // Rain Window: dark cool gradient with animated rain streaks
+    const grad = ctx.createLinearGradient(0, 0, 0, height);
+    grad.addColorStop(0, '#0a1218');
+    grad.addColorStop(0.3, '#101a24');
+    grad.addColorStop(0.6, '#0a1218');
+    grad.addColorStop(1, '#04080c');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, width, height);
+
+    // Occasional lightning flash
+    const flash = Math.max(0, Math.sin(t * 0.7) ** 32 - 0.5) * 2;
+    if (flash > 0) {
+      ctx.fillStyle = `rgba(200, 220, 255, ${flash * 0.06})`;
+      ctx.fillRect(0, 0, width, height);
+    }
+
+    // Rain streaks
+    ctx.save();
+    ctx.strokeStyle = 'rgba(180, 200, 220, 0.15)';
+    ctx.lineWidth = 1.5;
+    for (let i = 0; i < 50; i++) {
+      const rx = (i * 37.7 + 10) % width;
+      const ry = ((i * 53.1 + t * 400 * (0.5 + (i % 3) * 0.25)) % (height * 1.5)) - height * 0.25;
+      const rlen = 30 + (i % 5) * 15;
+      ctx.beginPath();
+      ctx.moveTo(rx, ry);
+      ctx.lineTo(rx - 8, ry + rlen);
+      ctx.stroke();
+    }
+    ctx.restore();
+    } else {
+      // starfield (default): cosmic gradient with floating particles
+      const grad = ctx.createLinearGradient(0, 0, 0, height);
+      grad.addColorStop(0, '#080a14');
+      grad.addColorStop(0.5, '#130e25');
+      grad.addColorStop(1, '#020306');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, width, height);
+
+      ctx.save();
+      const particleCount = 60;
+      for (let i = 0; i < particleCount; i++) {
+        const speed = 0.2 + (i % 5) * 0.12;
+        const size = 1.5 + (i % 3) * 2;
+        const opacity = 0.15 + (i % 4) * 0.15;
+        
+        const x = ((i * 137.5) % 1) * width;
+        const drift = t * 35 * speed;
+        let y = (height - (((i * 83.3) + drift) % height)) % height;
+        if (y < 0) y += height;
+        
+        ctx.beginPath();
+        ctx.arc(x, y, size, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
+        
+        if (i % 8 === 0) {
+          ctx.shadowColor = 'rgba(255, 255, 255, 0.8)';
+          ctx.shadowBlur = 6;
+        } else {
+          ctx.shadowBlur = 0;
+        }
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+  }
+
+  // 2. Dark Overlay / Vignette
+  const overlayOpacity = parseFloat(config.vignetteOpacity || 0.4);
+  if (overlayOpacity > 0) {
+    // Solid overlay
+    ctx.fillStyle = `rgba(0, 0, 0, ${overlayOpacity})`;
+    ctx.fillRect(0, 0, width, height);
+
+    // Vignette (radial gradient)
+    const vignette = ctx.createRadialGradient(
+      width / 2, height / 2, height * 0.2,
+      width / 2, height / 2, height * 0.8
+    );
+    vignette.addColorStop(0, 'rgba(0, 0, 0, 0)');
+    vignette.addColorStop(1, `rgba(0, 0, 0, ${overlayOpacity * 1.5})`);
+    ctx.fillStyle = vignette;
+    ctx.fillRect(0, 0, width, height);
+  }
+
+  // 3. Draw Watermark / Top Header (only if text is set)
+  if (config.watermark) {
+    ctx.save();
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+    ctx.shadowBlur = 4;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 2;
+    
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+    ctx.font = '700 28px Outfit, Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(config.watermark, width / 2, 100);
+    ctx.restore();
+  }
+
+  // 4. Draw Surah and Ayah Info Badge
+  if (currentAyah) {
+    ctx.save();
+    const infoText = `${config.surahName} [${config.surahNumber}:${currentAyah.numberInSurah}]`;
+    
+    // Draw badge background
+    ctx.font = '500 24px Outfit, Inter, sans-serif';
+    const textWidth = ctx.measureText(infoText).width;
+    const badgeW = textWidth + 40;
+    const badgeH = 48;
+    const badgeX = (width - badgeW) / 2;
+    const badgeY = 135;
+    
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 24);
+    ctx.fill();
+    ctx.stroke();
+    
+    // Draw badge text
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+    ctx.textAlign = 'center';
+    ctx.fillText(infoText, width / 2, badgeY + 32);
+    ctx.restore();
+  }
+
+  // 5. Draw Quranic Arabic Text & English Translation
+  if (currentAyah) {
+    ctx.save();
+    
+    // Setup shadow for text legibility
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.95)';
+    ctx.shadowBlur = 12;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 4;
+
+    const arabicFontSize = parseInt(config.fontSize || 42);
+    const translationFontSize = parseInt(config.translationFontSize || 26);
+    
+    const textSpacing = 40; // spacing between Arabic and English text
+    const paddingX = 80;
+    const maxWidth = width - (paddingX * 2);
+
+    // Calculate Y Position based on setting
+    let centerY = height / 2;
+    if (config.textPosition === 'top') {
+      centerY = height * 0.35;
+    } else if (config.textPosition === 'bottom') {
+      centerY = height * 0.65;
+    }
+
+    // Measure heights first to center the block as a whole
+    // Set font temporarily for measurement
+    const arabicFontFamily = config.fontFamily === 'amiri' ? 'Amiri, serif' : 'Scheherazade New, serif';
+    ctx.font = `700 ${arabicFontSize}px ${arabicFontFamily}`;
+    
+    const tempArabicLines = [];
+    const words = currentAyah.text.split(' ');
+    let currentLine = '';
+    for (let i = 0; i < words.length; i++) {
+      const testLine = currentLine + words[i] + ' ';
+      if (ctx.measureText(testLine).width > maxWidth && i > 0) {
+        tempArabicLines.push(currentLine.trim());
+        currentLine = words[i] + ' ';
+      } else {
+        currentLine = testLine;
+      }
+    }
+    tempArabicLines.push(currentLine.trim());
+    const arabicHeight = tempArabicLines.length * (arabicFontSize * 1.5);
+
+    // Measure English
+    let englishHeight = 0;
+    const tempEnglishLines = [];
+    if (config.showTranslation && currentAyah.translation) {
+      ctx.font = `400 ${translationFontSize}px Outfit, Inter, sans-serif`;
+      const engWords = currentAyah.translation.split(' ');
+      let engLine = '';
+      for (let i = 0; i < engWords.length; i++) {
+        const testLine = engLine + engWords[i] + ' ';
+        if (ctx.measureText(testLine).width > maxWidth && i > 0) {
+          tempEnglishLines.push(engLine.trim());
+          engLine = engWords[i] + ' ';
+        } else {
+          engLine = testLine;
+        }
+      }
+      tempEnglishLines.push(engLine.trim());
+      englishHeight = tempEnglishLines.length * (translationFontSize * 1.4);
+    }
+
+    const totalBlockHeight = arabicHeight + (config.showTranslation ? textSpacing + englishHeight : 0);
+    const startY = centerY - (totalBlockHeight / 2);
+
+    // Draw Arabic Text
+    ctx.font = `700 ${arabicFontSize}px ${arabicFontFamily}`;
+    ctx.fillStyle = '#ffffff';
+    const arabicTextHeight = wrapText(
+      ctx,
+      currentAyah.text,
+      width / 2,
+      startY + arabicFontSize,
+      maxWidth,
+      arabicFontSize * 1.5
+    );
+
+    // Draw English Translation
+    if (config.showTranslation && currentAyah.translation) {
+      ctx.font = `400 ${translationFontSize}px Outfit, Inter, sans-serif`;
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+      
+      const englishStartY = startY + arabicTextHeight + textSpacing;
+      wrapText(
+        ctx,
+        currentAyah.translation,
+        width / 2,
+        englishStartY,
+        maxWidth,
+        translationFontSize * 1.4
+      );
+    }
+
+    ctx.restore();
+  }
+
+  // 6. Draw Audio Visualizer at the Bottom
+  if (config.visualizerStyle !== 'none' && isPlaying) {
+    ctx.save();
+
+    const visColor = config.visualizerColor || '#3b82f6';
+    ctx.strokeStyle = visColor;
+    ctx.fillStyle = visColor;
+    ctx.lineWidth = 4;
+    ctx.lineCap = 'round';
+
+    const visY = height - 200; // Place visualizer near bottom
+
+    // Try real analyser data first; fall back to simulated if all zeros
+    let dataArray = null;
+    let hasRealData = false;
+
+    if (audioAnalyser) {
+      const bufferLength = audioAnalyser.frequencyBinCount;
+      dataArray = new Uint8Array(bufferLength);
+      audioAnalyser.getByteFrequencyData(dataArray);
+      // Check if we got real data (at least one non-zero value)
+      hasRealData = dataArray.some(v => v > 0);
+    }
+
+    if (config.visualizerStyle === 'waves') {
+      ctx.beginPath();
+      const totalPoints = 128;
+      const sliceWidth = width / totalPoints;
+      let x = 0;
+
+      for (let i = 0; i < totalPoints; i++) {
+        let v;
+        if (hasRealData) {
+          v = dataArray[i] / 128.0;
+        } else {
+          // Simulated wave based on currentTime
+          const t = (currentTime || 0);
+          v = 1 + Math.sin(t * 3.5 + i * 0.15) * 0.4
+                + Math.sin(t * 5.2 + i * 0.08) * 0.25
+                + Math.sin(t * 1.8 + i * 0.22) * 0.15;
+        }
+        const y = visY + (v - 1) * 90;
+
+        if (i === 0) {
+          ctx.moveTo(x, y);
+        } else {
+          ctx.lineTo(x, y);
+        }
+        x += sliceWidth;
+      }
+
+      ctx.lineTo(width, visY);
+      ctx.stroke();
+    } else if (config.visualizerStyle === 'bars') {
+      const barWidth = 12;
+      const barGap = 6;
+      const totalBars = Math.floor(width / (barWidth + barGap));
+
+      ctx.shadowColor = visColor;
+      ctx.shadowBlur = 8;
+
+      for (let i = 0; i < totalBars; i++) {
+        let value;
+        if (hasRealData) {
+          const startBin = 2;
+          const binIndex = startBin + Math.floor((i / totalBars) * (dataArray.length * 0.4));
+          value = dataArray[binIndex] || 0;
+        } else {
+          // Simulated bar heights using multiple overlapping sine waves
+          const t = (currentTime || 0);
+          value = Math.abs(
+            Math.sin(t * 2.8 + i * 0.3) * 120
+            + Math.sin(t * 4.1 + i * 0.15) * 80
+            + Math.sin(t * 6.5 + i * 0.45) * 55
+          );
+          value = Math.min(255, value);
+        }
+
+        const barHeight = (value / 255.0) * 160;
+        const x = i * (barWidth + barGap) + barGap / 2;
+
+        // Draw double-sided bars extending up and down
+        ctx.fillRect(x, visY - barHeight / 2, barWidth, barHeight);
+      }
+    }
+
+    ctx.restore();
+  }
+
+}

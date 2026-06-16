@@ -1,0 +1,5 @@
+{
+  "rewrites": [
+    { "source": "/quran/(.*)", "destination": "https://cdn.islamic.network/quran/$1" }
+  ]
+}

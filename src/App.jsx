@@ -15,11 +15,15 @@ const RECITERS = [
 ];
 
 const getAudioPath = (url) => {
-  try { return new URL(url).pathname; } catch { return url; }
+  if (!url) return '';
+  try {
+    const p = new URL(url).pathname;
+    return p.startsWith('/quran') ? p : '/quran' + p;
+  } catch { return ''; }
 };
 
 function App() {
-  const [theme, setTheme] = useState(() => localStorage.getItem('quran-theme') || 'light');
+  const [theme, setTheme] = useState(() => localStorage.getItem('quran-theme') || 'dark');
   useEffect(() => {
     document.body.setAttribute('data-theme', theme);
   }, [theme]);
@@ -108,14 +112,20 @@ function App() {
       const enData = await enRes.json();
       const audioData = await audioRes.json();
 
-      // Combine Ayahs
-      const combined = arData.data.ayahs.map((ayah, idx) => ({
-        numberInSurah: ayah.numberInSurah,
-        number: ayah.number,
-        text: ayah.text,
-        translation: enData.data.ayahs[idx].text,
-        audio: getAudioPath(audioData.data.ayahs[idx].audio)
-      }));
+      // Combine Ayahs — skip any without audio
+      const combined = arData.data.ayahs
+        .map((ayah, idx) => ({
+          numberInSurah: ayah.numberInSurah,
+          number: ayah.number,
+          text: ayah.text,
+          translation: enData.data.ayahs[idx]?.text || '',
+          audio: getAudioPath(audioData.data.ayahs[idx]?.audio)
+        }))
+        .filter(a => a.audio);
+
+      if (combined.length === 0) {
+        throw new Error('No audio available for this reciter/surah combination. Try a different reciter.');
+      }
 
       // Slice to selected ayah range
       const rangeSlice = combined.slice(startAyah - 1, endAyah);
@@ -161,13 +171,19 @@ function App() {
       const enData = await enRes.json();
       const audioData = await audioRes.json();
 
-      const combined = arData.data.ayahs.map((ayah, idx) => ({
-        numberInSurah: ayah.numberInSurah,
-        number: ayah.number,
-        text: ayah.text,
-        translation: enData.data.ayahs[idx].text,
-        audio: getAudioPath(audioData.data.ayahs[idx].audio)
-      }));
+      const combined = arData.data.ayahs
+        .map((ayah, idx) => ({
+          numberInSurah: ayah.numberInSurah,
+          number: ayah.number,
+          text: ayah.text,
+          translation: enData.data.ayahs[idx]?.text || '',
+          audio: getAudioPath(audioData.data.ayahs[idx]?.audio)
+        }))
+        .filter(a => a.audio);
+
+      if (combined.length === 0) {
+        throw new Error('No audio available for this reciter/surah combination. Try a different reciter.');
+      }
 
       const rangeSlice = combined.slice(startAyah - 1, endAyah);
       setPassageAyahs(rangeSlice);
@@ -222,8 +238,11 @@ function App() {
       audioRef.current.pause();
       setIsPlaying(false);
     } else {
-      if (!audioRef.current.src && passageAyahs[currentAyahIndex]) {
-        audioRef.current.src = passageAyahs[currentAyahIndex].audio;
+      const ayah = passageAyahs[currentAyahIndex];
+      if (!ayah || !ayah.audio) return;
+      if (!audioRef.current.src || audioRef.current.src === location.href) {
+        audioRef.current.src = ayah.audio;
+        audioRef.current.load();
       }
       audioRef.current.play().then(() => {
         setIsPlaying(true);
@@ -669,7 +688,7 @@ function App() {
       <header className="app-header">
         <div className="logo-section">
           <h1>
-            <img src="/Quran.svg" alt="Quran" style={{height: 52, width: 'auto'}} />
+            <img src="/Quran.svg" alt="Quran" style={{height: 80, width: 'auto'}} />
           </h1>
           <button className="theme-toggle" onClick={toggleTheme} title="Toggle theme">
             {theme === 'dark' ? (

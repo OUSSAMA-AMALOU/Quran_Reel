@@ -38,6 +38,8 @@ function App() {
   const [surahNum, setSurahNum] = useState(1);
   const [startAyah, setStartAyah] = useState(1);
   const [endAyah, setEndAyah] = useState(7);
+  const [startInput, setStartInput] = useState('1');
+  const [endInput, setEndInput] = useState('7');
   const [reciterId, setReciterId] = useState('ar.alafasy');
   
   // Customization States
@@ -761,7 +763,10 @@ function App() {
                 const details = surahs.find(s => s.number === newSurah);
                 if (details) {
                   setStartAyah(1);
-                  setEndAyah(Math.min(5, details.numberOfAyahs));
+                  setStartInput('1');
+                  const newEnd = Math.min(7, details.numberOfAyahs);
+                  setEndAyah(newEnd);
+                  setEndInput(String(newEnd));
                 }
               }}
               disabled={isRecording}
@@ -782,12 +787,17 @@ function App() {
                 id="startAyah"
                 min="1" 
                 max={selectedSurahDetails?.numberOfAyahs || 7} 
-                value={startAyah}
-                onChange={(e) => {
+                value={startInput}
+                onChange={(e) => setStartInput(e.target.value)}
+                onBlur={() => {
                   const maxAyahs = selectedSurahDetails?.numberOfAyahs || 7;
-                  const val = Math.min(Math.max(1, parseInt(e.target.value) || 1), maxAyahs);
+                  const val = Math.min(Math.max(1, parseInt(startInput) || 1), maxAyahs);
                   setStartAyah(val);
-                  if (val > endAyah) setEndAyah(val);
+                  setStartInput(String(val));
+                  if (val > endAyah) {
+                    setEndAyah(val);
+                    setEndInput(String(val));
+                  }
                 }}
                 disabled={isRecording}
               />
@@ -799,10 +809,13 @@ function App() {
                 id="endAyah"
                 min={startAyah} 
                 max={selectedSurahDetails?.numberOfAyahs || 7} 
-                value={endAyah}
-                onChange={(e) => {
+                value={endInput}
+                onChange={(e) => setEndInput(e.target.value)}
+                onBlur={() => {
                   const maxAyahs = selectedSurahDetails?.numberOfAyahs || 7;
-                  setEndAyah(Math.max(startAyah, Math.min(maxAyahs, parseInt(e.target.value) || 1)));
+                  const val = Math.max(startAyah, Math.min(maxAyahs, parseInt(endInput) || 1));
+                  setEndAyah(val);
+                  setEndInput(String(val));
                 }}
                 disabled={isRecording}
               />

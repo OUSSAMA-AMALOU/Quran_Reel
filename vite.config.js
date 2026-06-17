@@ -13,6 +13,7 @@ export default defineConfig({
       '/everyayah': {
         target: 'https://everyayah.com',
         changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/everyayah/, ''),
       }
     }
   }

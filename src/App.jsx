@@ -123,6 +123,7 @@ function App() {
   // DOM References
   const canvasRef = useRef(null);
   const audioRef = useRef(null);
+  const nextAudioRef = useRef(null);
   const fileInputRef = useRef(null);
   const videoRef = useRef(null);
   
@@ -130,7 +131,13 @@ function App() {
   const audioCtxRef = useRef(null);
   const analyserRef = useRef(null);
   const audioSourceNodeRef = useRef(null);
+  const nextAudioSourceNodeRef = useRef(null);
   const recorderRef = useRef(null);
+  
+  // Track which audio element is currently active for playback
+  const activeIsPrimaryRef = useRef(true);
+  const getAudio = () => activeIsPrimaryRef.current ? audioRef.current : nextAudioRef.current;
+  const getIdleAudio = () => activeIsPrimaryRef.current ? nextAudioRef.current : audioRef.current;
 
   const selectedSurahDetails = surahs.find(s => s.number === parseInt(surahNum));
 
@@ -139,9 +146,8 @@ function App() {
     setLoading(true);
     setError(null);
     setIsPlaying(false);
-    if (audioRef.current) {
-      audioRef.current.pause();
-    }
+    const a = getAudio();
+    if (a) a.pause();
     
     try {
       let arData, enData, combined;
@@ -221,9 +227,8 @@ function App() {
     setLoading(true);
     setError(null);
     setIsPlaying(false);
-    if (audioRef.current) {
-      audioRef.current.pause();
-    }
+    const a = getAudio();
+    if (a) a.pause();
 
     try {
       let arData, enData, combined;
@@ -297,23 +302,39 @@ function App() {
       const analyser = audioCtx.createAnalyser();
       analyser.fftSize = 256;
       
-      const source = audioCtx.createMediaElementSource(audioRef.current);
+      // Connect primary audio element
+      const primarySource = audioCtx.createMediaElementSource(audioRef.current);
+      primarySource.connect(audioCtx.destination);
+      primarySource.connect(analyser);
       
-      // Send audio to speakers directly and feed analyser without routing through it
-      source.connect(audioCtx.destination);
-      source.connect(analyser);
+      // Connect secondary audio element for seamless ayah transitions
+      const secondarySource = audioCtx.createMediaElementSource(nextAudioRef.current);
+      secondarySource.connect(audioCtx.destination);
+      secondarySource.connect(analyser);
       
       audioCtxRef.current = audioCtx;
       analyserRef.current = analyser;
-      audioSourceNodeRef.current = source;
+      audioSourceNodeRef.current = primarySource;
+      nextAudioSourceNodeRef.current = secondarySource;
     } catch (e) {
       console.warn("Web Audio API not fully initialized (user interaction required or already running)", e);
     }
   };
 
+  const preloadNextAyah = () => {
+    const nextIdx = currentAyahIndex + 1;
+    if (nextIdx < passageAyahs.length && passageAyahs[nextIdx]?.audio) {
+      const idleAudio = getIdleAudio();
+      if (idleAudio) {
+        idleAudio.src = passageAyahs[nextIdx].audio;
+        idleAudio.load();
+      }
+    }
+  };
+
   // Playback Control
   const togglePlay = async () => {
-    if (passageAyahs.length === 0 || !audioRef.current) return;
+    if (passageAyahs.length === 0 || !getAudio()) return;
     
     initWebAudio();
     
@@ -322,17 +343,21 @@ function App() {
     }
 
     if (isPlaying) {
-      audioRef.current.pause();
+      const a = getAudio();
+      if (a) a.pause();
       setIsPlaying(false);
     } else {
       const ayah = passageAyahs[currentAyahIndex];
       if (!ayah || !ayah.audio) return;
-      if (!audioRef.current.src || audioRef.current.src === location.href) {
-        audioRef.current.src = ayah.audio;
-        audioRef.current.load();
+      const a = getAudio();
+      if (!a) return;
+      if (!a.src || a.src === location.href) {
+        a.src = ayah.audio;
+        a.load();
       }
-      audioRef.current.play().then(() => {
+      a.play().then(() => {
         setIsPlaying(true);
+        preloadNextAyah();
       }).catch(err => {
         console.error("Audio playback error:", err);
       });
@@ -341,20 +366,31 @@ function App() {
 
   // Handle Audio events
   const handleTimeUpdate = () => {
-    if (audioRef.current) {
-      setCurrentTime(audioRef.current.currentTime);
+    const a = getAudio();
+    if (a) {
+      setCurrentTime(a.currentTime);
     }
   };
 
   const handleAudioEnded = () => {
-    if (currentAyahIndex < passageAyahs.length - 1) {
-      const nextIdx = currentAyahIndex + 1;
+    const nextIdx = currentAyahIndex + 1;
+    if (nextIdx < passageAyahs.length) {
       setCurrentAyahIndex(nextIdx);
-      if (audioRef.current) {
-        audioRef.current.src = passageAyahs[nextIdx].audio;
-        audioRef.current.load();
-        audioRef.current.play().then(() => {
+      // Toggle active audio element
+      activeIsPrimaryRef.current = !activeIsPrimaryRef.current;
+      const nextA = getAudio();
+      if (nextA) {
+        nextA.play().then(() => {
           setIsPlaying(true);
+          // Preload next ayah into the idle element
+          const nextNextIdx = nextIdx + 1;
+          if (nextNextIdx < passageAyahs.length && passageAyahs[nextNextIdx]?.audio) {
+            const idle = getIdleAudio();
+            if (idle) {
+              idle.src = passageAyahs[nextNextIdx].audio;
+              idle.load();
+            }
+          }
         }).catch(err => {
           console.error("Audio playback error:", err);
         });
@@ -362,9 +398,12 @@ function App() {
     } else {
       setIsPlaying(false);
       setCurrentAyahIndex(0);
-      if (audioRef.current && passageAyahs[0]) {
-        audioRef.current.src = passageAyahs[0].audio;
-        audioRef.current.load();
+      // Reset: make primary active and preload first ayah
+      activeIsPrimaryRef.current = true;
+      const a = getAudio();
+      if (a && passageAyahs[0]) {
+        a.src = passageAyahs[0].audio;
+        a.load();
       }
       
       // If we are recording, stop the recording on end
@@ -450,16 +489,16 @@ function App() {
     
     // Stop any current playback
     setIsPlaying(false);
-    if (audioRef.current) {
-      audioRef.current.pause();
-    }
+    const currAudio = getAudio();
+    if (currAudio) currAudio.pause();
 
     setIsRecording(true);
     setRecordingProgress(5);
     setRecordingStatus('Initializing media recorder...');
 
     try {
-      // 1. Load the first audio source into the element
+      // Reset to primary audio element
+      activeIsPrimaryRef.current = true;
       setCurrentAyahIndex(0);
       if (!audioRef.current) throw new Error('Audio element not available.');
       audioRef.current.src = passageAyahs[0].audio;
@@ -474,6 +513,12 @@ function App() {
         audioRef.current.load();
       });
 
+      // Preload second ayah into secondary element
+      if (passageAyahs[1]?.audio && nextAudioRef.current) {
+        nextAudioRef.current.src = passageAyahs[1].audio;
+        nextAudioRef.current.load();
+      }
+
       // 2. Setup Web Audio routing for recording
       const AudioContextClass = window.AudioContext || window.webkitAudioContext;
       let audioCtx;
@@ -485,17 +530,25 @@ function App() {
       }
       if (audioCtx.state === 'suspended') await audioCtx.resume();
 
-      // Reuse existing MediaElementSource or create one
-      let source;
-      if (!audioSourceNodeRef.current) {
-        source = audioCtx.createMediaElementSource(audioRef.current);
-        audioSourceNodeRef.current = source;
-      } else {
-        source = audioSourceNodeRef.current;
-        source.disconnect();
-      }
+      // Helper to connect an audio element to the Web Audio pipeline for recording
+      const connectAudioForRecording = (el, sourceNodeRef) => {
+        let source;
+        if (!sourceNodeRef.current) {
+          source = audioCtx.createMediaElementSource(el);
+          sourceNodeRef.current = source;
+        } else {
+          source = sourceNodeRef.current;
+          source.disconnect();
+        }
+        return source;
+      };
 
-      // Disconnect analyser from destination (from initWebAudio) to prevent doubled audio
+      // Connect primary audio element
+      const primarySource = connectAudioForRecording(audioRef.current, audioSourceNodeRef);
+      // Connect secondary audio element (for seamless ayah transitions)
+      const secondarySource = connectAudioForRecording(nextAudioRef.current, nextAudioSourceNodeRef);
+
+      // Disconnect analyser from previous setup
       if (analyserRef.current) analyserRef.current.disconnect();
 
       // Create destination node for capturing audio
@@ -507,10 +560,14 @@ function App() {
         analyserRef.current.fftSize = 256;
       }
 
-      // Route: source -> destNode (recording), source -> speakers, source -> analyser (visualizer)
-      source.connect(destNode);
-      source.connect(audioCtx.destination);
-      source.connect(analyserRef.current);
+      // Route both sources: -> destNode (recording), -> speakers, -> analyser (visualizer)
+      primarySource.connect(destNode);
+      primarySource.connect(audioCtx.destination);
+      primarySource.connect(analyserRef.current);
+      
+      secondarySource.connect(destNode);
+      secondarySource.connect(audioCtx.destination);
+      secondarySource.connect(analyserRef.current);
 
       // 3. Capture canvas video + audio from destination node
       const canvasStream = canvasRef.current.captureStream(30);
@@ -572,7 +629,8 @@ function App() {
       recorderRef.current.start();
 
       // 6. Begin playback
-      await audioRef.current.play();
+      const activeA = getAudio();
+      if (activeA) await activeA.play();
       setIsPlaying(true);
       setRecordingProgress(10);
       setRecordingStatus(`Recording Ayah ${startAyah} of ${endAyah}...`);
@@ -587,9 +645,8 @@ function App() {
 
   // Stop recording early and finalize the video with captured chunks
   const stopRecording = () => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-    }
+    if (audioRef.current) audioRef.current.pause();
+    if (nextAudioRef.current) nextAudioRef.current.pause();
     setIsPlaying(false);
     if (recorderRef.current && recorderRef.current.state === 'recording') {
       recorderRef.current.stop();
@@ -1017,10 +1074,15 @@ function App() {
               playsInline
             />
 
-            {/* Hidden Audio element loaded from selections */}
+            {/* Hidden Audio elements for seamless playback */}
             <audio 
               ref={audioRef}
               onTimeUpdate={handleTimeUpdate}
+              onEnded={handleAudioEnded}
+              preload="auto"
+            />
+            <audio 
+              ref={nextAudioRef}
               onEnded={handleAudioEnded}
               preload="auto"
             />

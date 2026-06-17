@@ -49,7 +49,7 @@ function App() {
   const [translationFontSize, setTranslationFontSize] = useState(26);
   const [textPosition, setTextPosition] = useState('center'); // 'top', 'center', 'bottom'
   const [vignetteOpacity, setVignetteOpacity] = useState(0.4);
-  const [fontFamily, setFontFamily] = useState('amiri'); // 'amiri' or 'scheherazade'
+  const [fontFamily, setFontFamily] = useState('amiri');
   const [showTranslation, setShowTranslation] = useState(true);
   const [watermark, setWatermark] = useState('');
   const [visualizerStyle, setVisualizerStyle] = useState('none'); // 'waves', 'bars', 'none'
@@ -526,22 +526,18 @@ function App() {
 
       <div className="form-group">
         <label>Arabic Script Font</label>
-        <div className="tab-container">
-          <button 
-            className={`tab-btn ${fontFamily === 'amiri' ? 'active' : ''}`}
-            onClick={() => setFontFamily('amiri')}
-            disabled={isRecording}
-          >
-            Amiri Font
-          </button>
-          <button 
-            className={`tab-btn ${fontFamily === 'scheherazade' ? 'active' : ''}`}
-            onClick={() => setFontFamily('scheherazade')}
-            disabled={isRecording}
-          >
-            Scheherazade
-          </button>
-        </div>
+        <select 
+          value={fontFamily} 
+          onChange={(e) => setFontFamily(e.target.value)}
+          disabled={isRecording}
+        >
+          <option value="amiri">Amiri</option>
+          <option value="scheherazade">Scheherazade New</option>
+          <option value="noto-naskh">Noto Naskh Arabic</option>
+          <option value="lateef">Lateef</option>
+          <option value="reem-kufi">Reem Kufi</option>
+          <option value="cairo">Cairo</option>
+        </select>
       </div>
 
       <div className="form-group">
@@ -688,7 +684,7 @@ function App() {
       <header className="app-header">
         <div className="logo-section">
           <h1>
-            <img src="/Quran.svg" alt="Quran" style={{height: 80, width: 'auto'}} />
+            <img src="/Quran.svg" alt="Quran" style={{height: 100, width: 'auto'}} />
           </h1>
           <button className="theme-toggle" onClick={toggleTheme} title="Toggle theme">
             {theme === 'dark' ? (
@@ -858,7 +854,7 @@ function App() {
               </>
             ) : (
               <>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
                 </svg>
                 Generate Reel

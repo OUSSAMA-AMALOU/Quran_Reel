@@ -301,7 +301,14 @@ export function drawFrame({
 
     // Measure heights first to center the block as a whole
     // Set font temporarily for measurement
-    const arabicFontFamily = config.fontFamily === 'amiri' ? 'Amiri, serif' : 'Scheherazade New, serif';
+    const arabicFontFamily = {
+      amiri: 'Amiri, serif',
+      scheherazade: '"Scheherazade New", serif',
+      'noto-naskh': '"Noto Naskh Arabic", serif',
+      lateef: 'Lateef, serif',
+      'reem-kufi': '"Reem Kufi", sans-serif',
+      cairo: 'Cairo, sans-serif',
+    }[config.fontFamily] || 'Amiri, serif';
     ctx.font = `700 ${arabicFontSize}px ${arabicFontFamily}`;
     
     const tempArabicLines = [];

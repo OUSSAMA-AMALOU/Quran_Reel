@@ -1,9 +1,13 @@
-@import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800&family=Scheherazade+New:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&family=Cairo:wght@400;700&family=Inter:wght@300;400;500;600;700;800&family=Lateef:wght@400;700&family=Noto+Naskh+Arabic:wght@400;700&family=Outfit:wght@300;400;500;600;700;800&family=Reem+Kufi:wght@400;700&family=Scheherazade+New:wght@400;700&display=swap');
 
 :root {
   --font-primary: 'Outfit', 'Inter', sans-serif;
   --font-arabic-amiri: 'Amiri', serif;
   --font-arabic-scheherazade: 'Scheherazade New', serif;
+  --font-arabic-noto: 'Noto Naskh Arabic', serif;
+  --font-arabic-lateef: 'Lateef', serif;
+  --font-arabic-reem: 'Reem Kufi', sans-serif;
+  --font-arabic-cairo: 'Cairo', sans-serif;
 
   --bg-base: hsl(230, 20%, 4%);
   --bg-surface: hsl(230, 18%, 8%);
@@ -38,35 +42,34 @@
 
 /* ── Light Theme ── */
 [data-theme="light"] {
-  --bg-base: hsl(220, 15%, 94%);
-  --bg-surface: hsl(220, 12%, 88%);
-  --bg-surface-elevated: hsl(220, 10%, 82%);
-  --bg-card: hsla(220, 10%, 85%, 0.7);
+  --bg-base: hsl(220, 12%, 88%);
+  --bg-surface: hsl(220, 10%, 80%);
+  --bg-surface-elevated: hsl(220, 8%, 72%);
+  --bg-card: hsla(220, 8%, 78%, 0.7);
 
-  --border-color: hsla(220, 10%, 60%, 0.5);
-  --border-glow: hsla(215, 85%, 50%, 0.2);
+  --border-color: hsla(220, 8%, 50%, 0.45);
+  --border-glow: hsla(215, 85%, 50%, 0.18);
 
   --text-primary: hsl(230, 15%, 12%);
   --text-secondary: hsl(225, 10%, 35%);
   --text-muted: hsl(225, 8%, 55%);
 
   --primary: hsl(215, 85%, 45%);
-  --primary-glow: hsla(215, 85%, 45%, 0.2);
-  --primary-subtle: hsla(215, 85%, 45%, 0.08);
+  --primary-glow: hsla(215, 85%, 45%, 0.18);
+  --primary-subtle: hsla(215, 85%, 45%, 0.07);
   --secondary: hsl(175, 80%, 35%);
-  --secondary-glow: hsla(175, 80%, 35%, 0.2);
+  --secondary-glow: hsla(175, 80%, 35%, 0.18);
 
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
-  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.12);
-  --shadow-xl: 0 24px 64px rgba(0, 0, 0, 0.15);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 24px 64px rgba(0, 0, 0, 0.12);
 }
 
 [data-theme="light"] .app-container {
   background-image:
-    radial-gradient(ellipse at 15% 10%, hsla(215, 60%, 70%, 0.15) 0%, transparent 55%),
-    radial-gradient(ellipse at 85% 90%, hsla(175, 40%, 65%, 0.12) 0%, transparent 55%),
-    radial-gradient(ellipse at 50% 50%, hsla(215, 30%, 80%, 0.08) 0%, transparent 70%);
+    radial-gradient(ellipse at 15% 10%, hsla(215, 40%, 60%, 0.06) 0%, transparent 55%),
+    radial-gradient(ellipse at 85% 90%, hsla(175, 30%, 55%, 0.05) 0%, transparent 55%);
 }
 
 /* ── Animations ── */
@@ -316,8 +319,8 @@
 
 [data-theme="light"] .bg-grid {
   background-image:
-    linear-gradient(hsla(215, 40%, 50%, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, hsla(215, 40%, 50%, 0.04) 1px, transparent 1px);
+    linear-gradient(hsla(215, 30%, 50%, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, hsla(215, 30%, 50%, 0.06) 1px, transparent 1px);
 }
 
 /* ── Animated gradient border for glass panels ── */
@@ -361,7 +364,7 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 0;
   background-image:
     radial-gradient(ellipse at 15% 10%, hsla(240, 60%, 20%, 0.12) 0%, transparent 55%),
     radial-gradient(ellipse at 85% 90%, hsla(175, 50%, 15%, 0.1) 0%, transparent 55%),
@@ -374,8 +377,7 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 0 16px;
-  border-bottom: 1px solid var(--border-color);
+  padding: 4px 0 4px;
 }
 
 .logo-section {
@@ -455,7 +457,7 @@ body {
 
 @media (max-width: 640px) {
   .app-container { padding: 12px; gap: 12px; }
-  .app-header { padding: 12px 0; }
+  .app-header { padding: 6px 0; }
   .logo-section svg:first-child { width: 24px; height: 24px; }
   .phone-mockup { width: 260px; height: 475px; border-radius: 34px; }
   .phone-notch { width: 80px; height: 16px; border-radius: 0 0 10px 10px; }
@@ -641,6 +643,15 @@ select option {
   background: var(--primary-subtle);
 }
 
+/* ── Watermark input ── */
+#watermark {
+  text-align: center;
+  font-weight: 700;
+  letter-spacing: 2px;
+  font-size: 15px;
+  max-width: 200px;
+}
+
 .btn-ghost:disabled {
   opacity: 0.4;
   cursor: not-allowed;
@@ -768,11 +779,11 @@ select option {
 .file-upload {
   position: relative;
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 10px 16px;
+  padding: 30px 16px;
   margin: 12px 0 16px 0;
   background: var(--bg-surface);
   border: 1.5px dashed var(--border-color);

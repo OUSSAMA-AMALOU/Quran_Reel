@@ -37,7 +37,20 @@ const RECITERS = [
   { id: 'ar.minshawi-2', name: 'Al-Minshawi (V2)', style: 'Murattal' },
   { id: 'ar.muhammadayyoub-2', name: 'Muhammad Ayyoub (V2)', style: 'Murattal' },
   { id: 'ar.muhammadjibreel-2', name: 'Muhammad Jibreel (V2)', style: 'Murattal' },
+  // CDN-only reciters (not in Alquran Cloud API)
+  { id: 'ar.yasseraldossari', name: 'Yasser Al-Dosari', style: 'Murattal' },
 ];
+
+// Reciters NOT available in Alquran Cloud API — audio comes from CDN directly
+const CDN_ONLY_RECITERS = new Set(['ar.yasseraldossari']);
+
+// Build cumulative ayah offsets: surahNum → global ayah offset (0-indexed)
+const surahOffset = {};
+let cum = 0;
+for (const s of surahs) {
+  surahOffset[s.number] = cum;
+  cum += s.numberOfAyahs;
+}
 
 const getAudioPath = (url) => {
   if (!url) return '';
@@ -124,31 +137,49 @@ function App() {
     }
     
     try {
-      // Fetch Arabic Uthmani text, English translation, and audio in parallel
-      const [arRes, enRes, audioRes] = await Promise.all([
-        fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/quran-uthmani`),
-        fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/en.sahih`),
-        fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/${reciterId}`)
-      ]);
+      let arData, enData, combined;
 
-      if (!arRes.ok || !enRes.ok || !audioRes.ok) {
-        throw new Error('Failed to fetch Quran data from API. Please try again.');
+      if (CDN_ONLY_RECITERS.has(reciterId)) {
+        // CDN-only reciter: fetch text/translation from API, build audio URL directly
+        const [arRes, enRes] = await Promise.all([
+          fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/quran-uthmani`),
+          fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/en.sahih`)
+        ]);
+        if (!arRes.ok || !enRes.ok) throw new Error('Failed to fetch Quran data from API.');
+        arData = await arRes.json();
+        enData = await enRes.json();
+        const offset = surahOffset[surahNum] || 0;
+        combined = arData.data.ayahs
+          .map((ayah, idx) => ({
+            numberInSurah: ayah.numberInSurah,
+            number: ayah.number,
+            text: ayah.text,
+            translation: enData.data.ayahs[idx]?.text || '',
+            audio: `/quran/audio/128/${reciterId}/${offset + ayah.numberInSurah}.mp3`
+          }));
+      } else {
+        // API reciter: fetch everything from Alquran Cloud
+        const [arRes, enRes, audioRes] = await Promise.all([
+          fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/quran-uthmani`),
+          fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/en.sahih`),
+          fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/${reciterId}`)
+        ]);
+        if (!arRes.ok || !enRes.ok || !audioRes.ok) {
+          throw new Error('Failed to fetch Quran data from API. Please try again.');
+        }
+        arData = await arRes.json();
+        enData = await enRes.json();
+        const audioData = await audioRes.json();
+        combined = arData.data.ayahs
+          .map((ayah, idx) => ({
+            numberInSurah: ayah.numberInSurah,
+            number: ayah.number,
+            text: ayah.text,
+            translation: enData.data.ayahs[idx]?.text || '',
+            audio: getAudioPath(audioData.data.ayahs[idx]?.audio)
+          }))
+          .filter(a => a.audio);
       }
-
-      const arData = await arRes.json();
-      const enData = await enRes.json();
-      const audioData = await audioRes.json();
-
-      // Combine Ayahs — skip any without audio
-      const combined = arData.data.ayahs
-        .map((ayah, idx) => ({
-          numberInSurah: ayah.numberInSurah,
-          number: ayah.number,
-          text: ayah.text,
-          translation: enData.data.ayahs[idx]?.text || '',
-          audio: getAudioPath(audioData.data.ayahs[idx]?.audio)
-        }))
-        .filter(a => a.audio);
 
       if (combined.length === 0) {
         throw new Error('No audio available for this reciter/surah combination. Try a different reciter.');
@@ -188,25 +219,47 @@ function App() {
     }
 
     try {
-      const [arRes, enRes, audioRes] = await Promise.all([
-        fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/quran-uthmani`),
-        fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/en.sahih`),
-        fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/${reciterId}`)
-      ]);
+      let arData, enData, combined;
 
-      const arData = await arRes.json();
-      const enData = await enRes.json();
-      const audioData = await audioRes.json();
-
-      const combined = arData.data.ayahs
-        .map((ayah, idx) => ({
-          numberInSurah: ayah.numberInSurah,
-          number: ayah.number,
-          text: ayah.text,
-          translation: enData.data.ayahs[idx]?.text || '',
-          audio: getAudioPath(audioData.data.ayahs[idx]?.audio)
-        }))
-        .filter(a => a.audio);
+      if (CDN_ONLY_RECITERS.has(reciterId)) {
+        const [arRes, enRes] = await Promise.all([
+          fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/quran-uthmani`),
+          fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/en.sahih`)
+        ]);
+        if (!arRes.ok || !enRes.ok) throw new Error('Failed to fetch Quran data from API.');
+        arData = await arRes.json();
+        enData = await enRes.json();
+        const offset = surahOffset[surahNum] || 0;
+        combined = arData.data.ayahs
+          .map((ayah, idx) => ({
+            numberInSurah: ayah.numberInSurah,
+            number: ayah.number,
+            text: ayah.text,
+            translation: enData.data.ayahs[idx]?.text || '',
+            audio: `/quran/audio/128/${reciterId}/${offset + ayah.numberInSurah}.mp3`
+          }));
+      } else {
+        const [arRes, enRes, audioRes] = await Promise.all([
+          fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/quran-uthmani`),
+          fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/en.sahih`),
+          fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/${reciterId}`)
+        ]);
+        if (!arRes.ok || !enRes.ok || !audioRes.ok) {
+          throw new Error('Failed to fetch Quran data from API. Try again.');
+        }
+        arData = await arRes.json();
+        enData = await enRes.json();
+        const audioData = await audioRes.json();
+        combined = arData.data.ayahs
+          .map((ayah, idx) => ({
+            numberInSurah: ayah.numberInSurah,
+            number: ayah.number,
+            text: ayah.text,
+            translation: enData.data.ayahs[idx]?.text || '',
+            audio: getAudioPath(audioData.data.ayahs[idx]?.audio)
+          }))
+          .filter(a => a.audio);
+      }
 
       if (combined.length === 0) {
         throw new Error('No audio available for this reciter/surah combination. Try a different reciter.');

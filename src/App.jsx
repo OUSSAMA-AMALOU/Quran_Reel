@@ -44,6 +44,13 @@ const RECITERS = [
 // Reciters NOT available in Alquran Cloud API — audio comes from CDN directly
 const CDN_ONLY_RECITERS = new Set(['ar.yasseraldossari']);
 
+// Map CDN reciter IDs to EveryAyah folder names
+const EVERYAYAH_FOLDERS = {
+  'ar.yasseraldossari': 'Yasser_Ad-Dussary'
+};
+
+const pad3 = (n) => String(n).padStart(3, '0');
+
 // Build cumulative ayah offsets: surahNum → global ayah offset (0-indexed)
 const surahOffset = {};
 let cum = 0;
@@ -148,14 +155,14 @@ function App() {
         if (!arRes.ok || !enRes.ok) throw new Error('Failed to fetch Quran data from API.');
         arData = await arRes.json();
         enData = await enRes.json();
-        const offset = surahOffset[surahNum] || 0;
+        const folder = EVERYAYAH_FOLDERS[reciterId];
         combined = arData.data.ayahs
           .map((ayah, idx) => ({
             numberInSurah: ayah.numberInSurah,
             number: ayah.number,
             text: ayah.text,
             translation: enData.data.ayahs[idx]?.text || '',
-            audio: `/quran/audio/128/${reciterId}/${offset + ayah.numberInSurah}.mp3`
+            audio: `/everyayah/data/${folder}_128kbps/${pad3(surahNum)}${pad3(ayah.numberInSurah)}.mp3`
           }));
       } else {
         // API reciter: fetch everything from Alquran Cloud
@@ -229,14 +236,14 @@ function App() {
         if (!arRes.ok || !enRes.ok) throw new Error('Failed to fetch Quran data from API.');
         arData = await arRes.json();
         enData = await enRes.json();
-        const offset = surahOffset[surahNum] || 0;
+        const folder = EVERYAYAH_FOLDERS[reciterId];
         combined = arData.data.ayahs
           .map((ayah, idx) => ({
             numberInSurah: ayah.numberInSurah,
             number: ayah.number,
             text: ayah.text,
             translation: enData.data.ayahs[idx]?.text || '',
-            audio: `/quran/audio/128/${reciterId}/${offset + ayah.numberInSurah}.mp3`
+            audio: `/everyayah/data/${folder}_128kbps/${pad3(surahNum)}${pad3(ayah.numberInSurah)}.mp3`
           }));
       } else {
         const [arRes, enRes, audioRes] = await Promise.all([

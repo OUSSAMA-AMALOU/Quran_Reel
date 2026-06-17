@@ -9,6 +9,10 @@ export default defineConfig({
       '/quran': {
         target: 'https://cdn.islamic.network',
         changeOrigin: true,
+      },
+      '/everyayah': {
+        target: 'https://everyayah.com',
+        changeOrigin: true,
       }
     }
   }

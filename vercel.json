@@ -1,5 +1,6 @@
 {
   "rewrites": [
-    { "source": "/quran/(.*)", "destination": "https://cdn.islamic.network/quran/$1" }
+    { "source": "/quran/(.*)", "destination": "https://cdn.islamic.network/quran/$1" },
+    { "source": "/everyayah/(.*)", "destination": "https://everyayah.com/$1" }
   ]
 }

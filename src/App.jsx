@@ -304,9 +304,9 @@ function App() {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     
-    // Explicitly set HD vertical resolution (508x850)
-    canvas.width = 508;
-    canvas.height = 850;
+    // Instagram Reels 9:16
+    canvas.width = 1080;
+    canvas.height = 1920;
 
     let animId;
     const renderLoop = () => {

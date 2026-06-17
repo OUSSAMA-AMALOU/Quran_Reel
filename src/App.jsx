@@ -3,6 +3,7 @@ import { surahs } from './data/surahData';
 import { drawFrame } from './utils/videoRenderer';
 
 const RECITERS = [
+  // Original 9
   { id: 'ar.alafasy', name: 'Mishary Rashid Alafasy', style: 'Murattal' },
   { id: 'ar.sudais', name: 'Abdul Rahman Al-Sudais', style: 'Murattal' },
   { id: 'ar.mahermuaiqly', name: 'Maher Al-Muaiqly', style: 'Murattal' },
@@ -11,7 +12,31 @@ const RECITERS = [
   { id: 'ar.minshawi', name: 'Muhammad Al-Minshawi', style: 'Murattal' },
   { id: 'ar.shaatree', name: 'Abu Bakr Al-Shatri', style: 'Murattal' },
   { id: 'ar.saadalgamidi', name: 'Saad Al-Ghamdi', style: 'Murattal' },
-  { id: 'ar.hanirifai', name: 'Hani Ar-Rifai', style: 'Murattal' }
+  { id: 'ar.hanirifai', name: 'Hani Ar-Rifai', style: 'Murattal' },
+  // New from API
+  { id: 'ar.abdullahbasfar', name: 'Abdullah Basfar', style: 'Murattal' },
+  { id: 'ar.abdurrahmaansudais', name: 'Abdurrahmaan As-Sudais', style: 'Murattal' },
+  { id: 'ar.abdulsamad', name: 'Abdul Samad', style: 'Murattal' },
+  { id: 'ar.ahmedajamy', name: 'Ahmed ibn Ali al-Ajamy', style: 'Murattal' },
+  { id: 'ar.husary', name: 'Mahmoud Khalil Al-Husary', style: 'Murattal' },
+  { id: 'ar.husarymujawwad', name: 'Al-Husary (Mujawwad)', style: 'Mujawwad' },
+  { id: 'ar.hudhaify', name: 'Ali Al-Hudhaify', style: 'Murattal' },
+  { id: 'ar.ibrahimakhbar', name: 'Ibrahim Al-Akhdar', style: 'Murattal' },
+  { id: 'ar.minshawimujawwad', name: 'Al-Minshawi (Mujawwad)', style: 'Mujawwad' },
+  { id: 'ar.muhammadayyoub', name: 'Muhammad Ayyoub', style: 'Murattal' },
+  { id: 'ar.muhammadjibreel', name: 'Muhammad Jibreel', style: 'Murattal' },
+  { id: 'ar.saoodshuraym', name: 'Saood Ash-Shuraym', style: 'Murattal' },
+  { id: 'ar.parhizgar', name: 'Parhizgar', style: 'Murattal' },
+  { id: 'ar.aymanswoaid', name: 'Ayman Sowaid', style: 'Murattal' },
+  // V2 editions (alternate recordings)
+  { id: 'ar.alafasy-2', name: 'Alafasy (V2)', style: 'Murattal' },
+  { id: 'ar.husary-2', name: 'Al-Husary (V2)', style: 'Murattal' },
+  { id: 'ar.mahermuaiqly-2', name: 'Maher Al-Muaiqly (V2)', style: 'Murattal' },
+  { id: 'ar.hudhaify-2', name: 'Al-Hudhaify (V2)', style: 'Murattal' },
+  { id: 'ar.husarymujawwad-2', name: 'Al-Husary (Mujawwad V2)', style: 'Mujawwad' },
+  { id: 'ar.minshawi-2', name: 'Al-Minshawi (V2)', style: 'Murattal' },
+  { id: 'ar.muhammadayyoub-2', name: 'Muhammad Ayyoub (V2)', style: 'Murattal' },
+  { id: 'ar.muhammadjibreel-2', name: 'Muhammad Jibreel (V2)', style: 'Murattal' },
 ];
 
 const getAudioPath = (url) => {

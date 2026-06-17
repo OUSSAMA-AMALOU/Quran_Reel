@@ -462,7 +462,7 @@ body {
 @media (max-width: 1024px) {
   .main-content { grid-template-columns: 1fr; }
   .app-container { padding: 16px; }
-  .phone-mockup { width: 300px; height: 533px; }
+  .phone-mockup { width: 300px; height: 502px; }
   .phone-notch { width: 100px; height: 18px; border-radius: 0 0 12px 12px; }
   .video-frame { border-radius: 36px; }
 }
@@ -472,7 +472,7 @@ body {
   .app-header { padding: 6px 0; }
   .desktop-only { display: none !important; }
   .logo-section svg:first-child { width: 24px; height: 24px; }
-  .phone-mockup { width: 260px; height: 462px; border-radius: 34px; }
+  .phone-mockup { width: 260px; height: 435px; border-radius: 34px; }
   .phone-notch { width: 80px; height: 16px; border-radius: 0 0 10px 10px; }
   .video-frame { border-radius: 28px; }
   .preview-controls { margin-top: 14px; }
@@ -484,7 +484,7 @@ body {
 @media (max-width: 400px) {
   .app-container { padding: 8px; }
   .desktop-only { display: none !important; }
-  .phone-mockup { width: 220px; height: 391px; border-radius: 28px; }
+  .phone-mockup { width: 220px; height: 368px; border-radius: 28px; }
   .phone-notch { width: 60px; height: 14px; border-radius: 0 0 8px 8px; }
   .video-frame { border-radius: 22px; }
   .sidebar { padding: 12px; gap: 12px; }
@@ -931,7 +931,7 @@ input[type="range"]::-moz-range-thumb {
 
 .phone-mockup {
   width: 340px;
-  height: 604px;
+  height: 569px;
   border-radius: 44px;
   background: var(--bg-surface-elevated);
   box-shadow:

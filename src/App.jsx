@@ -120,6 +120,11 @@ function App() {
   const [hadithData, setHadithData] = useState([]);
   const [currentHadithIndex, setCurrentHadithIndex] = useState(0);
   
+  // Background Audio
+  const [bgAudioFile, setBgAudioFile] = useState(null);
+  const [bgAudioEnabled, setBgAudioEnabled] = useState(false);
+  const [bgAudioVolume, setBgAudioVolume] = useState(50);
+  
   // Data States
   const [passageAyahs, setPassageAyahs] = useState([]);
   const [currentAyahIndex, setCurrentAyahIndex] = useState(0);
@@ -142,6 +147,7 @@ function App() {
   const canvasRef = useRef(null);
   const audioRef = useRef(null);
   const nextAudioRef = useRef(null);
+  const bgAudioRef = useRef(null);
   const fileInputRef = useRef(null);
   const videoRef = useRef(null);
   
@@ -150,11 +156,12 @@ function App() {
   const analyserRef = useRef(null);
   const audioSourceNodeRef = useRef(null);
   const nextAudioSourceNodeRef = useRef(null);
+  const bgAudioSourceNodeRef = useRef(null);
+  const bgGainNodeRef = useRef(null);
   const recorderRef = useRef(null);
   
   // Track which audio element is currently active for playback
   const activeIsPrimaryRef = useRef(true);
-  const utteranceRef = useRef(null);
   const getAudio = () => activeIsPrimaryRef.current ? audioRef.current : nextAudioRef.current;
   const getIdleAudio = () => activeIsPrimaryRef.current ? nextAudioRef.current : audioRef.current;
 
@@ -317,7 +324,6 @@ function App() {
     setError(null);
     setIsPlaying(false);
     setCurrentHadithIndex(0);
-    window.speechSynthesis.cancel();
 
     try {
       const num = hadithNumber;
@@ -382,6 +388,17 @@ function App() {
       analyserRef.current = analyser;
       audioSourceNodeRef.current = primarySource;
       nextAudioSourceNodeRef.current = secondarySource;
+      
+      // Connect background audio element if available
+      if (bgAudioRef.current) {
+        const bgSource = audioCtx.createMediaElementSource(bgAudioRef.current);
+        const bgGain = audioCtx.createGain();
+        bgGain.gain.value = bgAudioVolume / 100;
+        bgSource.connect(bgGain);
+        bgGain.connect(audioCtx.destination);
+        bgAudioSourceNodeRef.current = bgSource;
+        bgGainNodeRef.current = bgGain;
+      }
     } catch (e) {
       console.warn("Web Audio API not fully initialized (user interaction required or already running)", e);
     }
@@ -401,28 +418,8 @@ function App() {
   // Playback Control
   const togglePlay = async () => {
     if (mode === 'hadith') {
-      if (isPlaying) {
-        if (audioRef.current) audioRef.current.pause();
-        window.speechSynthesis.cancel();
-        setIsPlaying(false);
-      } else {
-        const hadith = hadithData[currentHadithIndex];
-        if (!hadith || !hadith.text) return;
-
-        const text = hadith.text.slice(0, 200); // Google TTS has char limit
-        const url = `/api/tts?ie=UTF-8&tl=ar&client=tw-ob&q=${encodeURIComponent(text)}`;
-        
-        if (audioRef.current) {
-          audioRef.current.src = url;
-          audioRef.current.load();
-          audioRef.current.play().then(() => {
-            setIsPlaying(true);
-          }).catch(err => {
-            console.error('TTS playback error:', err);
-            setError('TTS playback failed. Try again or use a different browser.');
-          });
-        }
-      }
+      if (hadithData.length === 0) return;
+      setIsPlaying(!isPlaying);
       return;
     }
     if (passageAyahs.length === 0 || !getAudio()) return;
@@ -464,25 +461,7 @@ function App() {
   };
 
   const handleAudioEnded = () => {
-    if (mode === 'hadith') {
-      const nextIdx = currentHadithIndex + 1;
-      if (nextIdx < hadithData.length) {
-        setCurrentHadithIndex(nextIdx);
-        const nextHadith = hadithData[nextIdx];
-        if (nextHadith?.text && !isRecording) {
-          const text = nextHadith.text.slice(0, 200);
-          const a = audioRef.current;
-          if (a) {
-            a.src = `/api/tts?ie=UTF-8&tl=ar&client=tw-ob&q=${encodeURIComponent(text)}`;
-            a.load();
-            a.play().catch(console.error);
-          }
-        }
-      } else {
-        setIsPlaying(false);
-      }
-      return;
-    }
+    if (mode === 'hadith') return;
     const nextIdx = currentAyahIndex + 1;
     if (nextIdx < passageAyahs.length) {
       setCurrentAyahIndex(nextIdx);
@@ -530,6 +509,27 @@ function App() {
       if (uploadedBgUrl) URL.revokeObjectURL(uploadedBgUrl);
       setUploadedBgUrl(URL.createObjectURL(file));
     }
+  };
+
+  // Handle Background Audio Upload
+  const handleBgAudioUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (bgAudioFile) URL.revokeObjectURL(bgAudioFile);
+      setBgAudioFile(URL.createObjectURL(file));
+    }
+  };
+
+  const toggleBgAudio = () => {
+    if (!bgAudioRef.current || !bgAudioFile) return;
+    if (bgAudioEnabled) {
+      bgAudioRef.current.pause();
+    } else {
+      bgAudioRef.current.src = bgAudioFile;
+      bgAudioRef.current.loop = true;
+      bgAudioRef.current.play().catch(console.error);
+    }
+    setBgAudioEnabled(!bgAudioEnabled);
   };
 
   // Canvas Drawing animation loop
@@ -693,6 +693,25 @@ function App() {
       secondarySource.connect(audioCtx.destination);
       secondarySource.connect(analyserRef.current);
 
+      // Connect background audio if uploaded
+      if (bgAudioFile && bgAudioRef.current) {
+        let bgSource;
+        if (!bgAudioSourceNodeRef.current) {
+          bgSource = audioCtx.createMediaElementSource(bgAudioRef.current);
+          bgAudioSourceNodeRef.current = bgSource;
+        } else {
+          bgSource = bgAudioSourceNodeRef.current;
+          bgSource.disconnect();
+        }
+        const bgGain = audioCtx.createGain();
+        bgGain.gain.value = bgAudioVolume / 100;
+        bgSource.connect(bgGain);
+        bgGain.connect(destNode);
+        bgGainNodeRef.current = bgGain;
+        bgAudioRef.current.loop = true;
+        bgAudioRef.current.play().catch(console.error);
+      }
+
       // 3. Capture canvas video + audio from destination node
       const canvasStream = canvasRef.current.captureStream(30);
       const videoTrack = canvasStream.getVideoTracks()[0];
@@ -779,12 +798,30 @@ function App() {
     try {
       setCurrentHadithIndex(0);
 
-      // Capture canvas video (no audio for hadith)
+      let hasBgAudio = false;
+      let bgTrack = null;
+      if (bgAudioFile && bgAudioRef.current) {
+        bgAudioRef.current.src = bgAudioFile;
+        bgAudioRef.current.loop = true;
+        try {
+          await bgAudioRef.current.play();
+          // Capture audio track directly from the audio element
+          const bgStream = bgAudioRef.current.captureStream();
+          bgTrack = bgStream.getAudioTracks()[0];
+          if (bgTrack) hasBgAudio = true;
+        } catch (e) {
+          console.warn('Background audio failed:', e);
+        }
+      }
+
+      // Capture canvas video
       const canvasStream = canvasRef.current.captureStream(30);
       const videoTrack = canvasStream.getVideoTracks()[0];
       if (!videoTrack) throw new Error('Failed to capture canvas video track.');
 
-      const recorderStream = new MediaStream([videoTrack]);
+      const tracks = [videoTrack];
+      if (hasBgAudio && bgTrack) tracks.push(bgTrack);
+      const recorderStream = new MediaStream(tracks);
 
       // Set up MediaRecorder
       let options;
@@ -853,6 +890,7 @@ function App() {
       if (recorderRef.current && recorderRef.current.state === 'recording') {
         recorderRef.current.stop();
       }
+      if (bgAudioRef.current) bgAudioRef.current.pause();
     } catch (err) {
       console.error(err);
       setError(`Recording failed: ${err.message}`);
@@ -865,7 +903,7 @@ function App() {
   const stopRecording = () => {
     if (audioRef.current) audioRef.current.pause();
     if (nextAudioRef.current) nextAudioRef.current.pause();
-    window.speechSynthesis.cancel();
+    if (bgAudioRef.current) bgAudioRef.current.pause();
     setIsPlaying(false);
     if (recorderRef.current && recorderRef.current.state === 'recording') {
       recorderRef.current.stop();
@@ -1294,6 +1332,50 @@ function App() {
             />
           </div>
 
+          <hr />
+
+          <h2 className="section-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 18V5l12-2v13"/>
+              <circle cx="6" cy="18" r="3"/>
+              <circle cx="18" cy="16" r="3"/>
+            </svg>
+            Background Audio
+          </h2>
+
+          <div className="file-upload">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 18V5l12-2v13"/>
+              <circle cx="6" cy="18" r="3"/>
+              <circle cx="18" cy="16" r="3"/>
+            </svg>
+            <span>{bgAudioFile ? 'Audio Uploaded ✓' : 'Upload Background Audio'}</span>
+            <input 
+              type="file" 
+              accept="audio/*" 
+              onChange={handleBgAudioUpload} 
+              disabled={isRecording}
+            />
+          </div>
+
+          {bgAudioFile && (
+            <div className="form-row">
+              <button className={`btn-sm ${bgAudioEnabled ? 'btn-active' : ''}`} onClick={toggleBgAudio}>
+                {bgAudioEnabled ? 'Playing' : 'Play'}
+              </button>
+              <div className="form-group" style={{flex: 1}}>
+                <input
+                  type="range" min="0" max="100" value={bgAudioVolume}
+                  onChange={(e) => {
+                    const v = Number(e.target.value);
+                    setBgAudioVolume(v);
+                    if (bgGainNodeRef.current) bgGainNodeRef.current.gain.value = v / 100;
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
           <button 
             className="btn-generate" 
             onClick={handleExportVideo} 
@@ -1376,6 +1458,11 @@ function App() {
               ref={nextAudioRef}
               onEnded={handleAudioEnded}
               preload="auto"
+            />
+            <audio 
+              ref={bgAudioRef}
+              preload="auto"
+              loop
             />
           </div>
 

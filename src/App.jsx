@@ -67,6 +67,31 @@ const getAudioPath = (url) => {
   } catch { return ''; }
 };
 
+// 20 preset halal background sounds (vocal nasheeds, CC0 from Internet Archive)
+const PRESET_BG_SOUNDS = [
+  { id: 'none', name: 'None' },
+  { id: 'ia01', name: 'Islamic Background 01', url: 'https://archive.org/download/IslamicBackgroundSoundsAahat/01-ISLAMIC%20BACKGROUND%20SOUNDS.mp3' },
+  { id: 'ia02', name: 'Islamic Background 02', url: 'https://archive.org/download/IslamicBackgroundSoundsAahat/02-ISLAMIC%20BACKGROUND%20SOUNDS.mp3' },
+  { id: 'ia03', name: 'Islamic Background 03', url: 'https://archive.org/download/IslamicBackgroundSoundsAahat/03-ISLAMIC%20BACKGROUND%20SOUNDS.mp3' },
+  { id: 'ia04', name: 'Islamic Background 04', url: 'https://archive.org/download/IslamicBackgroundSoundsAahat/04-ISLAMIC%20BACKGROUND%20SOUNDS.mp3' },
+  { id: 'ia05', name: 'Islamic Background 05', url: 'https://archive.org/download/IslamicBackgroundSoundsAahat/05-ISLAMIC%20BACKGROUND%20SOUNDS.mp3' },
+  { id: 'ia06', name: 'Islamic Background 06', url: 'https://archive.org/download/IslamicBackgroundSoundsAahat/06-ISLAMIC%20BACKGROUND%20SOUNDS.mp3' },
+  { id: 'ia07', name: 'Islamic Background 07', url: 'https://archive.org/download/IslamicBackgroundSoundsAahat/07-ISLAMIC%20BACKGROUND%20SOUNDS.mp3' },
+  { id: 'ia08', name: 'Islamic Background 08', url: 'https://archive.org/download/IslamicBackgroundSoundsAahat/08-ISLAMIC%20BACKGROUND%20SOUNDS.mp3' },
+  { id: 'ia09', name: 'Islamic Background 09', url: 'https://archive.org/download/IslamicBackgroundSoundsAahat/09-ISLAMIC%20BACKGROUND%20SOUNDS.mp3' },
+  { id: 'ia10', name: 'Islamic Background 10', url: 'https://archive.org/download/IslamicBackgroundSoundsAahat/10-ISLAMIC%20BACKGROUND%20SOUNDS.mp3' },
+  { id: 'nasheed1', name: 'Alhamdulillah Nasheed', url: 'https://archive.org/download/background-nasheed-1/Alhamdulillah%20Nasheed.mp3' },
+  { id: 'nasheed2', name: 'Deen al-Salam', url: 'https://archive.org/download/background-nasheed-1/Deen%20al-Salam%20%28Religion%20of%20Peace%29.mp3' },
+  { id: 'nasheed3', name: 'Alyawm Kaleid', url: 'https://archive.org/download/background-nasheed-1/Alyawm%20Kaleid%20%28Today%20is%20like%20Eid%29.mp3' },
+  { id: 'nasheed4', name: 'Qad Udna', url: 'https://archive.org/download/background-nasheed-1/Qad%20Udna%20%28Here%20we%20come%20back%20to%20you%29.mp3' },
+  { id: 'nasheed5', name: 'Quranuna Dusturuna', url: 'https://archive.org/download/background-nasheed-1/Quranuna%20Dusturuna%20%28Our%20Quran%20is%20Our%20Constitution%29.mp3' },
+  { id: 'nasheed6', name: 'Riha Ula', url: 'https://archive.org/download/background-nasheed-1/Riha%20Ula%20%28Heaven%20called%20them%29.mp3' },
+  { id: 'nasheed7', name: 'Ummat al-Islami Bushra', url: 'https://archive.org/download/background-nasheed-1/Ummat%20al-Islami%20Bushra%20%28online-audio-converter.com%29.mp3' },
+  { id: 'nasheed8', name: 'Ya Hala Marhaba', url: 'https://archive.org/download/background-nasheed-1/Ya%20Hala%20Marhaba%20%28online-audio-converter.com%29.mp3' },
+  { id: 'nasheed9', name: 'al-Ghuraba', url: 'https://archive.org/download/background-nasheed-1/al-Ghuraba%20%28The%20Strangers%29.mp3' },
+  { id: 'nasheed10', name: 'Salaktu Tariqi', url: 'https://archive.org/download/background-nasheed-1/Salaktu%20Tariqi%20%28online-audio-converter.com%29.mp3' },
+];
+
 function App() {
   const [theme, setTheme] = useState(() => localStorage.getItem('quran-theme') || 'dark');
   useEffect(() => {
@@ -122,6 +147,7 @@ function App() {
   
   // Background Audio
   const [bgAudioFile, setBgAudioFile] = useState(null);
+  const [selectedBgSound, setSelectedBgSound] = useState('none');
   const [bgAudioEnabled, setBgAudioEnabled] = useState(false);
   const [bgAudioVolume, setBgAudioVolume] = useState(50);
   
@@ -515,8 +541,32 @@ function App() {
   const handleBgAudioUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
-      if (bgAudioFile) URL.revokeObjectURL(bgAudioFile);
+      if (bgAudioFile && !bgAudioFile.startsWith('https://')) URL.revokeObjectURL(bgAudioFile);
       setBgAudioFile(URL.createObjectURL(file));
+      setSelectedBgSound('__custom__');
+    }
+  };
+
+  const handleSelectBgSound = (id) => {
+    setSelectedBgSound(id);
+    if (id === 'none') {
+      setBgAudioFile(null);
+      if (bgAudioRef.current) bgAudioRef.current.pause();
+      setBgAudioEnabled(false);
+    } else if (id === '__custom__') {
+      // file upload handles itself
+    } else {
+      const preset = PRESET_BG_SOUNDS.find(s => s.id === id);
+      if (preset) {
+        setBgAudioFile(preset.url);
+        // Auto-play if already enabled
+        if (bgAudioRef.current) {
+          bgAudioRef.current.src = preset.url;
+          bgAudioRef.current.loop = true;
+          bgAudioRef.current.play().catch(console.error);
+          setBgAudioEnabled(true);
+        }
+      }
     }
   };
 
@@ -524,12 +574,15 @@ function App() {
     if (!bgAudioRef.current || !bgAudioFile) return;
     if (bgAudioEnabled) {
       bgAudioRef.current.pause();
+      setBgAudioEnabled(false);
     } else {
-      bgAudioRef.current.src = bgAudioFile;
+      if (!bgAudioRef.current.src || bgAudioRef.current.src === location.href) {
+        bgAudioRef.current.src = bgAudioFile;
+      }
       bgAudioRef.current.loop = true;
       bgAudioRef.current.play().catch(console.error);
+      setBgAudioEnabled(true);
     }
-    setBgAudioEnabled(!bgAudioEnabled);
   };
 
   // Canvas Drawing animation loop
@@ -1343,22 +1396,40 @@ function App() {
             Background Audio
           </h2>
 
-          <div className="file-upload">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M9 18V5l12-2v13"/>
-              <circle cx="6" cy="18" r="3"/>
-              <circle cx="18" cy="16" r="3"/>
-            </svg>
-            <span>{bgAudioFile ? 'Audio Uploaded ✓' : 'Upload Background Audio'}</span>
-            <input 
-              type="file" 
-              accept="audio/*" 
-              onChange={handleBgAudioUpload} 
+          <div className="form-group">
+            <label>Choose Sound</label>
+            <select
+              value={selectedBgSound}
+              onChange={(e) => handleSelectBgSound(e.target.value)}
               disabled={isRecording}
-            />
+            >
+              {PRESET_BG_SOUNDS.map(s => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+              <option value="__custom__">—— Upload Custom ——</option>
+            </select>
           </div>
 
-          {bgAudioFile && (
+          {selectedBgSound === '__custom__' && (
+            <div className="file-upload">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 18V5l12-2v13"/>
+                <circle cx="6" cy="18" r="3"/>
+                <circle cx="18" cy="16" r="3"/>
+              </svg>
+              <span>{bgAudioFile && selectedBgSound === '__custom__' ? 'Audio Uploaded ✓' : 'Upload Audio File'}</span>
+              <input 
+                type="file" 
+                accept="audio/*" 
+                onChange={handleBgAudioUpload} 
+                disabled={isRecording}
+              />
+            </div>
+          )}
+
+          {bgAudioFile && selectedBgSound !== 'none' && (
             <div className="form-row">
               <button className={`btn-sm ${bgAudioEnabled ? 'btn-active' : ''}`} onClick={toggleBgAudio}>
                 {bgAudioEnabled ? 'Playing' : 'Play'}

@@ -636,6 +636,54 @@ select option {
 
 .btn-primary:disabled::before { display: none; }
 
+/* Button group for mode toggle */
+.btn-group {
+  display: flex;
+  gap: 0;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.btn-sm {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 12px;
+  font-family: var(--font-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-sm:not(:last-child) {
+  border-right: 1px solid var(--border-color);
+}
+
+.btn-sm:hover:not(:disabled) {
+  background: var(--bg-secondary);
+}
+
+.btn-sm.btn-active {
+  background: var(--primary);
+  color: #fff;
+}
+
+.btn-sm:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.mode-toggle {
+  margin-bottom: 16px;
+}
+
 /* Secondary/ghost button */
 .btn-ghost {
   width: 100%;

@@ -102,6 +102,25 @@ function App() {
   const [visualizerStyle, setVisualizerStyle] = useState('none'); // 'waves', 'bars', 'none'
   const [visualizerColor, setVisualizerColor] = useState('#60a5fa');
   
+  // Mode: quran or hadith
+  const [mode, setMode] = useState('quran');
+
+  // Hadith-specific states
+  const HADITH_BOOKS = [
+    { id: 'bukhari', name: 'Sahih Bukhari', arabic: 'صحيح البخاري' },
+    { id: 'muslim', name: 'Sahih Muslim', arabic: 'صحيح مسلم' },
+    { id: 'abudawud', name: 'Sunan Abi Dawud', arabic: 'سنن أبي داود' },
+    { id: 'tirmidhi', name: 'Jami At-Tirmidhi', arabic: 'جامع الترمذي' },
+    { id: 'nasai', name: 'Sunan An-Nasai', arabic: 'سنن النسائي' },
+    { id: 'ibnmajah', name: 'Sunan Ibn Majah', arabic: 'سنن ابن ماجه' },
+    { id: 'malik', name: 'Muwatta Malik', arabic: 'موطأ مالك' },
+  ];
+  const [hadithBook, setHadithBook] = useState('bukhari');
+  const [hadithStart, setHadithStart] = useState(1);
+  const [hadithEnd, setHadithEnd] = useState(5);
+  const [hadithData, setHadithData] = useState([]);
+  const [currentHadithIndex, setCurrentHadithIndex] = useState(0);
+  
   // Data States
   const [passageAyahs, setPassageAyahs] = useState([]);
   const [currentAyahIndex, setCurrentAyahIndex] = useState(0);
@@ -292,6 +311,48 @@ function App() {
     }
   };
 
+  // Fetch Hadiths from fawazahmed0 hadith-api
+  const fetchHadiths = async () => {
+    setLoading(true);
+    setError(null);
+    setIsPlaying(false);
+    setCurrentHadithIndex(0);
+
+    try {
+      const results = [];
+      for (let num = hadithStart; num <= hadithEnd; num++) {
+        const [araRes, engRes] = await Promise.all([
+          fetch(`https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-${hadithBook}/${num}.json`),
+          fetch(`https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/eng-${hadithBook}/${num}.json`)
+        ]);
+        if (!araRes.ok || !engRes.ok) {
+          console.warn(`Hadith ${num} not found, skipping.`);
+          continue;
+        }
+        const araData = await araRes.json();
+        const engData = await engRes.json();
+        const araHadith = araData.hadiths?.[0];
+        const engHadith = engData.hadiths?.[0];
+        if (araHadith && engHadith) {
+          results.push({
+            number: num,
+            text: araHadith.text,
+            translation: engHadith.text,
+            bookName: araData.metadata?.name || hadithBook,
+          });
+        }
+      }
+      if (results.length === 0) {
+        throw new Error('No hadith found in this range. Try different numbers.');
+      }
+      setHadithData(results);
+    } catch (err) {
+      setError(err.message || 'Failed to fetch hadith.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Setup Web Audio API on first play
   const initWebAudio = () => {
     if (audioCtxRef.current) return;
@@ -334,6 +395,7 @@ function App() {
 
   // Playback Control
   const togglePlay = async () => {
+    if (mode === 'hadith') return;
     if (passageAyahs.length === 0 || !getAudio()) return;
     
     initWebAudio();
@@ -434,12 +496,18 @@ function App() {
 
     let animId;
     const renderLoop = () => {
+      const currentItem = mode === 'hadith'
+        ? hadithData[currentHadithIndex]
+        : passageAyahs[currentAyahIndex];
+      const referenceText = mode === 'hadith' && currentItem
+        ? `${currentItem.bookName}, Hadith ${currentItem.number}`
+        : undefined;
       drawFrame({
         ctx,
         canvas,
         videoElement: videoRef.current,
         audioAnalyser: analyserRef.current,
-        currentAyah: passageAyahs[currentAyahIndex],
+        currentAyah: currentItem,
         config: {
           fontSize,
           translationFontSize,
@@ -453,6 +521,7 @@ function App() {
           surahName: selectedSurahDetails?.englishName,
           surahNumber: surahNum,
           backgroundType,
+          referenceText,
         },
         isPlaying,
         currentTime
@@ -466,8 +535,11 @@ function App() {
       cancelAnimationFrame(animId);
     };
   }, [
+    mode,
     passageAyahs, 
     currentAyahIndex, 
+    hadithData,
+    currentHadithIndex,
     isPlaying, 
     fontSize, 
     translationFontSize, 
@@ -485,6 +557,10 @@ function App() {
 
   // Export / Record video logic
   const handleExportVideo = async () => {
+    if (mode === 'hadith') {
+      await handleExportHadith();
+      return;
+    }
     if (passageAyahs.length === 0) return;
     
     // Stop any current playback
@@ -635,6 +711,100 @@ function App() {
       setRecordingProgress(10);
       setRecordingStatus(`Recording Ayah ${startAyah} of ${endAyah}...`);
 
+    } catch (err) {
+      console.error(err);
+      setError(`Recording failed: ${err.message}`);
+      setIsRecording(false);
+      setRecordingProgress(0);
+    }
+  };
+
+  // Export Hadith reel (silent video, no audio)
+  const handleExportHadith = async () => {
+    if (hadithData.length === 0) return;
+
+    setIsPlaying(false);
+    setIsRecording(true);
+    setRecordingProgress(5);
+    setRecordingStatus('Initializing hadith reel...');
+
+    try {
+      setCurrentHadithIndex(0);
+
+      // Capture canvas video (no audio for hadith)
+      const canvasStream = canvasRef.current.captureStream(30);
+      const videoTrack = canvasStream.getVideoTracks()[0];
+      if (!videoTrack) throw new Error('Failed to capture canvas video track.');
+
+      const recorderStream = new MediaStream([videoTrack]);
+
+      // Set up MediaRecorder
+      let options;
+      if (MediaRecorder.isTypeSupported('video/mp4;codecs=h264,aac')) {
+        options = { mimeType: 'video/mp4;codecs=h264,aac' };
+      } else if (MediaRecorder.isTypeSupported('video/mp4;codecs=avc1.42E01E,mp4a.40.2')) {
+        options = { mimeType: 'video/mp4;codecs=avc1.42E01E,mp4a.40.2' };
+      } else if (MediaRecorder.isTypeSupported('video/mp4')) {
+        options = { mimeType: 'video/mp4' };
+      } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')) {
+        options = { mimeType: 'video/webm;codecs=vp9,opus' };
+      } else {
+        options = { mimeType: 'video/webm' };
+      }
+
+      const chunks = [];
+      recorderRef.current = new MediaRecorder(recorderStream, options);
+
+      recorderRef.current.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) chunks.push(e.data);
+      };
+
+      recorderRef.current.onstop = () => {
+        setRecordingStatus('Compiling video file...');
+        setRecordingProgress(95);
+
+        const blob = new Blob(chunks, { type: options.mimeType });
+        const downloadUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = downloadUrl;
+        const bookName = HADITH_BOOKS.find(b => b.id === hadithBook)?.name || 'Hadith';
+        const extension = options.mimeType.includes('mp4') ? 'mp4' : 'webm';
+        a.download = `HadithReel_${bookName}_${hadithStart}-${hadithEnd}.${extension}`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+
+        setTimeout(() => {
+          setIsRecording(false);
+          setRecordingProgress(0);
+          setRecordingStatus('');
+        }, 1500);
+      };
+
+      recorderRef.current.start();
+
+      // Auto-advance through hadiths every 10 seconds
+      setIsPlaying(true);
+      setRecordingStatus(`Recording Hadith 1 of ${hadithData.length}...`);
+
+      for (let i = 0; i < hadithData.length; i++) {
+        setCurrentHadithIndex(i);
+        setRecordingStatus(`Recording Hadith ${i + 1} of ${hadithData.length}...`);
+        setRecordingProgress(Math.round(((i + 1) / hadithData.length) * 80 + 10));
+
+        const secondsPerHadith = 10;
+        if (i === hadithData.length - 1) {
+          // Last hadith: wait then stop
+          await new Promise(resolve => setTimeout(resolve, secondsPerHadith * 1000));
+        } else {
+          await new Promise(resolve => setTimeout(resolve, secondsPerHadith * 1000));
+        }
+      }
+
+      setIsPlaying(false);
+      if (recorderRef.current && recorderRef.current.state === 'recording') {
+        recorderRef.current.stop();
+      }
     } catch (err) {
       console.error(err);
       setError(`Recording failed: ${err.message}`);
@@ -884,99 +1054,182 @@ function App() {
             Passage Settings
           </h2>
 
-          <div className="form-group">
-            <label htmlFor="reciter">Reciter</label>
-            <select 
-              id="reciter" 
-              value={reciterId} 
-              onChange={(e) => setReciterId(e.target.value)}
-              disabled={isRecording}
-            >
-              {RECITERS.map(reciter => (
-                <option key={reciter.id} value={reciter.id}>
-                  {reciter.name} ({reciter.style})
-                </option>
-              ))}
-            </select>
+          <div className="form-group mode-toggle">
+            <label>Content Type</label>
+            <div className="btn-group">
+              <button 
+                className={`btn-sm ${mode === 'quran' ? 'btn-active' : ''}`}
+                onClick={() => setMode('quran')}
+                disabled={isRecording}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                  <path d="M20 2H6.5a2.5 2.5 0 0 0 0 5H20v14H6.5A2.5 2.5 0 0 1 4 18.5V4"/>
+                </svg>
+                Quran
+              </button>
+              <button 
+                className={`btn-sm ${mode === 'hadith' ? 'btn-active' : ''}`}
+                onClick={() => setMode('hadith')}
+                disabled={isRecording}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                </svg>
+                Hadith
+              </button>
+            </div>
           </div>
 
-          <div className="form-group">
-            <label htmlFor="surah">Surah</label>
-            <select 
-              id="surah" 
-              value={surahNum} 
-              onChange={(e) => {
-                const newSurah = parseInt(e.target.value);
-                setSurahNum(newSurah);
-                const details = surahs.find(s => s.number === newSurah);
-                if (details) {
-                  setStartAyah(1);
-                  setStartInput('1');
-                  const newEnd = Math.min(7, details.numberOfAyahs);
-                  setEndAyah(newEnd);
-                  setEndInput(String(newEnd));
-                }
-              }}
-              disabled={isRecording}
-            >
-              {surahs.map(s => (
-                <option key={s.number} value={s.number}>
-                  {s.number}. {s.englishName} ({s.name})
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="form-row">
+          {mode === 'quran' ? (
+            <>
             <div className="form-group">
-              <label htmlFor="startAyah">Start Ayah</label>
-              <input 
-                type="number" 
-                id="startAyah"
-                min="1" 
-                max={selectedSurahDetails?.numberOfAyahs || 7} 
-                value={startInput}
-                onChange={(e) => setStartInput(e.target.value)}
-                onBlur={() => {
-                  const maxAyahs = selectedSurahDetails?.numberOfAyahs || 7;
-                  const val = Math.min(Math.max(1, parseInt(startInput) || 1), maxAyahs);
-                  setStartAyah(val);
-                  setStartInput(String(val));
-                  if (val > endAyah) {
-                    setEndAyah(val);
-                    setEndInput(String(val));
+              <label htmlFor="reciter">Reciter</label>
+              <select 
+                id="reciter" 
+                value={reciterId} 
+                onChange={(e) => setReciterId(e.target.value)}
+                disabled={isRecording}
+              >
+                {RECITERS.map(reciter => (
+                  <option key={reciter.id} value={reciter.id}>
+                    {reciter.name} ({reciter.style})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="surah">Surah</label>
+              <select 
+                id="surah" 
+                value={surahNum} 
+                onChange={(e) => {
+                  const newSurah = parseInt(e.target.value);
+                  setSurahNum(newSurah);
+                  const details = surahs.find(s => s.number === newSurah);
+                  if (details) {
+                    setStartAyah(1);
+                    setStartInput('1');
+                    const newEnd = Math.min(7, details.numberOfAyahs);
+                    setEndAyah(newEnd);
+                    setEndInput(String(newEnd));
                   }
                 }}
                 disabled={isRecording}
-              />
+              >
+                {surahs.map(s => (
+                  <option key={s.number} value={s.number}>
+                    {s.number}. {s.englishName} ({s.name})
+                  </option>
+                ))}
+              </select>
             </div>
-            <div className="form-group">
-              <label htmlFor="endAyah">End Ayah</label>
-              <input 
-                type="number" 
-                id="endAyah"
-                min={startAyah} 
-                max={selectedSurahDetails?.numberOfAyahs || 7} 
-                value={endInput}
-                onChange={(e) => setEndInput(e.target.value)}
-                onBlur={() => {
-                  const maxAyahs = selectedSurahDetails?.numberOfAyahs || 7;
-                  const val = Math.max(startAyah, Math.min(maxAyahs, parseInt(endInput) || 1));
-                  setEndAyah(val);
-                  setEndInput(String(val));
-                }}
-                disabled={isRecording}
-              />
-            </div>
-          </div>
 
-          <button 
-            className="btn-ghost" 
-            onClick={applyLocalRangeChange} 
-            disabled={loading || isRecording}
-          >
-            Apply Ayah Range
-          </button>
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="startAyah">Start Ayah</label>
+                <input 
+                  type="number" 
+                  id="startAyah"
+                  min="1" 
+                  max={selectedSurahDetails?.numberOfAyahs || 7} 
+                  value={startInput}
+                  onChange={(e) => setStartInput(e.target.value)}
+                  onBlur={() => {
+                    const maxAyahs = selectedSurahDetails?.numberOfAyahs || 7;
+                    const val = Math.min(Math.max(1, parseInt(startInput) || 1), maxAyahs);
+                    setStartAyah(val);
+                    setStartInput(String(val));
+                    if (val > endAyah) {
+                      setEndAyah(val);
+                      setEndInput(String(val));
+                    }
+                  }}
+                  disabled={isRecording}
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="endAyah">End Ayah</label>
+                <input 
+                  type="number" 
+                  id="endAyah"
+                  min={startAyah} 
+                  max={selectedSurahDetails?.numberOfAyahs || 7} 
+                  value={endInput}
+                  onChange={(e) => setEndInput(e.target.value)}
+                  onBlur={() => {
+                    const maxAyahs = selectedSurahDetails?.numberOfAyahs || 7;
+                    const val = Math.max(startAyah, Math.min(maxAyahs, parseInt(endInput) || 1));
+                    setEndAyah(val);
+                    setEndInput(String(val));
+                  }}
+                  disabled={isRecording}
+                />
+              </div>
+            </div>
+
+            <button 
+              className="btn-ghost" 
+              onClick={applyLocalRangeChange} 
+              disabled={loading || isRecording}
+            >
+              Apply Ayah Range
+            </button>
+            </>
+          ) : (
+            <>
+            <div className="form-group">
+              <label htmlFor="hadithBook">Hadith Book</label>
+              <select 
+                id="hadithBook" 
+                value={hadithBook} 
+                onChange={(e) => setHadithBook(e.target.value)}
+                disabled={isRecording}
+              >
+                {HADITH_BOOKS.map(book => (
+                  <option key={book.id} value={book.id}>
+                    {book.name} ({book.arabic})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="hadithStart">Start Hadith</label>
+                <input 
+                  type="number" 
+                  id="hadithStart"
+                  min="1" 
+                  value={hadithStart}
+                  onChange={(e) => setHadithStart(parseInt(e.target.value) || 1)}
+                  disabled={isRecording}
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="hadithEnd">End Hadith</label>
+                <input 
+                  type="number" 
+                  id="hadithEnd"
+                  min={hadithStart} 
+                  value={hadithEnd}
+                  onChange={(e) => setHadithEnd(parseInt(e.target.value) || hadithStart)}
+                  disabled={isRecording}
+                />
+              </div>
+            </div>
+
+            <button 
+              className="btn-ghost" 
+              onClick={fetchHadiths} 
+              disabled={loading || isRecording}
+            >
+              Load Hadith
+            </button>
+            </>
+          )}
+
 
           <hr />
 
@@ -1093,7 +1346,7 @@ function App() {
             <button 
               className={`btn-circle ${isPlaying ? 'active' : ''}`} 
               onClick={togglePlay}
-              disabled={loading || isRecording || passageAyahs.length === 0}
+            disabled={loading || isRecording || (mode === 'quran' ? passageAyahs.length === 0 : hadithData.length === 0)}
               title={isPlaying ? "Pause Preview" : "Play Preview"}
             >
               {isPlaying ? (

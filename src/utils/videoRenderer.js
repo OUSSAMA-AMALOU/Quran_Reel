@@ -246,10 +246,10 @@ export function drawFrame({
     ctx.restore();
   }
 
-  // 4. Draw Surah and Ayah Info Badge
+  // 4. Draw Surah/Ayah Info Badge or Hadith Reference Badge
   if (currentAyah) {
     ctx.save();
-    const infoText = `${config.surahName} [${config.surahNumber}:${currentAyah.numberInSurah}]`;
+    const infoText = config.referenceText || `${config.surahName} [${config.surahNumber}:${currentAyah.numberInSurah}]`;
     
     // Draw badge background
     ctx.font = '500 24px Outfit, Inter, sans-serif';

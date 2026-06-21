@@ -851,20 +851,41 @@ function App() {
     try {
       setCurrentHadithIndex(0);
 
+      // Setup Web Audio for background audio capture (same approach as Quran export)
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      let audioCtx;
+      if (audioCtxRef.current && audioCtxRef.current.state !== 'closed') {
+        audioCtx = audioCtxRef.current;
+        if (audioCtx.state === 'suspended') await audioCtx.resume();
+      } else {
+        audioCtx = new AudioContextClass();
+        audioCtxRef.current = audioCtx;
+      }
+
+      const destNode = audioCtx.createMediaStreamDestination();
+
       let hasBgAudio = false;
-      let bgTrack = null;
       if (bgAudioFile && bgAudioRef.current) {
+        // Set source and start playing
         bgAudioRef.current.src = bgAudioFile;
         bgAudioRef.current.loop = true;
-        try {
-          await bgAudioRef.current.play();
-          // Capture audio track directly from the audio element
-          const bgStream = bgAudioRef.current.captureStream();
-          bgTrack = bgStream.getAudioTracks()[0];
-          if (bgTrack) hasBgAudio = true;
-        } catch (e) {
-          console.warn('Background audio failed:', e);
+        await bgAudioRef.current.play();
+
+        // Connect bg audio to Web Audio pipeline
+        if (bgAudioSourceNodeRef.current) {
+          bgAudioSourceNodeRef.current.disconnect();
+        } else {
+          const src = audioCtx.createMediaElementSource(bgAudioRef.current);
+          bgAudioSourceNodeRef.current = src;
         }
+        const bgGain = audioCtx.createGain();
+        bgGain.gain.value = bgAudioVolume / 100;
+        bgAudioSourceNodeRef.current.connect(bgGain);
+        bgGain.connect(destNode);
+        bgGainNodeRef.current = bgGain;
+
+        const audioTrack = destNode.stream.getAudioTracks()[0];
+        if (audioTrack) hasBgAudio = true;
       }
 
       // Capture canvas video
@@ -873,7 +894,10 @@ function App() {
       if (!videoTrack) throw new Error('Failed to capture canvas video track.');
 
       const tracks = [videoTrack];
-      if (hasBgAudio && bgTrack) tracks.push(bgTrack);
+      if (hasBgAudio) {
+        const audioTrack = destNode.stream.getAudioTracks()[0];
+        if (audioTrack) tracks.push(audioTrack);
+      }
       const recorderStream = new MediaStream(tracks);
 
       // Set up MediaRecorder
@@ -1534,6 +1558,7 @@ function App() {
               ref={bgAudioRef}
               preload="auto"
               loop
+              crossOrigin="anonymous"
             />
           </div>
 

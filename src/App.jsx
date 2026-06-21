@@ -413,16 +413,17 @@ function App() {
         if (!hadith || !hadith.text) return;
 
         // Force voice loading (Chrome workaround)
-        const voices = window.speechSynthesis.getVoices();
+        let voices = window.speechSynthesis.getVoices();
         if (voices.length === 0) {
-          // Not loaded yet, trigger loading
+          // Trigger synchronous voice loading
           window.speechSynthesis.getVoices();
         }
+        console.log('Available TTS voices:', voices.map(v => `${v.name} (${v.lang})`));
         const arabicVoice = voices.find(v => v.lang.startsWith('ar'));
+        console.log('Arabic voice:', arabicVoice?.name);
         
         const utterance = new SpeechSynthesisUtterance(hadith.text);
         if (arabicVoice) utterance.voice = arabicVoice;
-        utterance.lang = 'ar';
         utterance.rate = 0.9;
         utterance.onerror = (e) => console.error('TTS error:', e);
         

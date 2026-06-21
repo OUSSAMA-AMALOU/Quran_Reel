@@ -312,7 +312,7 @@ function App() {
   };
 
   // Fetch Hadiths from fawazahmed0 hadith-api
-  const fetchHadiths = async () => {
+  const fetchHadiths = useCallback(async () => {
     setLoading(true);
     setError(null);
     setIsPlaying(false);
@@ -346,12 +346,21 @@ function App() {
         throw new Error('No hadith found in this range. Try different numbers.');
       }
       setHadithData(results);
+      console.log('Loaded hadiths:', results);
     } catch (err) {
+      console.error('fetchHadiths error:', err);
       setError(err.message || 'Failed to fetch hadith.');
     } finally {
       setLoading(false);
     }
-  };
+  }, [hadithStart, hadithEnd, hadithBook]);
+
+  // Auto-load hadiths when switching to hadith mode
+  useEffect(() => {
+    if (mode === 'hadith') {
+      fetchHadiths();
+    }
+  }, [mode, fetchHadiths]);
 
   // Setup Web Audio API on first play
   const initWebAudio = () => {

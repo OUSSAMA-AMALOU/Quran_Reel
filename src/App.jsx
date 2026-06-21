@@ -401,57 +401,27 @@ function App() {
   // Playback Control
   const togglePlay = async () => {
     if (mode === 'hadith') {
-      if (!window.speechSynthesis) {
-        setError('Text-to-Speech is not supported in this browser.');
-        return;
-      }
       if (isPlaying) {
+        if (audioRef.current) audioRef.current.pause();
         window.speechSynthesis.cancel();
         setIsPlaying(false);
       } else {
         const hadith = hadithData[currentHadithIndex];
         if (!hadith || !hadith.text) return;
 
-        // Force voice loading (Chrome workaround)
-        let voices = window.speechSynthesis.getVoices();
-        if (voices.length === 0) {
-          // Trigger synchronous voice loading
-          window.speechSynthesis.getVoices();
+        const text = hadith.text.slice(0, 200); // Google TTS has char limit
+        const url = `/api/tts?ie=UTF-8&tl=ar&client=tw-ob&q=${encodeURIComponent(text)}`;
+        
+        if (audioRef.current) {
+          audioRef.current.src = url;
+          audioRef.current.load();
+          audioRef.current.play().then(() => {
+            setIsPlaying(true);
+          }).catch(err => {
+            console.error('TTS playback error:', err);
+            setError('TTS playback failed. Try again or use a different browser.');
+          });
         }
-        console.log('Available TTS voices:', voices.map(v => `${v.name} (${v.lang})`));
-        const arabicVoice = voices.find(v => v.lang.startsWith('ar'));
-        console.log('Arabic voice:', arabicVoice?.name);
-        
-        const utterance = new SpeechSynthesisUtterance(hadith.text);
-        if (arabicVoice) utterance.voice = arabicVoice;
-        utterance.rate = 0.9;
-        utterance.onerror = (e) => console.error('TTS error:', e);
-        
-        let currentSpeechIdx = currentHadithIndex;
-        const speakNext = () => {
-          const nextIdx = currentSpeechIdx + 1;
-          if (nextIdx < hadithData.length) {
-            currentSpeechIdx = nextIdx;
-            setCurrentHadithIndex(nextIdx);
-            const nextHadith = hadithData[nextIdx];
-            if (nextHadith?.text) {
-              const nextUtterance = new SpeechSynthesisUtterance(nextHadith.text);
-              if (arabicVoice) nextUtterance.voice = arabicVoice;
-              nextUtterance.lang = 'ar';
-              nextUtterance.rate = 0.9;
-              nextUtterance.onend = speakNext;
-              nextUtterance.onerror = (e) => console.error('TTS error:', e);
-              utteranceRef.current = nextUtterance;
-              window.speechSynthesis.speak(nextUtterance);
-            }
-          } else {
-            setIsPlaying(false);
-          }
-        };
-        utterance.onend = speakNext;
-        utteranceRef.current = utterance;
-        window.speechSynthesis.speak(utterance);
-        setIsPlaying(true);
       }
       return;
     }
@@ -494,6 +464,25 @@ function App() {
   };
 
   const handleAudioEnded = () => {
+    if (mode === 'hadith') {
+      const nextIdx = currentHadithIndex + 1;
+      if (nextIdx < hadithData.length) {
+        setCurrentHadithIndex(nextIdx);
+        const nextHadith = hadithData[nextIdx];
+        if (nextHadith?.text && !isRecording) {
+          const text = nextHadith.text.slice(0, 200);
+          const a = audioRef.current;
+          if (a) {
+            a.src = `/api/tts?ie=UTF-8&tl=ar&client=tw-ob&q=${encodeURIComponent(text)}`;
+            a.load();
+            a.play().catch(console.error);
+          }
+        }
+      } else {
+        setIsPlaying(false);
+      }
+      return;
+    }
     const nextIdx = currentAyahIndex + 1;
     if (nextIdx < passageAyahs.length) {
       setCurrentAyahIndex(nextIdx);

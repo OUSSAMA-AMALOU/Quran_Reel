@@ -116,8 +116,7 @@ function App() {
     { id: 'malik', name: 'Muwatta Malik', arabic: 'موطأ مالك' },
   ];
   const [hadithBook, setHadithBook] = useState('bukhari');
-  const [hadithStart, setHadithStart] = useState(1);
-  const [hadithEnd, setHadithEnd] = useState(5);
+  const [hadithNumber, setHadithNumber] = useState(1);
   const [hadithData, setHadithData] = useState([]);
   const [currentHadithIndex, setCurrentHadithIndex] = useState(0);
   
@@ -319,41 +318,36 @@ function App() {
     setCurrentHadithIndex(0);
 
     try {
-      const results = [];
-      for (let num = hadithStart; num <= hadithEnd; num++) {
-        const [araRes, engRes] = await Promise.all([
-          fetch(`https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-${hadithBook}/${num}.json`),
-          fetch(`https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/eng-${hadithBook}/${num}.json`)
-        ]);
-        if (!araRes.ok || !engRes.ok) {
-          console.warn(`Hadith ${num} not found, skipping.`);
-          continue;
-        }
-        const araData = await araRes.json();
-        const engData = await engRes.json();
-        const araHadith = araData.hadiths?.[0];
-        const engHadith = engData.hadiths?.[0];
-        if (araHadith && engHadith) {
-          results.push({
-            number: num,
-            text: araHadith.text,
-            translation: engHadith.text,
-            bookName: araData.metadata?.name || hadithBook,
-          });
-        }
+      const num = hadithNumber;
+      const [araRes, engRes] = await Promise.all([
+        fetch(`https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-${hadithBook}/${num}.json`),
+        fetch(`https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/eng-${hadithBook}/${num}.json`)
+      ]);
+      if (!araRes.ok || !engRes.ok) {
+        throw new Error(`Hadith ${num} not found in ${hadithBook}.`);
       }
-      if (results.length === 0) {
-        throw new Error('No hadith found in this range. Try different numbers.');
+      const araData = await araRes.json();
+      const engData = await engRes.json();
+      const araHadith = araData.hadiths?.[0];
+      const engHadith = engData.hadiths?.[0];
+      if (!araHadith || !engHadith) {
+        throw new Error(`Hadith ${num} not found.`);
       }
-      setHadithData(results);
-      console.log('Loaded hadiths:', results);
+      const result = [{
+        number: num,
+        text: araHadith.text,
+        translation: engHadith.text,
+        bookName: araData.metadata?.name || hadithBook,
+      }];
+      setHadithData(result);
+      console.log('Loaded hadith:', result[0]);
     } catch (err) {
       console.error('fetchHadiths error:', err);
       setError(err.message || 'Failed to fetch hadith.');
     } finally {
       setLoading(false);
     }
-  }, [hadithStart, hadithEnd, hadithBook]);
+  }, [hadithNumber, hadithBook]);
 
   // Auto-load hadiths when switching to hadith mode
   useEffect(() => {
@@ -778,7 +772,7 @@ function App() {
         a.href = downloadUrl;
         const bookName = HADITH_BOOKS.find(b => b.id === hadithBook)?.name || 'Hadith';
         const extension = options.mimeType.includes('mp4') ? 'mp4' : 'webm';
-        a.download = `HadithReel_${bookName}_${hadithStart}-${hadithEnd}.${extension}`;
+        a.download = `HadithReel_${bookName}_${hadithNumber}.${extension}`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -1204,29 +1198,16 @@ function App() {
               </select>
             </div>
 
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="hadithStart">Start Hadith</label>
-                <input 
-                  type="number" 
-                  id="hadithStart"
-                  min="1" 
-                  value={hadithStart}
-                  onChange={(e) => setHadithStart(parseInt(e.target.value) || 1)}
-                  disabled={isRecording}
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="hadithEnd">End Hadith</label>
-                <input 
-                  type="number" 
-                  id="hadithEnd"
-                  min={hadithStart} 
-                  value={hadithEnd}
-                  onChange={(e) => setHadithEnd(parseInt(e.target.value) || hadithStart)}
-                  disabled={isRecording}
-                />
-              </div>
+            <div className="form-group">
+              <label htmlFor="hadithNumber">Hadith Number</label>
+              <input 
+                type="number" 
+                id="hadithNumber"
+                min="1" 
+                value={hadithNumber}
+                onChange={(e) => setHadithNumber(parseInt(e.target.value) || 1)}
+                disabled={isRecording}
+              />
             </div>
 
             <button 

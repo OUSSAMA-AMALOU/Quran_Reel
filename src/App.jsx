@@ -1198,16 +1198,18 @@ function App() {
               </select>
             </div>
 
-            <div className="form-group">
-              <label htmlFor="hadithNumber">Hadith Number</label>
-              <input 
-                type="number" 
-                id="hadithNumber"
-                min="1" 
-                value={hadithNumber}
-                onChange={(e) => setHadithNumber(parseInt(e.target.value) || 1)}
-                disabled={isRecording}
-              />
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="hadithNumber">Hadith Number</label>
+                <input 
+                  type="number" 
+                  id="hadithNumber"
+                  min="1" 
+                  value={hadithNumber}
+                  onChange={(e) => setHadithNumber(parseInt(e.target.value) || 1)}
+                  disabled={isRecording}
+                />
+              </div>
             </div>
 
             <button 

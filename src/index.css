@@ -1075,6 +1075,84 @@ input[type="range"]::-moz-range-thumb {
   cursor: not-allowed;
 }
 
+/* ── Background Audio Player ── */
+.bg-audio-player {
+  margin: 12px 0 16px 0;
+  padding: 10px 12px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+}
+
+.bg-audio-info {
+  margin-bottom: 8px;
+}
+
+.bg-audio-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bg-audio-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.bg-audio-controls input[type="range"] {
+  flex: 1;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--border-color);
+  border-radius: 2px;
+  outline: none;
+  transition: background 0.2s;
+}
+
+.bg-audio-controls input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--primary);
+  cursor: pointer;
+  box-shadow: 0 2px 6px var(--primary-glow);
+}
+
+.btn-circle-sm {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.btn-circle-sm:hover:not(:disabled) {
+  background: var(--primary);
+  border-color: var(--primary);
+  box-shadow: 0 2px 10px var(--primary-glow);
+}
+
+.btn-circle-sm.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  box-shadow: 0 2px 10px var(--primary-glow);
+  animation: glowPulse 2s ease-in-out infinite;
+}
+
 /* ── Export Panel ── */
 .export-panel {
   padding: 20px;

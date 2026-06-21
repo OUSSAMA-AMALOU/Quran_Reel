@@ -1454,11 +1454,25 @@ function App() {
           )}
 
           {bgAudioFile && selectedBgSound !== 'none' && (
-            <div className="form-row">
-              <button className={`btn-sm ${bgAudioEnabled ? 'btn-active' : ''}`} onClick={toggleBgAudio}>
-                {bgAudioEnabled ? 'Playing' : 'Play'}
-              </button>
-              <div className="form-group" style={{flex: 1}}>
+            <div className="bg-audio-player">
+              <div className="bg-audio-info">
+                <span className="bg-audio-label">
+                  {selectedBgSound === '__custom__' ? 'Custom Audio' : PRESET_BG_SOUNDS.find(s => s.id === selectedBgSound)?.name || 'Background Audio'}
+                </span>
+              </div>
+              <div className="bg-audio-controls">
+                <button className={`btn-circle-sm ${bgAudioEnabled ? 'active' : ''}`} onClick={toggleBgAudio} title={bgAudioEnabled ? 'Pause' : 'Play'}>
+                  {bgAudioEnabled ? (
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                      <rect x="6" y="4" width="4" height="16" rx="1"/>
+                      <rect x="14" y="4" width="4" height="16" rx="1"/>
+                    </svg>
+                  ) : (
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                      <polygon points="8 4 20 12 8 20 8 4"/>
+                    </svg>
+                  )}
+                </button>
                 <input
                   type="range" min="0" max="100" value={bgAudioVolume}
                   onChange={(e) => {

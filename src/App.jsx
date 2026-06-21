@@ -154,6 +154,7 @@ function App() {
   
   // Track which audio element is currently active for playback
   const activeIsPrimaryRef = useRef(true);
+  const utteranceRef = useRef(null);
   const getAudio = () => activeIsPrimaryRef.current ? audioRef.current : nextAudioRef.current;
   const getIdleAudio = () => activeIsPrimaryRef.current ? nextAudioRef.current : audioRef.current;
 
@@ -316,6 +317,7 @@ function App() {
     setError(null);
     setIsPlaying(false);
     setCurrentHadithIndex(0);
+    window.speechSynthesis.cancel();
 
     try {
       const num = hadithNumber;
@@ -398,7 +400,42 @@ function App() {
 
   // Playback Control
   const togglePlay = async () => {
-    if (mode === 'hadith') return;
+    if (mode === 'hadith') {
+      if (isPlaying) {
+        window.speechSynthesis.cancel();
+        setIsPlaying(false);
+      } else {
+        const hadith = hadithData[currentHadithIndex];
+        if (!hadith || !hadith.text) return;
+        const utterance = new SpeechSynthesisUtterance(hadith.text);
+        utterance.lang = 'ar';
+        utterance.rate = 1.0;
+        let currentSpeechIdx = currentHadithIndex;
+        const speakNext = () => {
+          const nextIdx = currentSpeechIdx + 1;
+          if (nextIdx < hadithData.length) {
+            currentSpeechIdx = nextIdx;
+            setCurrentHadithIndex(nextIdx);
+            const nextHadith = hadithData[nextIdx];
+            if (nextHadith?.text) {
+              const nextUtterance = new SpeechSynthesisUtterance(nextHadith.text);
+              nextUtterance.lang = 'ar';
+              nextUtterance.rate = 1.0;
+              nextUtterance.onend = speakNext;
+              utteranceRef.current = nextUtterance;
+              window.speechSynthesis.speak(nextUtterance);
+            }
+          } else {
+            setIsPlaying(false);
+          }
+        };
+        utterance.onend = speakNext;
+        utteranceRef.current = utterance;
+        window.speechSynthesis.speak(utterance);
+        setIsPlaying(true);
+      }
+      return;
+    }
     if (passageAyahs.length === 0 || !getAudio()) return;
     
     initWebAudio();
@@ -820,6 +857,7 @@ function App() {
   const stopRecording = () => {
     if (audioRef.current) audioRef.current.pause();
     if (nextAudioRef.current) nextAudioRef.current.pause();
+    window.speechSynthesis.cancel();
     setIsPlaying(false);
     if (recorderRef.current && recorderRef.current.state === 'recording') {
       recorderRef.current.stop();

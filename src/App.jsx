@@ -67,29 +67,69 @@ const getAudioPath = (url) => {
   } catch { return ''; }
 };
 
-// 20 preset halal background sounds (vocal nasheeds, CC0 from Internet Archive)
-const PRESET_BG_SOUNDS = [
+// 25 preset nature sounds (CC0, for Quran mode)
+const NATURE_SOUNDS = [
   { id: 'none', name: 'None' },
-  { id: 'ia01', name: 'Islamic Background 01', url: 'https://archive.org/download/IslamicBackgroundSoundsAahat/01-ISLAMIC%20BACKGROUND%20SOUNDS.mp3' },
-  { id: 'ia02', name: 'Islamic Background 02', url: 'https://archive.org/download/IslamicBackgroundSoundsAahat/02-ISLAMIC%20BACKGROUND%20SOUNDS.mp3' },
-  { id: 'ia03', name: 'Islamic Background 03', url: 'https://archive.org/download/IslamicBackgroundSoundsAahat/03-ISLAMIC%20BACKGROUND%20SOUNDS.mp3' },
-  { id: 'ia04', name: 'Islamic Background 04', url: 'https://archive.org/download/IslamicBackgroundSoundsAahat/04-ISLAMIC%20BACKGROUND%20SOUNDS.mp3' },
-  { id: 'ia05', name: 'Islamic Background 05', url: 'https://archive.org/download/IslamicBackgroundSoundsAahat/05-ISLAMIC%20BACKGROUND%20SOUNDS.mp3' },
-  { id: 'ia06', name: 'Islamic Background 06', url: 'https://archive.org/download/IslamicBackgroundSoundsAahat/06-ISLAMIC%20BACKGROUND%20SOUNDS.mp3' },
-  { id: 'ia07', name: 'Islamic Background 07', url: 'https://archive.org/download/IslamicBackgroundSoundsAahat/07-ISLAMIC%20BACKGROUND%20SOUNDS.mp3' },
-  { id: 'ia08', name: 'Islamic Background 08', url: 'https://archive.org/download/IslamicBackgroundSoundsAahat/08-ISLAMIC%20BACKGROUND%20SOUNDS.mp3' },
-  { id: 'ia09', name: 'Islamic Background 09', url: 'https://archive.org/download/IslamicBackgroundSoundsAahat/09-ISLAMIC%20BACKGROUND%20SOUNDS.mp3' },
-  { id: 'ia10', name: 'Islamic Background 10', url: 'https://archive.org/download/IslamicBackgroundSoundsAahat/10-ISLAMIC%20BACKGROUND%20SOUNDS.mp3' },
-  { id: 'nasheed1', name: 'Alhamdulillah Nasheed', url: 'https://archive.org/download/background-nasheed-1/Alhamdulillah%20Nasheed.mp3' },
-  { id: 'nasheed2', name: 'Deen al-Salam', url: 'https://archive.org/download/background-nasheed-1/Deen%20al-Salam%20%28Religion%20of%20Peace%29.mp3' },
-  { id: 'nasheed3', name: 'Alyawm Kaleid', url: 'https://archive.org/download/background-nasheed-1/Alyawm%20Kaleid%20%28Today%20is%20like%20Eid%29.mp3' },
-  { id: 'nasheed4', name: 'Qad Udna', url: 'https://archive.org/download/background-nasheed-1/Qad%20Udna%20%28Here%20we%20come%20back%20to%20you%29.mp3' },
-  { id: 'nasheed5', name: 'Quranuna Dusturuna', url: 'https://archive.org/download/background-nasheed-1/Quranuna%20Dusturuna%20%28Our%20Quran%20is%20Our%20Constitution%29.mp3' },
-  { id: 'nasheed6', name: 'Riha Ula', url: 'https://archive.org/download/background-nasheed-1/Riha%20Ula%20%28Heaven%20called%20them%29.mp3' },
-  { id: 'nasheed7', name: 'Ummat al-Islami Bushra', url: 'https://archive.org/download/background-nasheed-1/Ummat%20al-Islami%20Bushra%20%28online-audio-converter.com%29.mp3' },
-  { id: 'nasheed8', name: 'Ya Hala Marhaba', url: 'https://archive.org/download/background-nasheed-1/Ya%20Hala%20Marhaba%20%28online-audio-converter.com%29.mp3' },
-  { id: 'nasheed9', name: 'al-Ghuraba', url: 'https://archive.org/download/background-nasheed-1/al-Ghuraba%20%28The%20Strangers%29.mp3' },
-  { id: 'nasheed10', name: 'Salaktu Tariqi', url: 'https://archive.org/download/background-nasheed-1/Salaktu%20Tariqi%20%28online-audio-converter.com%29.mp3' },
+  // Gold Tape: Thunderstorm & Rain (12)
+  { id: 'g01', name: '🌧 Light Rain & Thunder', url: 'https://archive.org/download/GOLD_TAPE_46_Thunderstorm_Rain/G46-01-Light%20Rain%20and%20Natural%20Thunder.mp3' },
+  { id: 'g02', name: '🌧 Quiet Rain Rolling Thunder', url: 'https://archive.org/download/GOLD_TAPE_46_Thunderstorm_Rain/G46-02-Quiet%20Rain%20Rolling%20Thunder.mp3' },
+  { id: 'g03', name: '⛈ Long Thunder Storm', url: 'https://archive.org/download/GOLD_TAPE_46_Thunderstorm_Rain/G46-03-Long%20Thunder%20Storm.mp3' },
+  { id: 'g04', name: '⛈ Distant Storm', url: 'https://archive.org/download/GOLD_TAPE_46_Thunderstorm_Rain/G46-04-Distant%20Storm.mp3' },
+  { id: 'g05', name: '💨 Thunder Roll with Wind', url: 'https://archive.org/download/GOLD_TAPE_46_Thunderstorm_Rain/G46-05-Thunder%20Roll%20with%20Wind.mp3' },
+  { id: 'g06', name: '⚡ Treble-Heavy Thunder Crack', url: 'https://archive.org/download/GOLD_TAPE_46_Thunderstorm_Rain/G46-06-Treble-Heavy%20Thunder%20Crack.mp3' },
+  { id: 'g07', name: '⚡ Loud Muffled Thunder Crack', url: 'https://archive.org/download/GOLD_TAPE_46_Thunderstorm_Rain/G46-07-Loud%20Muffled%20Thunder%20Crack.mp3' },
+  { id: 'g08', name: '🌧 Rain & Distant Thunder', url: 'https://archive.org/download/GOLD_TAPE_46_Thunderstorm_Rain/G46-08-Rain%20Distant%20Thunder.mp3' },
+  { id: 'g09', name: '🌧 Steady Rain & Thunder', url: 'https://archive.org/download/GOLD_TAPE_46_Thunderstorm_Rain/G46-09-Steady%20Rain%20and%20Thunder.mp3' },
+  { id: 'g10', name: '⛈ Thunderclap and Roll', url: 'https://archive.org/download/GOLD_TAPE_46_Thunderstorm_Rain/G46-10-Thunderclap%20and%20Roll.mp3' },
+  { id: 'g11', name: '⛈ Rolling Thunder', url: 'https://archive.org/download/GOLD_TAPE_46_Thunderstorm_Rain/G46-11-Rolling%20Thunder.mp3' },
+  { id: 'g12', name: '⚡ Thunderclap Fox', url: 'https://archive.org/download/GOLD_TAPE_46_Thunderstorm_Rain/G46-12-Thunderclap%20Fox.mp3' },
+  // Red Library: Ambience (5)
+  { id: 'r01', name: '🏖 Beach Scene', url: 'https://archive.org/download/Red_Library_Ambience_1/R01-23-Beach%20Scene.mp3' },
+  { id: 'r02', name: '🦜 Exotic Birds & Monkeys', url: 'https://archive.org/download/Red_Library_Ambience_1/R01-61-Exotic%20Birds%20and%20Monkeys.mp3' },
+  { id: 'r03', name: '🌳 Outdoor Ambience', url: 'https://archive.org/download/Red_Library_Ambience_1/R08-47-Outdoor%20Ambience.mp3' },
+  { id: 'r04', name: '🏙 City Scene', url: 'https://archive.org/download/Red_Library_Ambience_1/R05-17-City%20Scene.mp3' },
+  { id: 'r05', name: '🏡 Suburban Ambience', url: 'https://archive.org/download/Red_Library_Ambience_1/R10-01-Suburban%20Ambience-Noise.mp3' },
+  // Animal Sounds (8)
+  { id: 'a01', name: '🐺 Wolf Pack Howls', url: 'https://archive.org/download/animalsounds1/11wolfhowls.mp3' },
+  { id: 'a02', name: '🐸 Frogs Various', url: 'https://archive.org/download/animalsounds1/19frogsandsuch.mp3' },
+  { id: 'a03', name: '🐸 Spring Peepers', url: 'https://archive.org/download/animalsounds1/20peepers.mp3' },
+  { id: 'a04', name: '🦩 Shorebirds Nest', url: 'https://archive.org/download/animalsounds1/13shorebirdsnest.mp3' },
+  { id: 'a05', name: '🐦 Hummingbird Feeding', url: 'https://archive.org/download/animalsounds1/28hummingbirdeats.mp3' },
+  { id: 'a06', name: '🦆 Loons Calling', url: 'https://archive.org/download/animalsounds1/44loons.mp3' },
+  { id: 'a07', name: '🦢 Snow Geese Flock', url: 'https://archive.org/download/animalsounds1/43100sofsnowgeese.mp3' },
+  { id: 'a08', name: '🪵 Woodpecker Tapping', url: 'https://archive.org/download/animalsounds1/41woodpecker.mp3' },
+];
+
+// 25 preset halal nasheed sounds (CC0, for Hadith mode)
+const NASHEED_SOUNDS = [
+  { id: 'none', name: 'None' },
+  // Islamic Background Aahat (10)
+  { id: 'ia01', name: '🎵 Islamic Background 01', url: 'https://archive.org/download/IslamicBackgroundSoundsAahat/01-ISLAMIC%20BACKGROUND%20SOUNDS.mp3' },
+  { id: 'ia02', name: '🎵 Islamic Background 02', url: 'https://archive.org/download/IslamicBackgroundSoundsAahat/02-ISLAMIC%20BACKGROUND%20SOUNDS.mp3' },
+  { id: 'ia03', name: '🎵 Islamic Background 03', url: 'https://archive.org/download/IslamicBackgroundSoundsAahat/03-ISLAMIC%20BACKGROUND%20SOUNDS.mp3' },
+  { id: 'ia04', name: '🎵 Islamic Background 04', url: 'https://archive.org/download/IslamicBackgroundSoundsAahat/04-ISLAMIC%20BACKGROUND%20SOUNDS.mp3' },
+  { id: 'ia05', name: '🎵 Islamic Background 05', url: 'https://archive.org/download/IslamicBackgroundSoundsAahat/05-ISLAMIC%20BACKGROUND%20SOUNDS.mp3' },
+  { id: 'ia06', name: '🎵 Islamic Background 06', url: 'https://archive.org/download/IslamicBackgroundSoundsAahat/06-ISLAMIC%20BACKGROUND%20SOUNDS.mp3' },
+  { id: 'ia07', name: '🎵 Islamic Background 07', url: 'https://archive.org/download/IslamicBackgroundSoundsAahat/07-ISLAMIC%20BACKGROUND%20SOUNDS.mp3' },
+  { id: 'ia08', name: '🎵 Islamic Background 08', url: 'https://archive.org/download/IslamicBackgroundSoundsAahat/08-ISLAMIC%20BACKGROUND%20SOUNDS.mp3' },
+  { id: 'ia09', name: '🎵 Islamic Background 09', url: 'https://archive.org/download/IslamicBackgroundSoundsAahat/09-ISLAMIC%20BACKGROUND%20SOUNDS.mp3' },
+  { id: 'ia10', name: '🎵 Islamic Background 10', url: 'https://archive.org/download/IslamicBackgroundSoundsAahat/10-ISLAMIC%20BACKGROUND%20SOUNDS.mp3' },
+  // Vocal Nasheeds (15)
+  { id: 'n01', name: '🎙 Alhamdulillah Nasheed', url: 'https://archive.org/download/background-nasheed-1/Alhamdulillah%20Nasheed.mp3' },
+  { id: 'n02', name: '🎙 Deen al-Salam', url: 'https://archive.org/download/background-nasheed-1/Deen%20al-Salam%20%28Religion%20of%20Peace%29.mp3' },
+  { id: 'n03', name: '🎙 Alyawm Kaleid', url: 'https://archive.org/download/background-nasheed-1/Alyawm%20Kaleid%20%28Today%20is%20like%20Eid%29.mp3' },
+  { id: 'n04', name: '🎙 Qad Udna', url: 'https://archive.org/download/background-nasheed-1/Qad%20Udna%20%28Here%20we%20come%20back%20to%20you%29.mp3' },
+  { id: 'n05', name: '🎙 Quranuna Dusturuna', url: 'https://archive.org/download/background-nasheed-1/Quranuna%20Dusturuna%20%28Our%20Quran%20is%20Our%20Constitution%29.mp3' },
+  { id: 'n06', name: '🎙 Riha Ula', url: 'https://archive.org/download/background-nasheed-1/Riha%20Ula%20%28Heaven%20called%20them%29.mp3' },
+  { id: 'n07', name: '🎙 Ummat al-Islami Bushra', url: 'https://archive.org/download/background-nasheed-1/Ummat%20al-Islami%20Bushra%20%28online-audio-converter.com%29.mp3' },
+  { id: 'n08', name: '🎙 Ya Hala Marhaba', url: 'https://archive.org/download/background-nasheed-1/Ya%20Hala%20Marhaba%20%28online-audio-converter.com%29.mp3' },
+  { id: 'n09', name: '🎙 al-Ghuraba', url: 'https://archive.org/download/background-nasheed-1/al-Ghuraba%20%28The%20Strangers%29.mp3' },
+  { id: 'n10', name: '🎙 Salaktu Tariqi', url: 'https://archive.org/download/background-nasheed-1/Salaktu%20Tariqi%20%28online-audio-converter.com%29.mp3' },
+  { id: 'n11', name: '🎙 Adha al-Islam', url: 'https://archive.org/download/background-nasheed-1/A%27dha%20al-Islam.mp3' },
+  { id: 'n12', name: '🎙 Ahaat Min Burma', url: 'https://archive.org/download/background-nasheed-1/Ahaat%20Min%20Burma%20%28online-audio-converter.com%29.mp3' },
+  { id: 'n13', name: '🎙 Bikataibil Iman', url: 'https://archive.org/download/background-nasheed-1/Bikataibil%20Iman%20%28Battalions%20of%20Faith%29.mp3' },
+  { id: 'n14', name: '🎙 Qadisiyya al-Nasr', url: 'https://archive.org/download/background-nasheed-1/Qadisiyya%20al-Nasr%20%28online-audio-converter.com%29.mp3' },
+  { id: 'n15', name: '🎙 Sirna', url: 'https://archive.org/download/background-nasheed-1/Sirna%20%28online-audio-converter.com%29.mp3' },
 ];
 
 function App() {
@@ -560,7 +600,7 @@ function App() {
     } else if (id === '__custom__') {
       // file upload handles itself
     } else {
-      const preset = PRESET_BG_SOUNDS.find(s => s.id === id);
+      const preset = NATURE_SOUNDS.find(s => s.id === id) || NASHEED_SOUNDS.find(s => s.id === id);
       if (preset) {
         setBgAudioFile(preset.url);
         // Auto-play if already enabled
@@ -1413,11 +1453,20 @@ function App() {
               onChange={(e) => handleSelectBgSound(e.target.value)}
               disabled={isRecording}
             >
-              {PRESET_BG_SOUNDS.map(s => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
+              <optgroup label="🌿 Nature Sounds">
+                {NATURE_SOUNDS.map(s => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </optgroup>
+              <optgroup label="🎵 Nasheeds">
+                {NASHEED_SOUNDS.filter(s => s.id !== 'none').map(s => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </optgroup>
               <option value="__custom__">—— Upload Custom ——</option>
             </select>
           </div>
@@ -1443,7 +1492,7 @@ function App() {
             <div className="bg-audio-player">
               <div className="bg-audio-info">
                 <span className="bg-audio-label">
-                  {selectedBgSound === '__custom__' ? 'Custom Audio' : PRESET_BG_SOUNDS.find(s => s.id === selectedBgSound)?.name || 'Background Audio'}
+                  {selectedBgSound === '__custom__' ? 'Custom Audio' : (NATURE_SOUNDS.find(s => s.id === selectedBgSound) || NASHEED_SOUNDS.find(s => s.id === selectedBgSound))?.name || 'Background Audio'}
                 </span>
               </div>
               <div className="bg-audio-controls">

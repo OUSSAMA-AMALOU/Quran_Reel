@@ -427,10 +427,6 @@ function App() {
   useEffect(() => {
     if (mode === 'hadith') {
       fetchHadiths();
-    } else {
-      // Stop bg audio when switching to Quran mode
-      if (bgAudioRef.current) bgAudioRef.current.pause();
-      setBgAudioEnabled(false);
     }
   }, [mode, fetchHadiths]);
 
@@ -789,6 +785,27 @@ function App() {
       secondarySource.connect(destNode);
       secondarySource.connect(audioCtx.destination);
       secondarySource.connect(analyserRef.current);
+
+      // Connect background audio if available
+      if (bgAudioFile && bgAudioRef.current) {
+        let bgSource;
+        if (!bgAudioSourceNodeRef.current) {
+          bgSource = audioCtx.createMediaElementSource(bgAudioRef.current);
+          bgAudioSourceNodeRef.current = bgSource;
+        } else {
+          bgSource = bgAudioSourceNodeRef.current;
+          bgSource.disconnect();
+        }
+        const bgGain = audioCtx.createGain();
+        bgGain.gain.value = bgAudioVolume / 100;
+        bgSource.connect(bgGain);
+        bgGain.connect(destNode);
+        bgGainNodeRef.current = bgGain;
+        if (bgAudioRef.current.paused) {
+          bgAudioRef.current.loop = true;
+          bgAudioRef.current.play().catch(console.error);
+        }
+      }
 
       // 3. Capture canvas video + audio from destination node
       const canvasStream = canvasRef.current.captureStream(30);
@@ -1434,7 +1451,6 @@ function App() {
             />
           </div>
 
-          {mode === 'hadith' && (<>
           <hr />
 
           <h2 className="section-title">
@@ -1460,7 +1476,7 @@ function App() {
                   </option>
                 ))}
               </optgroup>
-              <optgroup label="🎵 Nasheeds">
+              <optgroup label="🎵 Nasheeds (Hadith)">
                 {NASHEED_SOUNDS.filter(s => s.id !== 'none').map(s => (
                   <option key={s.id} value={s.id}>
                     {s.name}
@@ -1519,7 +1535,6 @@ function App() {
               </div>
             </div>
           )}
-          </>)}
 
           <button 
             className="btn-generate" 

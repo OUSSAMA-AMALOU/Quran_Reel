@@ -1,6 +1,8 @@
 /**
  * Helper to wrap and draw text on canvas with centering and shadows
  */
+let _filterCanvas = null;
+
 export function wrapText(ctx, text, x, y, maxWidth, lineHeight, align = 'center') {
   if (!text) return 0;
   
@@ -469,4 +471,45 @@ export function drawFrame({
     ctx.restore();
   }
 
+  // 7. Apply Color Effect (CSS filter)
+  const effect = config.colorEffect || 'none';
+  if (effect !== 'none') {
+    const effectDef = {
+      warm: 'saturate(1.1) sepia(0.2) brightness(1.05)',
+      cool: 'saturate(0.9) hue-rotate(10deg) brightness(1.05)',
+      vintage: 'sepia(0.5) saturate(0.7) contrast(0.85) brightness(1.1)',
+      noir: 'grayscale(1) contrast(1.3) brightness(0.9)',
+      golden: 'sepia(0.3) saturate(1.3) hue-rotate(-5deg) brightness(1.1)',
+      ocean: 'saturate(1.2) hue-rotate(180deg) brightness(0.95) contrast(1.1)',
+      forest: 'saturate(1.3) sepia(0.2) hue-rotate(60deg) brightness(0.9)',
+      sunset: 'sepia(0.4) saturate(1.4) hue-rotate(-15deg) brightness(1.05)',
+      moody: 'grayscale(0.3) saturate(0.6) brightness(0.8) contrast(1.2)',
+      fade: 'saturate(0.5) contrast(0.8) brightness(1.15) opacity(0.9)',
+      cinematic: 'contrast(1.15) saturate(0.85) brightness(0.9) sepia(0.15)',
+      grayscale: 'grayscale(1) brightness(1.05)',
+      sepia: 'sepia(0.8) saturate(0.9) brightness(1.05)',
+      vibrant: 'saturate(1.8) contrast(1.15) brightness(1.05)',
+      soft: 'brightness(1.1) contrast(0.85) saturate(0.8) blur(0.3px)',
+      dramatic: 'contrast(1.5) brightness(0.75) saturate(0.7)',
+      retro: 'sepia(0.6) saturate(0.6) contrast(0.9) hue-rotate(-20deg)',
+      coolblue: 'saturate(1.1) hue-rotate(200deg) brightness(1.05) contrast(0.9)',
+      warmglow: 'sepia(0.2) saturate(1.2) hue-rotate(-10deg) brightness(1.1)',
+    };
+    const filter = effectDef[effect];
+    if (filter) {
+      const w = canvas.width, h = canvas.height;
+      if (!_filterCanvas || _filterCanvas.width !== w || _filterCanvas.height !== h) {
+        _filterCanvas = document.createElement('canvas');
+        _filterCanvas.width = w;
+        _filterCanvas.height = h;
+      }
+      const fc = _filterCanvas.getContext('2d');
+      fc.clearRect(0, 0, w, h);
+      fc.drawImage(canvas, 0, 0);
+      ctx.save();
+      ctx.filter = filter;
+      ctx.drawImage(_filterCanvas, 0, 0);
+      ctx.restore();
+    }
+  }
 }

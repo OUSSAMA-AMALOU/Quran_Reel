@@ -67,10 +67,10 @@ const getAudioPath = (url) => {
   } catch { return ''; }
 };
 
-// 25 preset nature sounds (CC0, for Quran mode)
+// 50 preset pure nature sounds (CC0, no human voice)
 const NATURE_SOUNDS = [
   { id: 'none', name: 'None' },
-  // Gold Tape: Thunderstorm & Rain (12)
+  // === Thunderstorm & Rain (12) — Gold Tape 46 ===
   { id: 'g01', name: '🌧 Light Rain & Thunder', url: 'https://archive.org/download/GOLD_TAPE_46_Thunderstorm_Rain/G46-01-Light%20Rain%20and%20Natural%20Thunder.mp3' },
   { id: 'g02', name: '🌧 Quiet Rain Rolling Thunder', url: 'https://archive.org/download/GOLD_TAPE_46_Thunderstorm_Rain/G46-02-Quiet%20Rain%20Rolling%20Thunder.mp3' },
   { id: 'g03', name: '⛈ Long Thunder Storm', url: 'https://archive.org/download/GOLD_TAPE_46_Thunderstorm_Rain/G46-03-Long%20Thunder%20Storm.mp3' },
@@ -83,13 +83,37 @@ const NATURE_SOUNDS = [
   { id: 'g10', name: '⛈ Thunderclap and Roll', url: 'https://archive.org/download/GOLD_TAPE_46_Thunderstorm_Rain/G46-10-Thunderclap%20and%20Roll.mp3' },
   { id: 'g11', name: '⛈ Rolling Thunder', url: 'https://archive.org/download/GOLD_TAPE_46_Thunderstorm_Rain/G46-11-Rolling%20Thunder.mp3' },
   { id: 'g12', name: '⚡ Thunderclap Fox', url: 'https://archive.org/download/GOLD_TAPE_46_Thunderstorm_Rain/G46-12-Thunderclap%20Fox.mp3' },
-  // Red Library: Ambience (5)
-  { id: 'r01', name: '🏖 Beach Scene', url: 'https://archive.org/download/Red_Library_Ambience_1/R01-23-Beach%20Scene.mp3' },
-  { id: 'r02', name: '🦜 Exotic Birds & Monkeys', url: 'https://archive.org/download/Red_Library_Ambience_1/R01-61-Exotic%20Birds%20and%20Monkeys.mp3' },
-  { id: 'r03', name: '🌳 Outdoor Ambience', url: 'https://archive.org/download/Red_Library_Ambience_1/R08-47-Outdoor%20Ambience.mp3' },
-  { id: 'r04', name: '🏙 City Scene', url: 'https://archive.org/download/Red_Library_Ambience_1/R05-17-City%20Scene.mp3' },
-  { id: 'r05', name: '🏡 Suburban Ambience', url: 'https://archive.org/download/Red_Library_Ambience_1/R10-01-Suburban%20Ambience-Noise.mp3' },
-  // Animal Sounds (8)
+  // === Ocean & Water (14) — Gold Tape 53/54 ===
+  { id: 'w01', name: '🌊 Quiet Surf', url: 'https://archive.org/download/GOLD_TAPE_53_54_Water/G53-01-Quiet%20Surf.mp3' },
+  { id: 'w02', name: '🌊 Light to Medium Surf', url: 'https://archive.org/download/GOLD_TAPE_53_54_Water/G53-02-Light%20to%20Medium%20Surf.mp3' },
+  { id: 'w03', name: '🌊 Foamy Surf', url: 'https://archive.org/download/GOLD_TAPE_53_54_Water/G53-03-Foamy%20Surf.mp3' },
+  { id: 'w04', name: '🌊 Medium to Heavy Surf', url: 'https://archive.org/download/GOLD_TAPE_53_54_Water/G53-06-Medium%20to%20Heavy%20Surf.mp3' },
+  { id: 'w05', name: '🌊 Steady Ocean Waves', url: 'https://archive.org/download/GOLD_TAPE_53_54_Water/G53-09-Steady%20Ocean%20Waves.mp3' },
+  { id: 'w06', name: '🌊 Surf on Rocks', url: 'https://archive.org/download/GOLD_TAPE_53_54_Water/G53-10-Surf%20on%20Rocks.mp3' },
+  { id: 'w07', name: '🕊 Waves & Gulls', url: 'https://archive.org/download/GOLD_TAPE_53_54_Water/G53-15-Waves%20and%20Gulls.mp3' },
+  { id: 'w08', name: '💧 Water Stream', url: 'https://archive.org/download/GOLD_TAPE_53_54_Water/G53-18-Water%20Stream.mp3' },
+  { id: 'w09', name: '💧 River Running', url: 'https://archive.org/download/GOLD_TAPE_53_54_Water/G53-20-River%20Running.mp3' },
+  { id: 'w10', name: '💧 Big River Rapids', url: 'https://archive.org/download/GOLD_TAPE_53_54_Water/G53-23-Big%20River%20Rapids.mp3' },
+  { id: 'w11', name: '💧 River Rapids Waterfall', url: 'https://archive.org/download/GOLD_TAPE_53_54_Water/G53-24-River%20or%20Rapids%20or%20Waterfall.mp3' },
+  { id: 'w12', name: '🫧 Bubbles & Splashes', url: 'https://archive.org/download/GOLD_TAPE_53_54_Water/G54-06-Bubbles%20and%20Splashes.mp3' },
+  { id: 'w13', name: '💧 Rushing Water', url: 'https://archive.org/download/GOLD_TAPE_53_54_Water/G54-28-Rushing%20Water.mp3' },
+  { id: 'w14', name: '💧 Water Lapping', url: 'https://archive.org/download/GOLD_TAPE_53_54_Water/G54-31-Water%20Lapping.mp3' },
+  // === Wind & Weather (15) — Gold Tape 55/56 ===
+  { id: 'wi01', name: '💨 Chill Wind', url: 'https://archive.org/download/GOLD_TAPE_55_56_Weather-Wind/G55-02-Chill%20Wind.mp3' },
+  { id: 'wi02', name: '💨 Wind in Trees', url: 'https://archive.org/download/GOLD_TAPE_55_56_Weather-Wind/G55-03-Wind%20in%20Trees.mp3' },
+  { id: 'wi03', name: '💨 Whistling Wind', url: 'https://archive.org/download/GOLD_TAPE_55_56_Weather-Wind/G55-05-Whistling%20Wind.mp3' },
+  { id: 'wi04', name: '💨 Desolate Wind', url: 'https://archive.org/download/GOLD_TAPE_55_56_Weather-Wind/G55-06-Desolate%20Wind.mp3' },
+  { id: 'wi05', name: '💨 Howling Wind', url: 'https://archive.org/download/GOLD_TAPE_55_56_Weather-Wind/G55-07-Howling%20wind.mp3' },
+  { id: 'wi06', name: '💨 Stormy Wind', url: 'https://archive.org/download/GOLD_TAPE_55_56_Weather-Wind/G55-08-Stormy%20Wind.mp3' },
+  { id: 'wi07', name: '💨 Slow Howling Wind', url: 'https://archive.org/download/GOLD_TAPE_55_56_Weather-Wind/G55-10-Slow%20Howling%20Wind.mp3' },
+  { id: 'wi08', name: '💨 Cold Wind Gusts', url: 'https://archive.org/download/GOLD_TAPE_55_56_Weather-Wind/G55-11-Cold%20Wind%20Gusts.mp3' },
+  { id: 'wi09', name: '💨 Steady Wind', url: 'https://archive.org/download/GOLD_TAPE_55_56_Weather-Wind/G55-13-Steady%20Wind.mp3' },
+  { id: 'wi10', name: '💨 Cold Wind', url: 'https://archive.org/download/GOLD_TAPE_55_56_Weather-Wind/G56-15-Cold%20Wind.mp3' },
+  { id: 'wi11', name: '💨 Hurricane Wind', url: 'https://archive.org/download/GOLD_TAPE_55_56_Weather-Wind/G56-18-Hurricane%20Wind.mp3' },
+  { id: 'wi12', name: '🌪 Sandstorm', url: 'https://archive.org/download/GOLD_TAPE_55_56_Weather-Wind/G56-22-Sandstorm.mp3' },
+  { id: 'wi13', name: '💨 Strong Steady Wind', url: 'https://archive.org/download/GOLD_TAPE_55_56_Weather-Wind/G56-23-Strong%20Steady%20Wind.mp3' },
+  { id: 'wi14', name: '💨 Storm Wind', url: 'https://archive.org/download/GOLD_TAPE_55_56_Weather-Wind/G56-27-Storm%20Wind.mp3' },
+  // === Birds & Animals (9) ===
   { id: 'a01', name: '🐺 Wolf Pack Howls', url: 'https://archive.org/download/animalsounds1/11wolfhowls.mp3' },
   { id: 'a02', name: '🐸 Frogs Various', url: 'https://archive.org/download/animalsounds1/19frogsandsuch.mp3' },
   { id: 'a03', name: '🐸 Spring Peepers', url: 'https://archive.org/download/animalsounds1/20peepers.mp3' },
@@ -98,38 +122,7 @@ const NATURE_SOUNDS = [
   { id: 'a06', name: '🦆 Loons Calling', url: 'https://archive.org/download/animalsounds1/44loons.mp3' },
   { id: 'a07', name: '🦢 Snow Geese Flock', url: 'https://archive.org/download/animalsounds1/43100sofsnowgeese.mp3' },
   { id: 'a08', name: '🪵 Woodpecker Tapping', url: 'https://archive.org/download/animalsounds1/41woodpecker.mp3' },
-];
-
-// 25 preset halal nasheed sounds (CC0, for Hadith mode)
-const NASHEED_SOUNDS = [
-  { id: 'none', name: 'None' },
-  // Islamic Background Aahat (10)
-  { id: 'ia01', name: '🎵 Islamic Background 01', url: 'https://archive.org/download/IslamicBackgroundSoundsAahat/01-ISLAMIC%20BACKGROUND%20SOUNDS.mp3' },
-  { id: 'ia02', name: '🎵 Islamic Background 02', url: 'https://archive.org/download/IslamicBackgroundSoundsAahat/02-ISLAMIC%20BACKGROUND%20SOUNDS.mp3' },
-  { id: 'ia03', name: '🎵 Islamic Background 03', url: 'https://archive.org/download/IslamicBackgroundSoundsAahat/03-ISLAMIC%20BACKGROUND%20SOUNDS.mp3' },
-  { id: 'ia04', name: '🎵 Islamic Background 04', url: 'https://archive.org/download/IslamicBackgroundSoundsAahat/04-ISLAMIC%20BACKGROUND%20SOUNDS.mp3' },
-  { id: 'ia05', name: '🎵 Islamic Background 05', url: 'https://archive.org/download/IslamicBackgroundSoundsAahat/05-ISLAMIC%20BACKGROUND%20SOUNDS.mp3' },
-  { id: 'ia06', name: '🎵 Islamic Background 06', url: 'https://archive.org/download/IslamicBackgroundSoundsAahat/06-ISLAMIC%20BACKGROUND%20SOUNDS.mp3' },
-  { id: 'ia07', name: '🎵 Islamic Background 07', url: 'https://archive.org/download/IslamicBackgroundSoundsAahat/07-ISLAMIC%20BACKGROUND%20SOUNDS.mp3' },
-  { id: 'ia08', name: '🎵 Islamic Background 08', url: 'https://archive.org/download/IslamicBackgroundSoundsAahat/08-ISLAMIC%20BACKGROUND%20SOUNDS.mp3' },
-  { id: 'ia09', name: '🎵 Islamic Background 09', url: 'https://archive.org/download/IslamicBackgroundSoundsAahat/09-ISLAMIC%20BACKGROUND%20SOUNDS.mp3' },
-  { id: 'ia10', name: '🎵 Islamic Background 10', url: 'https://archive.org/download/IslamicBackgroundSoundsAahat/10-ISLAMIC%20BACKGROUND%20SOUNDS.mp3' },
-  // Vocal Nasheeds (15)
-  { id: 'n01', name: '🎙 Alhamdulillah Nasheed', url: 'https://archive.org/download/background-nasheed-1/Alhamdulillah%20Nasheed.mp3' },
-  { id: 'n02', name: '🎙 Deen al-Salam', url: 'https://archive.org/download/background-nasheed-1/Deen%20al-Salam%20%28Religion%20of%20Peace%29.mp3' },
-  { id: 'n03', name: '🎙 Alyawm Kaleid', url: 'https://archive.org/download/background-nasheed-1/Alyawm%20Kaleid%20%28Today%20is%20like%20Eid%29.mp3' },
-  { id: 'n04', name: '🎙 Qad Udna', url: 'https://archive.org/download/background-nasheed-1/Qad%20Udna%20%28Here%20we%20come%20back%20to%20you%29.mp3' },
-  { id: 'n05', name: '🎙 Quranuna Dusturuna', url: 'https://archive.org/download/background-nasheed-1/Quranuna%20Dusturuna%20%28Our%20Quran%20is%20Our%20Constitution%29.mp3' },
-  { id: 'n06', name: '🎙 Riha Ula', url: 'https://archive.org/download/background-nasheed-1/Riha%20Ula%20%28Heaven%20called%20them%29.mp3' },
-  { id: 'n07', name: '🎙 Ummat al-Islami Bushra', url: 'https://archive.org/download/background-nasheed-1/Ummat%20al-Islami%20Bushra%20%28online-audio-converter.com%29.mp3' },
-  { id: 'n08', name: '🎙 Ya Hala Marhaba', url: 'https://archive.org/download/background-nasheed-1/Ya%20Hala%20Marhaba%20%28online-audio-converter.com%29.mp3' },
-  { id: 'n09', name: '🎙 al-Ghuraba', url: 'https://archive.org/download/background-nasheed-1/al-Ghuraba%20%28The%20Strangers%29.mp3' },
-  { id: 'n10', name: '🎙 Salaktu Tariqi', url: 'https://archive.org/download/background-nasheed-1/Salaktu%20Tariqi%20%28online-audio-converter.com%29.mp3' },
-  { id: 'n11', name: '🎙 Adha al-Islam', url: 'https://archive.org/download/background-nasheed-1/A%27dha%20al-Islam.mp3' },
-  { id: 'n12', name: '🎙 Ahaat Min Burma', url: 'https://archive.org/download/background-nasheed-1/Ahaat%20Min%20Burma%20%28online-audio-converter.com%29.mp3' },
-  { id: 'n13', name: '🎙 Bikataibil Iman', url: 'https://archive.org/download/background-nasheed-1/Bikataibil%20Iman%20%28Battalions%20of%20Faith%29.mp3' },
-  { id: 'n14', name: '🎙 Qadisiyya al-Nasr', url: 'https://archive.org/download/background-nasheed-1/Qadisiyya%20al-Nasr%20%28online-audio-converter.com%29.mp3' },
-  { id: 'n15', name: '🎙 Sirna', url: 'https://archive.org/download/background-nasheed-1/Sirna%20%28online-audio-converter.com%29.mp3' },
+  { id: 'a09', name: '🦜 Exotic Birds & Monkeys', url: 'https://archive.org/download/Red_Library_Ambience_1/R01-61-Exotic%20Birds%20and%20Monkeys.mp3' },
 ];
 
 function App() {
@@ -166,6 +159,30 @@ function App() {
   const [watermark, setWatermark] = useState('');
   const [visualizerStyle, setVisualizerStyle] = useState('none'); // 'waves', 'bars', 'none'
   const [visualizerColor, setVisualizerColor] = useState('#60a5fa');
+  const [colorEffect, setColorEffect] = useState('none');
+
+const COLOR_EFFECTS = [
+  { id: 'none', name: '♾ None' },
+  { id: 'warm', name: '🌅 Warm Glow', filter: 'saturate(1.1) sepia(0.2) brightness(1.05)' },
+  { id: 'cool', name: '❄ Cool Mist', filter: 'saturate(0.9) hue-rotate(10deg) brightness(1.05)' },
+  { id: 'vintage', name: '📜 Vintage', filter: 'sepia(0.5) saturate(0.7) contrast(0.85) brightness(1.1)' },
+  { id: 'noir', name: '🖤 Noir', filter: 'grayscale(1) contrast(1.3) brightness(0.9)' },
+  { id: 'golden', name: '✨ Golden Hour', filter: 'sepia(0.3) saturate(1.3) hue-rotate(-5deg) brightness(1.1)' },
+  { id: 'ocean', name: '🌊 Ocean', filter: 'saturate(1.2) hue-rotate(180deg) brightness(0.95) contrast(1.1)' },
+  { id: 'forest', name: '🌲 Forest', filter: 'saturate(1.3) sepia(0.2) hue-rotate(60deg) brightness(0.9)' },
+  { id: 'sunset', name: '🌇 Sunset', filter: 'sepia(0.4) saturate(1.4) hue-rotate(-15deg) brightness(1.05)' },
+  { id: 'moody', name: '🌧 Moody', filter: 'grayscale(0.3) saturate(0.6) brightness(0.8) contrast(1.2)' },
+  { id: 'fade', name: '🌫 Fade', filter: 'saturate(0.5) contrast(0.8) brightness(1.15) opacity(0.9)' },
+  { id: 'cinematic', name: '🎬 Cinematic', filter: 'contrast(1.15) saturate(0.85) brightness(0.9) sepia(0.15)' },
+  { id: 'grayscale', name: '⚫ Grayscale', filter: 'grayscale(1) brightness(1.05)' },
+  { id: 'sepia', name: '🟫 Sepia', filter: 'sepia(0.8) saturate(0.9) brightness(1.05)' },
+  { id: 'vibrant', name: '🌈 Vibrant', filter: 'saturate(1.8) contrast(1.15) brightness(1.05)' },
+  { id: 'soft', name: '☁ Soft', filter: 'brightness(1.1) contrast(0.85) saturate(0.8) blur(0.3px)' },
+  { id: 'dramatic', name: '🎭 Dramatic', filter: 'contrast(1.5) brightness(0.75) saturate(0.7)' },
+  { id: 'retro', name: '📺 Retro', filter: 'sepia(0.6) saturate(0.6) contrast(0.9) hue-rotate(-20deg)' },
+  { id: 'coolblue', name: '🧊 Cool Blue', filter: 'saturate(1.1) hue-rotate(200deg) brightness(1.05) contrast(0.9)' },
+  { id: 'warmglow', name: '🔥 Warm Glow', filter: 'sepia(0.2) saturate(1.2) hue-rotate(-10deg) brightness(1.1)' },
+];
   
   // Mode: quran or hadith
   const [mode, setMode] = useState('quran');
@@ -430,6 +447,14 @@ function App() {
     }
   }, [mode, fetchHadiths]);
 
+  // Stop bg audio when switching to Quran mode
+  useEffect(() => {
+    if (mode === 'quran' && bgAudioRef.current) {
+      bgAudioRef.current.pause();
+      setBgAudioEnabled(false);
+    }
+  }, [mode]);
+
   // Setup Web Audio API on first play
   const initWebAudio = () => {
     if (audioCtxRef.current) return;
@@ -596,7 +621,7 @@ function App() {
     } else if (id === '__custom__') {
       // file upload handles itself
     } else {
-      const preset = NATURE_SOUNDS.find(s => s.id === id) || NASHEED_SOUNDS.find(s => s.id === id);
+      const preset = NATURE_SOUNDS.find(s => s.id === id);
       if (preset) {
         setBgAudioFile(preset.url);
         // Auto-play if already enabled
@@ -659,6 +684,7 @@ function App() {
           watermark,
           visualizerStyle,
           visualizerColor,
+          colorEffect,
           surahName: selectedSurahDetails?.englishName,
           surahNumber: surahNum,
           backgroundType,
@@ -691,6 +717,7 @@ function App() {
     watermark, 
     visualizerStyle, 
     visualizerColor, 
+    colorEffect,
     selectedSurahDetails, 
     surahNum,
     currentTime,
@@ -1185,6 +1212,7 @@ function App() {
           </select>
         </div>
       )}
+
     </>
   );
 
@@ -1451,6 +1479,21 @@ function App() {
             />
           </div>
 
+          <div className="form-group">
+            <label htmlFor="colorEffect">Color Effect</label>
+            <select 
+              id="colorEffect" 
+              value={colorEffect} 
+              onChange={(e) => setColorEffect(e.target.value)}
+              disabled={isRecording}
+            >
+              {COLOR_EFFECTS.map(e => (
+                <option key={e.id} value={e.id}>{e.name}</option>
+              ))}
+            </select>
+          </div>
+
+          {mode === 'hadith' && (<>
           <hr />
 
           <h2 className="section-title">
@@ -1469,15 +1512,8 @@ function App() {
               onChange={(e) => handleSelectBgSound(e.target.value)}
               disabled={isRecording}
             >
-              <optgroup label="🌿 Nature Sounds">
+              <optgroup label="🌿 Pure Nature Sounds (50)">
                 {NATURE_SOUNDS.map(s => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </optgroup>
-              <optgroup label="🎵 Nasheeds (Hadith)">
-                {NASHEED_SOUNDS.filter(s => s.id !== 'none').map(s => (
                   <option key={s.id} value={s.id}>
                     {s.name}
                   </option>
@@ -1508,7 +1544,7 @@ function App() {
             <div className="bg-audio-player">
               <div className="bg-audio-info">
                 <span className="bg-audio-label">
-                  {selectedBgSound === '__custom__' ? 'Custom Audio' : (NATURE_SOUNDS.find(s => s.id === selectedBgSound) || NASHEED_SOUNDS.find(s => s.id === selectedBgSound))?.name || 'Background Audio'}
+                  {selectedBgSound === '__custom__' ? 'Custom Audio' : NATURE_SOUNDS.find(s => s.id === selectedBgSound)?.name || 'Background Audio'}
                 </span>
               </div>
               <div className="bg-audio-controls">
@@ -1535,6 +1571,7 @@ function App() {
               </div>
             </div>
           )}
+          </>)}
 
           <button 
             className="btn-generate" 

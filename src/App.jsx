@@ -2,6 +2,142 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { surahs } from './data/surahData';
 import { drawFrame } from './utils/videoRenderer';
 
+// Transition effect post-processing
+function applyTransition(ctx, canvas, fromCanvas, progress, effect) {
+  const w = canvas.width, h = canvas.height;
+  if (effect === 'none' || progress >= 1) return;
+
+  if (effect === 'crossfade') {
+    ctx.globalAlpha = 1 - progress;
+    ctx.drawImage(fromCanvas, 0, 0);
+    ctx.globalAlpha = 1;
+  } else if (effect === 'fadetoblack') {
+    if (progress < 0.5) {
+      const p = progress * 2;
+      ctx.fillStyle = `rgba(0,0,0,${p})`;
+      ctx.fillRect(0, 0, w, h);
+    } else {
+      const p = (progress - 0.5) * 2;
+      ctx.fillStyle = `rgba(0,0,0,${1 - p})`;
+      ctx.fillRect(0, 0, w, h);
+    }
+  } else if (effect === 'slideleft') {
+    ctx.drawImage(fromCanvas, -w * (1 - progress), 0);
+  } else if (effect === 'slideright') {
+    ctx.drawImage(fromCanvas, w * (1 - progress), 0);
+  } else if (effect === 'slideup') {
+    ctx.drawImage(fromCanvas, 0, -h * (1 - progress));
+  } else if (effect === 'slidedown') {
+    ctx.drawImage(fromCanvas, 0, h * (1 - progress));
+  } else if (effect === 'zoomin') {
+    const s = 1 + (1 - progress) * 0.3;
+    const ox = w / 2, oy = h / 2;
+    ctx.drawImage(fromCanvas, ox - (ox * s), oy - (oy * s), w * s, h * s);
+  } else if (effect === 'zoomout') {
+    const s = 1 + progress * 0.3;
+    const ox = w / 2, oy = h / 2;
+    ctx.globalAlpha = 1 - progress;
+    ctx.drawImage(fromCanvas, ox - (ox * s), oy - (oy * s), w * s, h * s);
+    ctx.globalAlpha = 1;
+  } else if (effect === 'wipeleft') {
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(w * progress, 0, w * (1 - progress), h);
+    ctx.clip();
+    ctx.drawImage(fromCanvas, 0, 0);
+    ctx.restore();
+  } else if (effect === 'wiperight') {
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, w * (1 - progress), h);
+    ctx.clip();
+    ctx.drawImage(fromCanvas, 0, 0);
+    ctx.restore();
+  } else if (effect === 'wipeup') {
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, h * progress, w, h * (1 - progress));
+    ctx.clip();
+    ctx.drawImage(fromCanvas, 0, 0);
+    ctx.restore();
+  } else if (effect === 'wipedown') {
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, w, h * (1 - progress));
+    ctx.clip();
+    ctx.drawImage(fromCanvas, 0, 0);
+    ctx.restore();
+  } else if (effect === 'radialin') {
+    const maxDist = Math.sqrt(w * w + h * h) / 2;
+    const r = maxDist * progress;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, w, h);
+    ctx.moveTo(w / 2 + r, h / 2);
+    ctx.arc(w / 2, h / 2, r, 0, Math.PI * 2);
+    ctx.clip('evenodd');
+    ctx.drawImage(fromCanvas, 0, 0);
+    ctx.restore();
+  } else if (effect === 'radialout') {
+    const maxDist = Math.sqrt(w * w + h * h) / 2;
+    const r = maxDist * (1 - progress);
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(w / 2, h / 2, r, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.drawImage(fromCanvas, 0, 0);
+    ctx.restore();
+  } else if (effect === 'blinds_h') {
+    const strips = 12;
+    const stripH = h / strips;
+    for (let i = 0; i < strips; i++) {
+      const y = i * stripH;
+      const sh = stripH * progress;
+      ctx.drawImage(fromCanvas, 0, y + (stripH - sh) / 2, w, sh, 0, y + (stripH - sh) / 2, w, sh);
+    }
+  } else if (effect === 'blinds_v') {
+    const strips = 12;
+    const stripW = w / strips;
+    for (let i = 0; i < strips; i++) {
+      const x = i * stripW;
+      const sw = stripW * progress;
+      ctx.drawImage(fromCanvas, x + (stripW - sw) / 2, 0, sw, h, x + (stripW - sw) / 2, 0, sw, h);
+    }
+  } else if (effect === 'checkerboard') {
+    const cols = 8, rows = 12;
+    const cw = w / cols, rh = h / rows;
+    const total = cols * rows;
+    const visible = Math.floor(total * progress);
+    for (let i = 0; i < visible; i++) {
+      const col = i % cols, row = Math.floor(i / cols);
+      ctx.drawImage(fromCanvas, col * cw, row * rh, cw, rh, col * cw, row * rh, cw, rh);
+    }
+  } else if (effect === 'diamond') {
+    const cx = w / 2, cy = h / 2;
+    const maxDist = Math.sqrt(cx * cx + cy * cy);
+    const d = maxDist * (1 - progress);
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - d);
+    ctx.lineTo(cx + d, cy);
+    ctx.lineTo(cx, cy + d);
+    ctx.lineTo(cx - d, cy);
+    ctx.closePath();
+    ctx.clip();
+    ctx.drawImage(fromCanvas, 0, 0);
+    ctx.restore();
+  } else if (effect === 'circle') {
+    const maxDist = Math.sqrt(w * w + h * h) / 2;
+    const r = maxDist * (1 - progress);
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(w / 2, h / 2, r, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.drawImage(fromCanvas, 0, 0);
+    ctx.restore();
+  }
+}
+
 const RECITERS = [
   // Original 9
   { id: 'ar.alafasy', name: 'Mishary Rashid Alafasy', style: 'Murattal' },
@@ -148,6 +284,9 @@ function App() {
   // Customization States
   const backgroundType = 'upload';
   const [uploadedBgUrl, setUploadedBgUrl] = useState(null);
+  const [videoMode, setVideoMode] = useState('single'); // 'single' | 'per-ayah'
+  const [perAyahVideos, setPerAyahVideos] = useState({}); // { ayahNum: blobUrl }
+  const uploadedForAyahRef = useRef(null);
   
   // Styling configuration
   const [fontSize, setFontSize] = useState(48);
@@ -160,6 +299,7 @@ function App() {
   const [visualizerStyle, setVisualizerStyle] = useState('none'); // 'waves', 'bars', 'none'
   const [visualizerColor, setVisualizerColor] = useState('#60a5fa');
   const [colorEffect, setColorEffect] = useState('none');
+  const [transitionEffect, setTransitionEffect] = useState('none');
 
 const COLOR_EFFECTS = [
   { id: 'none', name: '♾ None' },
@@ -182,6 +322,29 @@ const COLOR_EFFECTS = [
   { id: 'retro', name: '📺 Retro', filter: 'sepia(0.6) saturate(0.6) contrast(0.9) hue-rotate(-20deg)' },
   { id: 'coolblue', name: '🧊 Cool Blue', filter: 'saturate(1.1) hue-rotate(200deg) brightness(1.05) contrast(0.9)' },
   { id: 'warmglow', name: '🔥 Warm Glow', filter: 'sepia(0.2) saturate(1.2) hue-rotate(-10deg) brightness(1.1)' },
+];
+
+const TRANSITIONS = [
+  { id: 'none', name: '— None (Cut)' },
+  { id: 'crossfade', name: '🌀 Crossfade' },
+  { id: 'fadetoblack', name: '⬛ Fade to Black' },
+  { id: 'slideleft', name: '◀ Slide Left' },
+  { id: 'slideright', name: '▶ Slide Right' },
+  { id: 'slideup', name: '▲ Slide Up' },
+  { id: 'slidedown', name: '▼ Slide Down' },
+  { id: 'zoomin', name: '🔍 Zoom In' },
+  { id: 'zoomout', name: '🔎 Zoom Out' },
+  { id: 'wipeleft', name: '▮ Wipe Right' },
+  { id: 'wiperight', name: '▯ Wipe Left' },
+  { id: 'wipeup', name: '▬ Wipe Down' },
+  { id: 'wipedown', name: '▬ Wipe Up' },
+  { id: 'radialin', name: '◎ Radial In' },
+  { id: 'radialout', name: '◉ Radial Out' },
+  { id: 'blinds_h', name: '〓 H Blinds' },
+  { id: 'blinds_v', name: '≡ V Blinds' },
+  { id: 'checkerboard', name: '◫ Checkerboard' },
+  { id: 'diamond', name: '◇ Diamond' },
+  { id: 'circle', name: '○ Circle' },
 ];
   
   // Mode: quran or hadith
@@ -242,6 +405,8 @@ const COLOR_EFFECTS = [
   const bgAudioSourceNodeRef = useRef(null);
   const bgGainNodeRef = useRef(null);
   const recorderRef = useRef(null);
+  const prevFrameRef = useRef(null); // cached previous frame for transitions
+  const transitionRef = useRef({ active: false, startTime: 0, duration: 0, effect: 'none' });
   
   // Track which audio element is currently active for playback
   const activeIsPrimaryRef = useRef(true);
@@ -555,6 +720,17 @@ const COLOR_EFFECTS = [
     if (mode === 'hadith') return;
     const nextIdx = currentAyahIndex + 1;
     if (nextIdx < passageAyahs.length) {
+      // Capture current frame for transition
+      if (transitionEffect !== 'none' && canvasRef.current) {
+        const w = canvasRef.current.width, h = canvasRef.current.height;
+        if (!prevFrameRef.current || prevFrameRef.current.width !== w || prevFrameRef.current.height !== h) {
+          prevFrameRef.current = document.createElement('canvas');
+          prevFrameRef.current.width = w;
+          prevFrameRef.current.height = h;
+        }
+        prevFrameRef.current.getContext('2d').drawImage(canvasRef.current, 0, 0);
+        transitionRef.current = { active: true, startTime: performance.now(), duration: 500, effect: transitionEffect };
+      }
       setCurrentAyahIndex(nextIdx);
       // Toggle active audio element
       activeIsPrimaryRef.current = !activeIsPrimaryRef.current;
@@ -596,7 +772,16 @@ const COLOR_EFFECTS = [
   // Handle Custom Video File Upload
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
-    if (file) {
+    if (!file) return;
+    const targetAyah = uploadedForAyahRef.current;
+    if (videoMode === 'per-ayah' && targetAyah !== null) {
+      setPerAyahVideos(prev => {
+        const old = prev[targetAyah];
+        if (old) URL.revokeObjectURL(old);
+        return { ...prev, [targetAyah]: URL.createObjectURL(file) };
+      });
+      uploadedForAyahRef.current = null;
+    } else {
       if (uploadedBgUrl) URL.revokeObjectURL(uploadedBgUrl);
       setUploadedBgUrl(URL.createObjectURL(file));
     }
@@ -611,6 +796,19 @@ const COLOR_EFFECTS = [
       setSelectedBgSound('__custom__');
     }
   };
+
+  // Per-ayah video: swap video source when ayah changes
+  useEffect(() => {
+    if (videoMode !== 'per-ayah') return;
+    if (mode === 'quran') {
+      const ayahNum = passageAyahs[currentAyahIndex]?.numberInSurah;
+      if (ayahNum && perAyahVideos[ayahNum] && videoRef.current) {
+        videoRef.current.src = perAyahVideos[ayahNum];
+        videoRef.current.loop = false;
+        videoRef.current.play().catch(() => {});
+      }
+    }
+  }, [currentAyahIndex, videoMode, perAyahVideos, mode]);
 
   const handleSelectBgSound = (id) => {
     setSelectedBgSound(id);
@@ -661,7 +859,8 @@ const COLOR_EFFECTS = [
     canvas.height = 1920;
 
     let animId;
-    const renderLoop = () => {
+    let lastTransitionTime = 0;
+    const renderLoop = (now) => {
       const currentItem = mode === 'hadith'
         ? hadithData[currentHadithIndex]
         : passageAyahs[currentAyahIndex];
@@ -693,10 +892,23 @@ const COLOR_EFFECTS = [
         isPlaying,
         currentTime
       });
+
+      // Apply transition post-processing
+      const tr = transitionRef.current;
+      if (tr.active && prevFrameRef.current) {
+        const elapsed = now - tr.startTime;
+        const progress = Math.min(elapsed / tr.duration, 1);
+        applyTransition(ctx, canvas, prevFrameRef.current, progress, tr.effect);
+        if (progress >= 1) {
+          tr.active = false;
+          prevFrameRef.current = null;
+        }
+      }
+
       animId = requestAnimationFrame(renderLoop);
     };
 
-    renderLoop();
+    renderLoop(performance.now());
 
     return () => {
       cancelAnimationFrame(animId);
@@ -1465,6 +1677,27 @@ const COLOR_EFFECTS = [
             Background Video
           </h2>
 
+          <div className="form-group mode-toggle">
+            <label>Video Mode</label>
+            <div className="btn-group">
+              <button
+                className={`btn-sm ${videoMode === 'single' ? 'btn-active' : ''}`}
+                onClick={() => setVideoMode('single')}
+                disabled={isRecording}
+              >
+                Single Video
+              </button>
+              <button
+                className={`btn-sm ${videoMode === 'per-ayah' ? 'btn-active' : ''}`}
+                onClick={() => setVideoMode('per-ayah')}
+                disabled={isRecording}
+              >
+                Per Ayah
+              </button>
+            </div>
+          </div>
+
+          {videoMode === 'single' ? (
           <div className="file-upload">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
@@ -1478,6 +1711,49 @@ const COLOR_EFFECTS = [
               disabled={isRecording}
             />
           </div>
+          ) : (
+          <div className="per-ayah-videos">
+            {passageAyahs.map((a, i) => {
+              const ayahNum = a.numberInSurah;
+              const hasVideo = !!perAyahVideos[ayahNum];
+              return (
+                <div key={ayahNum} className={`ayah-video-item ${hasVideo ? 'uploaded' : ''}`}>
+                  <span className="ayah-label">{mode === 'quran' ? `Ayah ${ayahNum}` : `#${a.number || (a.numberInSurah || i + 1)}`}</span>
+                  <button
+                    className="btn-ghost btn-xs"
+                    onClick={() => {
+                      uploadedForAyahRef.current = ayahNum;
+                      const input = document.createElement('input');
+                      input.type = 'file';
+                      input.accept = 'video/*';
+                      input.onchange = handleFileUpload;
+                      input.click();
+                    }}
+                    disabled={isRecording}
+                  >
+                    {hasVideo ? '✓' : '+'}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+          )}
+
+          {videoMode === 'per-ayah' && (
+          <div className="form-group">
+            <label htmlFor="transitionEffect">Ayah Transition</label>
+            <select 
+              id="transitionEffect" 
+              value={transitionEffect} 
+              onChange={(e) => setTransitionEffect(e.target.value)}
+              disabled={isRecording}
+            >
+              {TRANSITIONS.map(t => (
+                <option key={t.id} value={t.id}>{t.name}</option>
+              ))}
+            </select>
+          </div>
+          )}
 
           <div className="form-group">
             <label htmlFor="colorEffect">Color Effect</label>
@@ -1636,9 +1912,9 @@ const COLOR_EFFECTS = [
             {/* Hidden Video element for uploaded background */}
             <video 
               ref={videoRef}
-              src={uploadedBgUrl || undefined}
+              src={videoMode === 'single' ? (uploadedBgUrl || undefined) : undefined}
               className="hidden-video"
-              loop 
+              loop={videoMode === 'single'}
               muted 
               autoPlay 
               playsInline

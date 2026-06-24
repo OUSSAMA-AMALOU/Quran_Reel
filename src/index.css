@@ -871,6 +871,43 @@ select option {
   cursor: pointer;
 }
 
+/* ── Per-Ayah Video Grid ── */
+.per-ayah-videos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0 12px 0;
+}
+
+.ayah-video-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+}
+
+.ayah-video-item.uploaded {
+  border-color: var(--primary);
+  background: var(--primary-subtle);
+}
+
+.ayah-video-item .ayah-label {
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.ayah-video-item .btn-xs {
+  padding: 2px 6px;
+  font-size: 13px;
+  line-height: 1;
+  min-width: 22px;
+  border-radius: 4px;
+}
+
 /* ── Sliders ── */
 .slider-group {
   display: flex;

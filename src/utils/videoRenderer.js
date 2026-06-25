@@ -276,7 +276,7 @@ export function drawFrame({
     ctx.restore();
   }
 
-  // 5. Draw Quranic Arabic Text & English Translation
+  // 5. Draw Quranic Arabic Text, Transliteration & Translation
   if (currentAyah) {
     ctx.save();
     
@@ -288,8 +288,9 @@ export function drawFrame({
 
     const arabicFontSize = parseInt(config.fontSize || 42);
     const translationFontSize = parseInt(config.translationFontSize || 26);
+    const transliterationFontSize = Math.max(18, translationFontSize - 4);
     
-    const textSpacing = 40; // spacing between Arabic and English text
+    const textSpacing = 40;
     const paddingX = 80;
     const maxWidth = width - (paddingX * 2);
 
@@ -302,7 +303,6 @@ export function drawFrame({
     }
 
     // Measure heights first to center the block as a whole
-    // Set font temporarily for measurement
     const arabicFontFamily = {
       amiri: 'Amiri, serif',
       scheherazade: '"Scheherazade New", serif',
@@ -328,7 +328,28 @@ export function drawFrame({
     tempArabicLines.push(currentLine.trim());
     const arabicHeight = tempArabicLines.length * (arabicFontSize * 1.5);
 
-    // Measure English
+    // Measure Transliteration
+    let transliterationHeight = 0;
+    const tempTrLines = [];
+    const showTr = config.showTransliteration && currentAyah.transliteration;
+    if (showTr) {
+      ctx.font = `400 ${transliterationFontSize}px 'Outfit', 'Inter', sans-serif`;
+      const trWords = currentAyah.transliteration.split(' ');
+      let trLine = '';
+      for (let i = 0; i < trWords.length; i++) {
+        const testLine = trLine + trWords[i] + ' ';
+        if (ctx.measureText(testLine).width > maxWidth && i > 0) {
+          tempTrLines.push(trLine.trim());
+          trLine = trWords[i] + ' ';
+        } else {
+          trLine = testLine;
+        }
+      }
+      tempTrLines.push(trLine.trim());
+      transliterationHeight = tempTrLines.length * (transliterationFontSize * 1.4);
+    }
+
+    // Measure Translation
     let englishHeight = 0;
     const tempEnglishLines = [];
     if (config.showTranslation && currentAyah.translation) {
@@ -348,32 +369,52 @@ export function drawFrame({
       englishHeight = tempEnglishLines.length * (translationFontSize * 1.4);
     }
 
-    const totalBlockHeight = arabicHeight + (config.showTranslation ? textSpacing + englishHeight : 0);
+    const totalBlockHeight = arabicHeight
+      + (showTr ? textSpacing + transliterationHeight : 0)
+      + (config.showTranslation ? textSpacing + englishHeight : 0);
     const startY = centerY - (totalBlockHeight / 2);
 
     // Draw Arabic Text
     ctx.font = `700 ${arabicFontSize}px ${arabicFontFamily}`;
     ctx.fillStyle = '#ffffff';
+    let currentY = startY + arabicFontSize;
     const arabicTextHeight = wrapText(
       ctx,
       currentAyah.text,
       width / 2,
-      startY + arabicFontSize,
+      currentY,
       maxWidth,
       arabicFontSize * 1.5
     );
 
-    // Draw English Translation
+    currentY += arabicTextHeight;
+
+    // Draw Transliteration
+    if (showTr) {
+      currentY += textSpacing;
+      ctx.font = `400 italic ${transliterationFontSize}px 'Outfit', 'Inter', sans-serif`;
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
+      const trHeight = wrapText(
+        ctx,
+        currentAyah.transliteration,
+        width / 2,
+        currentY + transliterationFontSize,
+        maxWidth,
+        transliterationFontSize * 1.4
+      );
+      currentY += trHeight;
+    }
+
+    // Draw Translation
     if (config.showTranslation && currentAyah.translation) {
+      currentY += textSpacing;
       ctx.font = `400 ${translationFontSize}px Outfit, Inter, sans-serif`;
       ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
-      
-      const englishStartY = startY + arabicTextHeight + textSpacing;
       wrapText(
         ctx,
         currentAyah.translation,
         width / 2,
-        englishStartY,
+        currentY + translationFontSize,
         maxWidth,
         translationFontSize * 1.4
       );

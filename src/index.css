@@ -1053,6 +1053,41 @@ input[type="range"]::-moz-range-thumb {
   z-index: 100;
 }
 
+.phone-lang-toggle {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  display: flex;
+  gap: 2px;
+  z-index: 100;
+  background: rgba(0,0,0,0.5);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 6px;
+  overflow: hidden;
+  backdrop-filter: blur(6px);
+}
+
+.phone-lang-toggle .lang-btn {
+  background: transparent;
+  border: none;
+  color: rgba(255,255,255,0.6);
+  cursor: pointer;
+  padding: 4px 7px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  transition: all 0.2s;
+}
+
+.phone-lang-toggle .lang-btn.active {
+  background: var(--primary);
+  color: #fff;
+}
+
+.phone-lang-toggle .lang-btn:not(.active):hover {
+  color: #fff;
+}
+
 .video-frame {
   width: 100%;
   height: 100%;

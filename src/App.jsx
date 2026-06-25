@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { surahs } from './data/surahData';
 import { drawFrame } from './utils/videoRenderer';
+import { t } from './i18n';
 
 // Transition effect post-processing
 function applyTransition(ctx, canvas, fromCanvas, progress, effect) {
@@ -203,62 +204,42 @@ const getAudioPath = (url) => {
   } catch { return ''; }
 };
 
-// 50 preset pure nature sounds (CC0, no human voice)
-const NATURE_SOUNDS = [
+// 30 CC0 Islamic nasheeds and background sounds
+const ISLAMIC_SOUNDS = [
   { id: 'none', name: 'None' },
-  // === Thunderstorm & Rain (12) — Gold Tape 46 ===
-  { id: 'g01', name: '🌧 Light Rain & Thunder', url: 'https://archive.org/download/GOLD_TAPE_46_Thunderstorm_Rain/G46-01-Light%20Rain%20and%20Natural%20Thunder.mp3' },
-  { id: 'g02', name: '🌧 Quiet Rain Rolling Thunder', url: 'https://archive.org/download/GOLD_TAPE_46_Thunderstorm_Rain/G46-02-Quiet%20Rain%20Rolling%20Thunder.mp3' },
-  { id: 'g03', name: '⛈ Long Thunder Storm', url: 'https://archive.org/download/GOLD_TAPE_46_Thunderstorm_Rain/G46-03-Long%20Thunder%20Storm.mp3' },
-  { id: 'g04', name: '⛈ Distant Storm', url: 'https://archive.org/download/GOLD_TAPE_46_Thunderstorm_Rain/G46-04-Distant%20Storm.mp3' },
-  { id: 'g05', name: '💨 Thunder Roll with Wind', url: 'https://archive.org/download/GOLD_TAPE_46_Thunderstorm_Rain/G46-05-Thunder%20Roll%20with%20Wind.mp3' },
-  { id: 'g06', name: '⚡ Treble-Heavy Thunder Crack', url: 'https://archive.org/download/GOLD_TAPE_46_Thunderstorm_Rain/G46-06-Treble-Heavy%20Thunder%20Crack.mp3' },
-  { id: 'g07', name: '⚡ Loud Muffled Thunder Crack', url: 'https://archive.org/download/GOLD_TAPE_46_Thunderstorm_Rain/G46-07-Loud%20Muffled%20Thunder%20Crack.mp3' },
-  { id: 'g08', name: '🌧 Rain & Distant Thunder', url: 'https://archive.org/download/GOLD_TAPE_46_Thunderstorm_Rain/G46-08-Rain%20Distant%20Thunder.mp3' },
-  { id: 'g09', name: '🌧 Steady Rain & Thunder', url: 'https://archive.org/download/GOLD_TAPE_46_Thunderstorm_Rain/G46-09-Steady%20Rain%20and%20Thunder.mp3' },
-  { id: 'g10', name: '⛈ Thunderclap and Roll', url: 'https://archive.org/download/GOLD_TAPE_46_Thunderstorm_Rain/G46-10-Thunderclap%20and%20Roll.mp3' },
-  { id: 'g11', name: '⛈ Rolling Thunder', url: 'https://archive.org/download/GOLD_TAPE_46_Thunderstorm_Rain/G46-11-Rolling%20Thunder.mp3' },
-  { id: 'g12', name: '⚡ Thunderclap Fox', url: 'https://archive.org/download/GOLD_TAPE_46_Thunderstorm_Rain/G46-12-Thunderclap%20Fox.mp3' },
-  // === Ocean & Water (14) — Gold Tape 53/54 ===
-  { id: 'w01', name: '🌊 Quiet Surf', url: 'https://archive.org/download/GOLD_TAPE_53_54_Water/G53-01-Quiet%20Surf.mp3' },
-  { id: 'w02', name: '🌊 Light to Medium Surf', url: 'https://archive.org/download/GOLD_TAPE_53_54_Water/G53-02-Light%20to%20Medium%20Surf.mp3' },
-  { id: 'w03', name: '🌊 Foamy Surf', url: 'https://archive.org/download/GOLD_TAPE_53_54_Water/G53-03-Foamy%20Surf.mp3' },
-  { id: 'w04', name: '🌊 Medium to Heavy Surf', url: 'https://archive.org/download/GOLD_TAPE_53_54_Water/G53-06-Medium%20to%20Heavy%20Surf.mp3' },
-  { id: 'w05', name: '🌊 Steady Ocean Waves', url: 'https://archive.org/download/GOLD_TAPE_53_54_Water/G53-09-Steady%20Ocean%20Waves.mp3' },
-  { id: 'w06', name: '🌊 Surf on Rocks', url: 'https://archive.org/download/GOLD_TAPE_53_54_Water/G53-10-Surf%20on%20Rocks.mp3' },
-  { id: 'w07', name: '🕊 Waves & Gulls', url: 'https://archive.org/download/GOLD_TAPE_53_54_Water/G53-15-Waves%20and%20Gulls.mp3' },
-  { id: 'w08', name: '💧 Water Stream', url: 'https://archive.org/download/GOLD_TAPE_53_54_Water/G53-18-Water%20Stream.mp3' },
-  { id: 'w09', name: '💧 River Running', url: 'https://archive.org/download/GOLD_TAPE_53_54_Water/G53-20-River%20Running.mp3' },
-  { id: 'w10', name: '💧 Big River Rapids', url: 'https://archive.org/download/GOLD_TAPE_53_54_Water/G53-23-Big%20River%20Rapids.mp3' },
-  { id: 'w11', name: '💧 River Rapids Waterfall', url: 'https://archive.org/download/GOLD_TAPE_53_54_Water/G53-24-River%20or%20Rapids%20or%20Waterfall.mp3' },
-  { id: 'w12', name: '🫧 Bubbles & Splashes', url: 'https://archive.org/download/GOLD_TAPE_53_54_Water/G54-06-Bubbles%20and%20Splashes.mp3' },
-  { id: 'w13', name: '💧 Rushing Water', url: 'https://archive.org/download/GOLD_TAPE_53_54_Water/G54-28-Rushing%20Water.mp3' },
-  { id: 'w14', name: '💧 Water Lapping', url: 'https://archive.org/download/GOLD_TAPE_53_54_Water/G54-31-Water%20Lapping.mp3' },
-  // === Wind & Weather (15) — Gold Tape 55/56 ===
-  { id: 'wi01', name: '💨 Chill Wind', url: 'https://archive.org/download/GOLD_TAPE_55_56_Weather-Wind/G55-02-Chill%20Wind.mp3' },
-  { id: 'wi02', name: '💨 Wind in Trees', url: 'https://archive.org/download/GOLD_TAPE_55_56_Weather-Wind/G55-03-Wind%20in%20Trees.mp3' },
-  { id: 'wi03', name: '💨 Whistling Wind', url: 'https://archive.org/download/GOLD_TAPE_55_56_Weather-Wind/G55-05-Whistling%20Wind.mp3' },
-  { id: 'wi04', name: '💨 Desolate Wind', url: 'https://archive.org/download/GOLD_TAPE_55_56_Weather-Wind/G55-06-Desolate%20Wind.mp3' },
-  { id: 'wi05', name: '💨 Howling Wind', url: 'https://archive.org/download/GOLD_TAPE_55_56_Weather-Wind/G55-07-Howling%20wind.mp3' },
-  { id: 'wi06', name: '💨 Stormy Wind', url: 'https://archive.org/download/GOLD_TAPE_55_56_Weather-Wind/G55-08-Stormy%20Wind.mp3' },
-  { id: 'wi07', name: '💨 Slow Howling Wind', url: 'https://archive.org/download/GOLD_TAPE_55_56_Weather-Wind/G55-10-Slow%20Howling%20Wind.mp3' },
-  { id: 'wi08', name: '💨 Cold Wind Gusts', url: 'https://archive.org/download/GOLD_TAPE_55_56_Weather-Wind/G55-11-Cold%20Wind%20Gusts.mp3' },
-  { id: 'wi09', name: '💨 Steady Wind', url: 'https://archive.org/download/GOLD_TAPE_55_56_Weather-Wind/G55-13-Steady%20Wind.mp3' },
-  { id: 'wi10', name: '💨 Cold Wind', url: 'https://archive.org/download/GOLD_TAPE_55_56_Weather-Wind/G56-15-Cold%20Wind.mp3' },
-  { id: 'wi11', name: '💨 Hurricane Wind', url: 'https://archive.org/download/GOLD_TAPE_55_56_Weather-Wind/G56-18-Hurricane%20Wind.mp3' },
-  { id: 'wi12', name: '🌪 Sandstorm', url: 'https://archive.org/download/GOLD_TAPE_55_56_Weather-Wind/G56-22-Sandstorm.mp3' },
-  { id: 'wi13', name: '💨 Strong Steady Wind', url: 'https://archive.org/download/GOLD_TAPE_55_56_Weather-Wind/G56-23-Strong%20Steady%20Wind.mp3' },
-  { id: 'wi14', name: '💨 Storm Wind', url: 'https://archive.org/download/GOLD_TAPE_55_56_Weather-Wind/G56-27-Storm%20Wind.mp3' },
-  // === Birds & Animals (9) ===
-  { id: 'a01', name: '🐺 Wolf Pack Howls', url: 'https://archive.org/download/animalsounds1/11wolfhowls.mp3' },
-  { id: 'a02', name: '🐸 Frogs Various', url: 'https://archive.org/download/animalsounds1/19frogsandsuch.mp3' },
-  { id: 'a03', name: '🐸 Spring Peepers', url: 'https://archive.org/download/animalsounds1/20peepers.mp3' },
-  { id: 'a04', name: '🦩 Shorebirds Nest', url: 'https://archive.org/download/animalsounds1/13shorebirdsnest.mp3' },
-  { id: 'a05', name: '🐦 Hummingbird Feeding', url: 'https://archive.org/download/animalsounds1/28hummingbirdeats.mp3' },
-  { id: 'a06', name: '🦆 Loons Calling', url: 'https://archive.org/download/animalsounds1/44loons.mp3' },
-  { id: 'a07', name: '🦢 Snow Geese Flock', url: 'https://archive.org/download/animalsounds1/43100sofsnowgeese.mp3' },
-  { id: 'a08', name: '🪵 Woodpecker Tapping', url: 'https://archive.org/download/animalsounds1/41woodpecker.mp3' },
-  { id: 'a09', name: '🦜 Exotic Birds & Monkeys', url: 'https://archive.org/download/Red_Library_Ambience_1/R01-61-Exotic%20Birds%20and%20Monkeys.mp3' },
+  // === Nasheeds from Background Nasheed Library (CC0) ===
+  { id: 'i01', name: '🤲 Alhamdulillah Nasheed', url: 'https://archive.org/download/background-nasheed-1/Alhamdulillah%20Nasheed.mp3' },
+  { id: 'i02', name: '🤲 A\'dha al-Islam', url: 'https://archive.org/download/background-nasheed-1/A%27dha%20al-Islam.mp3' },
+  { id: 'i03', name: '🤲 Deen al-Salam', url: 'https://archive.org/download/background-nasheed-1/Deen%20al-Salam.mp3' },
+  { id: 'i04', name: '🤲 Ya Hala Marhaba', url: 'https://archive.org/download/background-nasheed-1/Ya%20Hala%20Marhaba%20%28online-audio-converter.com%29.mp3' },
+  { id: 'i05', name: '🤲 Sirna', url: 'https://archive.org/download/background-nasheed-1/Sirna%20%28online-audio-converter.com%29.mp3' },
+  { id: 'i06', name: '🤲 Namdi Sawiyya', url: 'https://archive.org/download/background-nasheed-1/Namdi%20Sawiyya%20%28online-audio-converter.com%29.mp3' },
+  { id: 'i07', name: '🤲 Qad Udna', url: 'https://archive.org/download/background-nasheed-1/Qad%20Udna%20%28Here%20we%20come%20back%20to%20you%29.mp3' },
+  { id: 'i08', name: '🤲 Riha Ula', url: 'https://archive.org/download/background-nasheed-1/Riha%20Ula%20%28Heaven%20called%20them%29.mp3' },
+  { id: 'i09', name: '🤲 Salaktu Tariqi', url: 'https://archive.org/download/background-nasheed-1/Salaktu%20Tariqi%20%28online-audio-converter.com%29.mp3' },
+  { id: 'i10', name: '🤲 Quranuna Dusturuna', url: 'https://archive.org/download/background-nasheed-1/Quranuna%20Dusturuna%20%28Our%20Quran%20is%20Our%20Constitution%29.mp3' },
+  { id: 'i11', name: '🤲 Asmi\'ni Ya Ukhayyah', url: 'https://archive.org/download/background-nasheed-1/Asmi%27ni%20Ya%20Ukhayyah%20%28Let%20me%20hear%2C%20O%20sister%29.mp3' },
+  { id: 'i12', name: '🤲 Fala Ya Qalbu La Tahzan', url: 'https://archive.org/download/background-nasheed-1/Fala%20Ya%20Qalbu%20La%20Tahzan%20%28online-audio-converter.com%29.mp3' },
+  { id: 'i13', name: '🤲 Ummat al-Islami Bushra', url: 'https://archive.org/download/background-nasheed-1/Ummat%20al-Islami%20Bushra%20...%20Walidduna%20%28online-audio-converter.com%29.mp3' },
+  { id: 'i14', name: '🤲 al-Ghuraba (The Strangers)', url: 'https://archive.org/download/background-nasheed-1/al-Ghuraba%20%28The%20Strangers%29.mp3' },
+  { id: 'i15', name: '🤲 al-Akhira', url: 'https://archive.org/download/background-nasheed-1/al-Akhira%20%28online-audio-converter.com%29.mp3' },
+  // === Islamic Background Sounds Aahat (30 tracks) ===
+  { id: 'i16', name: '🎵 Islamic Ambience 01', url: 'https://archive.org/download/IslamicBackgroundSoundsAahat/01-ISLAMIC+BACKGROUND+SOUNDS.mp3' },
+  { id: 'i17', name: '🎵 Islamic Ambience 02', url: 'https://archive.org/download/IslamicBackgroundSoundsAahat/02-ISLAMIC+BACKGROUND+SOUNDS.mp3' },
+  { id: 'i18', name: '🎵 Islamic Ambience 03', url: 'https://archive.org/download/IslamicBackgroundSoundsAahat/03-ISLAMIC+BACKGROUND+SOUNDS.mp3' },
+  { id: 'i19', name: '🎵 Islamic Ambience 04', url: 'https://archive.org/download/IslamicBackgroundSoundsAahat/04-ISLAMIC+BACKGROUND+SOUNDS.mp3' },
+  { id: 'i20', name: '🎵 Islamic Ambience 05', url: 'https://archive.org/download/IslamicBackgroundSoundsAahat/05-ISLAMIC+BACKGROUND+SOUNDS.mp3' },
+  { id: 'i21', name: '🎵 Islamic Ambience 06', url: 'https://archive.org/download/IslamicBackgroundSoundsAahat/06-ISLAMIC+BACKGROUND+SOUNDS.mp3' },
+  { id: 'i22', name: '🎵 Islamic Ambience 07', url: 'https://archive.org/download/IslamicBackgroundSoundsAahat/07-ISLAMIC+BACKGROUND+SOUNDS.mp3' },
+  { id: 'i23', name: '🎵 Islamic Ambience 08', url: 'https://archive.org/download/IslamicBackgroundSoundsAahat/08-ISLAMIC+BACKGROUND+SOUNDS.mp3' },
+  { id: 'i24', name: '🎵 Islamic Ambience 09', url: 'https://archive.org/download/IslamicBackgroundSoundsAahat/09-ISLAMIC+BACKGROUND+SOUNDS.mp3' },
+  { id: 'i25', name: '🎵 Islamic Ambience 10', url: 'https://archive.org/download/IslamicBackgroundSoundsAahat/10-ISLAMIC+BACKGROUND+SOUNDS.mp3' },
+  // === Adhan (Public Domain) ===
+  { id: 'i26', name: '📿 Fajr Adhan (Doha)', url: 'https://archive.org/download/adhan.recordings.from.doha.qatar/Adhan_Doha_Qatar_01_Fajr_Adhan.mp3' },
+  { id: 'i27', name: '📿 Dhuhr Adhan (Doha)', url: 'https://archive.org/download/adhan.recordings.from.doha.qatar/Adhan_Doha_Qatar_02_Dhuhr_Adhan.mp3' },
+  { id: 'i28', name: '📿 Asr Adhan (Doha)', url: 'https://archive.org/download/adhan.recordings.from.doha.qatar/Adhan_Doha_Qatar_03_Asr_Adhan.mp3' },
+  { id: 'i29', name: '📿 Maghrib Adhan (Doha)', url: 'https://archive.org/download/adhan.recordings.from.doha.qatar/Adhan_Doha_Qatar_04_Maghrib_Adhan.mp3' },
+  { id: 'i30', name: '📿 Isha Adhan (Doha)', url: 'https://archive.org/download/adhan.recordings.from.doha.qatar/Adhan_Doha_Qatar_05_Isha_Adhan.mp3' },
 ];
 
 function App() {
@@ -295,6 +276,9 @@ function App() {
   const [vignetteOpacity, setVignetteOpacity] = useState(0.4);
   const [fontFamily, setFontFamily] = useState('amiri');
   const [showTranslation, setShowTranslation] = useState(true);
+  const [translationLang, setTranslationLang] = useState('en');
+  const [uiLang, setUiLang] = useState('en');
+  const [showTransliteration, setShowTransliteration] = useState(true);
   const [watermark, setWatermark] = useState('');
   const [visualizerStyle, setVisualizerStyle] = useState('none'); // 'waves', 'bars', 'none'
   const [visualizerColor, setVisualizerColor] = useState('#60a5fa');
@@ -360,10 +344,41 @@ const TRANSITIONS = [
     { id: 'ibnmajah', name: 'Sunan Ibn Majah', arabic: 'سنن ابن ماجه' },
     { id: 'malik', name: 'Muwatta Malik', arabic: 'موطأ مالك' },
   ];
+  const FRENCH_HADITH_EDITIONS = {
+    bukhari: 'fra-bukhari',
+    muslim: 'fra-muslim',
+    abudawud: 'fra-abudawud',
+    tirmidhi: 'fra-tirmidhi',
+    nasai: 'fra-nasai',
+    ibnmajah: 'fra-ibnmajah',
+    malik: 'fra-malik',
+  };
   const [hadithBook, setHadithBook] = useState('bukhari');
   const [hadithNumber, setHadithNumber] = useState(1);
   const [hadithData, setHadithData] = useState([]);
   const [currentHadithIndex, setCurrentHadithIndex] = useState(0);
+  
+  // Dua-specific states
+  const DUA_SHORTCUTS = [
+    { id: 'morning', name: 'Morning Adhkar', arabic: 'أذكار الصباح' },
+    { id: 'evening', name: 'Evening Adhkar', arabic: 'أذكار المساء' },
+    { id: 'after-prayer', name: 'After Prayer', arabic: 'أذكار بعد الصلاة' },
+    { id: 'before-sleep', name: 'Before Sleep', arabic: 'أذكار النوم' },
+    { id: 'waking-up', name: 'Waking Up', arabic: 'أذكار الاستيقاظ' },
+    { id: 'prayer', name: 'Prayer', arabic: 'أذكار الصلاة' },
+    { id: 'mosque', name: 'Mosque', arabic: 'أذكار المسجد' },
+    { id: 'travel', name: 'Travel', arabic: 'أذكار السفر' },
+    { id: 'food', name: 'Eating', arabic: 'أذكار الطعام' },
+    { id: 'home', name: 'Home', arabic: 'أذكار المنزل' },
+    { id: 'anxiety', name: 'Anxiety & Sorrow', arabic: 'أدعية الهم والحزن' },
+    { id: 'protection', name: 'Protection', arabic: 'أدعية التحصين' },
+    { id: 'forgiveness', name: 'Forgiveness', arabic: 'أدعية الاستغفار' },
+    { id: 'hajj', name: 'Hajj & Umrah', arabic: 'أذكار الحج والعمرة' },
+  ];
+  const [duaCategory, setDuaCategory] = useState('morning');
+  const [duaCategories, setDuaCategories] = useState([]);
+  const [duaData, setDuaData] = useState([]);
+  const [currentDuaIndex, setCurrentDuaIndex] = useState(0);
   
   // Background Audio
   const [bgAudioFile, setBgAudioFile] = useState(null);
@@ -377,6 +392,7 @@ const TRANSITIONS = [
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   
+  const T = (key, vars) => t(key, uiLang, vars);
   // Mobile section tab
   const [mobileSection, setMobileSection] = useState('passage');
 
@@ -428,27 +444,35 @@ const TRANSITIONS = [
 
       if (CDN_ONLY_RECITERS.has(reciterId)) {
         // CDN-only reciter: fetch text/translation from API, build audio URL directly
-        const [arRes, enRes] = await Promise.all([
+        const [arRes, enRes, frRes, trRes] = await Promise.all([
           fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/quran-uthmani`),
-          fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/en.sahih`)
+          fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/en.sahih`),
+          fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/fr.hamidullah`),
+          fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/en.transliteration`)
         ]);
         if (!arRes.ok || !enRes.ok) throw new Error('Failed to fetch Quran data from API.');
         arData = await arRes.json();
         enData = await enRes.json();
+        const frData = await frRes.json();
+        const trData = await trRes.json();
         const folder = EVERYAYAH_FOLDERS[reciterId];
         combined = arData.data.ayahs
           .map((ayah, idx) => ({
             numberInSurah: ayah.numberInSurah,
             number: ayah.number,
             text: ayah.text,
-            translation: enData.data.ayahs[idx]?.text || '',
+            translationEn: enData.data.ayahs[idx]?.text || '',
+            translationFr: frData.data.ayahs[idx]?.text || '',
+            transliteration: trData.data.ayahs[idx]?.text || '',
             audio: `/everyayah/data/${folder}_128kbps/${pad3(surahNum)}${pad3(ayah.numberInSurah)}.mp3`
           }));
       } else {
         // API reciter: fetch everything from Alquran Cloud
-        const [arRes, enRes, audioRes] = await Promise.all([
+        const [arRes, enRes, frRes, trRes, audioRes] = await Promise.all([
           fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/quran-uthmani`),
           fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/en.sahih`),
+          fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/fr.hamidullah`),
+          fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/en.transliteration`),
           fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/${reciterId}`)
         ]);
         if (!arRes.ok || !enRes.ok || !audioRes.ok) {
@@ -456,13 +480,17 @@ const TRANSITIONS = [
         }
         arData = await arRes.json();
         enData = await enRes.json();
+        const frData = await frRes.json();
+        const trData = await trRes.json();
         const audioData = await audioRes.json();
         combined = arData.data.ayahs
           .map((ayah, idx) => ({
             numberInSurah: ayah.numberInSurah,
             number: ayah.number,
             text: ayah.text,
-            translation: enData.data.ayahs[idx]?.text || '',
+            translationEn: enData.data.ayahs[idx]?.text || '',
+            translationFr: frData.data.ayahs[idx]?.text || '',
+            transliteration: trData.data.ayahs[idx]?.text || '',
             audio: getAudioPath(audioData.data.ayahs[idx]?.audio)
           }))
           .filter(a => a.audio);
@@ -508,26 +536,34 @@ const TRANSITIONS = [
       let arData, enData, combined;
 
       if (CDN_ONLY_RECITERS.has(reciterId)) {
-        const [arRes, enRes] = await Promise.all([
+        const [arRes, enRes, frRes, trRes] = await Promise.all([
           fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/quran-uthmani`),
-          fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/en.sahih`)
+          fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/en.sahih`),
+          fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/fr.hamidullah`),
+          fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/en.transliteration`)
         ]);
         if (!arRes.ok || !enRes.ok) throw new Error('Failed to fetch Quran data from API.');
         arData = await arRes.json();
         enData = await enRes.json();
+        const frData = await frRes.json();
+        const trData = await trRes.json();
         const folder = EVERYAYAH_FOLDERS[reciterId];
         combined = arData.data.ayahs
           .map((ayah, idx) => ({
             numberInSurah: ayah.numberInSurah,
             number: ayah.number,
             text: ayah.text,
-            translation: enData.data.ayahs[idx]?.text || '',
+            translationEn: enData.data.ayahs[idx]?.text || '',
+            translationFr: frData.data.ayahs[idx]?.text || '',
+            transliteration: trData.data.ayahs[idx]?.text || '',
             audio: `/everyayah/data/${folder}_128kbps/${pad3(surahNum)}${pad3(ayah.numberInSurah)}.mp3`
           }));
       } else {
-        const [arRes, enRes, audioRes] = await Promise.all([
+        const [arRes, enRes, frRes, trRes, audioRes] = await Promise.all([
           fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/quran-uthmani`),
           fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/en.sahih`),
+          fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/fr.hamidullah`),
+          fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/en.transliteration`),
           fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/${reciterId}`)
         ]);
         if (!arRes.ok || !enRes.ok || !audioRes.ok) {
@@ -535,13 +571,17 @@ const TRANSITIONS = [
         }
         arData = await arRes.json();
         enData = await enRes.json();
+        const frData = await frRes.json();
+        const trData = await trRes.json();
         const audioData = await audioRes.json();
         combined = arData.data.ayahs
           .map((ayah, idx) => ({
             numberInSurah: ayah.numberInSurah,
             number: ayah.number,
             text: ayah.text,
-            translation: enData.data.ayahs[idx]?.text || '',
+            translationEn: enData.data.ayahs[idx]?.text || '',
+            translationFr: frData.data.ayahs[idx]?.text || '',
+            transliteration: trData.data.ayahs[idx]?.text || '',
             audio: getAudioPath(audioData.data.ayahs[idx]?.audio)
           }))
           .filter(a => a.audio);
@@ -575,15 +615,22 @@ const TRANSITIONS = [
 
     try {
       const num = hadithNumber;
-      const [araRes, engRes] = await Promise.all([
+      const frEdition = FRENCH_HADITH_EDITIONS[hadithBook] || `fra-${hadithBook}`;
+      const [araRes, engRes, fraRes] = await Promise.all([
         fetch(`https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/ara-${hadithBook}/${num}.json`),
-        fetch(`https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/eng-${hadithBook}/${num}.json`)
+        fetch(`https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/eng-${hadithBook}/${num}.json`),
+        fetch(`https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/${frEdition}/${num}.json`)
       ]);
       if (!araRes.ok || !engRes.ok) {
         throw new Error(`Hadith ${num} not found in ${hadithBook}.`);
       }
       const araData = await araRes.json();
       const engData = await engRes.json();
+      let fraHadith = null;
+      if (fraRes.ok) {
+        const fraData = await fraRes.json();
+        fraHadith = fraData.hadiths?.[0];
+      }
       const araHadith = araData.hadiths?.[0];
       const engHadith = engData.hadiths?.[0];
       if (!araHadith || !engHadith) {
@@ -592,7 +639,8 @@ const TRANSITIONS = [
       const result = [{
         number: num,
         text: araHadith.text,
-        translation: engHadith.text,
+        translationEn: engHadith.text,
+        translationFr: fraHadith?.text || '',
         bookName: araData.metadata?.name || hadithBook,
       }];
       setHadithData(result);
@@ -605,12 +653,65 @@ const TRANSITIONS = [
     }
   }, [hadithNumber, hadithBook]);
 
+  // Fetch Duas from islamic.app API (Hisn al-Muslim)
+  const fetchDuaCategories = useCallback(async () => {
+    try {
+      const res = await fetch('https://api.islamic.app/v1/dhikr');
+      const json = await res.json();
+      if (json.code === 200 && json.data) {
+        setDuaCategories(json.data.categories);
+      }
+    } catch (err) {
+      console.error('Failed to fetch dua categories:', err);
+    }
+  }, []);
+
+  const fetchDuas = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    setIsPlaying(false);
+    setCurrentDuaIndex(0);
+    try {
+      const res = await fetch(`https://api.islamic.app/v1/dhikr/${duaCategory}`);
+      const json = await res.json();
+      if (json.code !== 200 || !json.data) {
+        throw new Error('Failed to fetch duas.');
+      }
+      const items = json.data.duas.map((d, i) => ({
+        text: d.ar?.text || d.ar?.body || '',
+        translationEn: d.en?.text || d.en?.body || '',
+        transliteration: d.transliteration?.en || '',
+        numberInSurah: i + 1,
+        number: d.number,
+        slug: d.slug,
+      }));
+      setDuaData(items);
+    } catch (err) {
+      console.error(err);
+      setError(err.message || 'Failed to fetch duas.');
+    } finally {
+      setLoading(false);
+    }
+  }, [duaCategory]);
+
   // Auto-load hadiths when switching to hadith mode
   useEffect(() => {
     if (mode === 'hadith') {
       fetchHadiths();
     }
   }, [mode, fetchHadiths]);
+
+  // Fetch dua categories on mount
+  useEffect(() => {
+    fetchDuaCategories();
+  }, [fetchDuaCategories]);
+
+  // Auto-load duas when switching to dua mode
+  useEffect(() => {
+    if (mode === 'dua') {
+      fetchDuas();
+    }
+  }, [mode, fetchDuas]);
 
   // Stop bg audio when switching to Quran mode
   useEffect(() => {
@@ -673,8 +774,9 @@ const TRANSITIONS = [
 
   // Playback Control
   const togglePlay = async () => {
-    if (mode === 'hadith') {
-      if (hadithData.length === 0) return;
+    if (mode === 'hadith' || mode === 'dua') {
+      const data = mode === 'hadith' ? hadithData : duaData;
+      if (data.length === 0) return;
       setIsPlaying(!isPlaying);
       return;
     }
@@ -717,7 +819,7 @@ const TRANSITIONS = [
   };
 
   const handleAudioEnded = () => {
-    if (mode === 'hadith') return;
+    if (mode === 'hadith' || mode === 'dua') return;
     const nextIdx = currentAyahIndex + 1;
     if (nextIdx < passageAyahs.length) {
       // Capture current frame for transition
@@ -808,7 +910,7 @@ const TRANSITIONS = [
         videoRef.current.play().catch(() => {});
       }
     }
-  }, [currentAyahIndex, videoMode, perAyahVideos, mode]);
+  }, [currentAyahIndex, currentDuaIndex, currentHadithIndex, videoMode, perAyahVideos, mode]);
 
   const handleSelectBgSound = (id) => {
     setSelectedBgSound(id);
@@ -819,16 +921,13 @@ const TRANSITIONS = [
     } else if (id === '__custom__') {
       // file upload handles itself
     } else {
-      const preset = NATURE_SOUNDS.find(s => s.id === id);
-      if (preset) {
+      const preset = ISLAMIC_SOUNDS.find(s => s.id === id);
+      if (preset && bgAudioRef.current) {
         setBgAudioFile(preset.url);
-        // Auto-play if already enabled
-        if (bgAudioRef.current) {
-          bgAudioRef.current.src = preset.url;
-          bgAudioRef.current.loop = true;
-          bgAudioRef.current.play().catch(console.error);
-          setBgAudioEnabled(true);
-        }
+        bgAudioRef.current.src = preset.url;
+        bgAudioRef.current.loop = true;
+        bgAudioRef.current.play().catch(console.error);
+        setBgAudioEnabled(true);
       }
     }
   };
@@ -861,12 +960,23 @@ const TRANSITIONS = [
     let animId;
     let lastTransitionTime = 0;
     const renderLoop = (now) => {
-      const currentItem = mode === 'hadith'
+      const rawItem = mode === 'hadith'
         ? hadithData[currentHadithIndex]
-        : passageAyahs[currentAyahIndex];
+        : mode === 'dua'
+          ? duaData[currentDuaIndex]
+          : passageAyahs[currentAyahIndex];
+      const currentItem = rawItem ? {
+        ...rawItem,
+        translation: translationLang === 'fr'
+          ? (rawItem.translationFr || rawItem.translationEn || '')
+          : (rawItem.translationEn || rawItem.translationFr || ''),
+        transliteration: rawItem.transliteration || ''
+      } : null;
       const referenceText = mode === 'hadith' && currentItem
         ? `${currentItem.bookName}, Hadith ${currentItem.number}`
-        : undefined;
+        : mode === 'dua' && currentItem
+          ? `${DUA_SHORTCUTS.find(s => s.id === duaCategory)?.name || 'Dua'} #${currentItem.number}`
+          : undefined;
       drawFrame({
         ctx,
         canvas,
@@ -880,6 +990,8 @@ const TRANSITIONS = [
           vignetteOpacity,
           fontFamily,
           showTranslation,
+          translationLang,
+          showTransliteration,
           watermark,
           visualizerStyle,
           visualizerColor,
@@ -919,6 +1031,9 @@ const TRANSITIONS = [
     currentAyahIndex, 
     hadithData,
     currentHadithIndex,
+    duaData,
+    currentDuaIndex,
+    duaCategory,
     isPlaying, 
     fontSize, 
     translationFontSize, 
@@ -926,6 +1041,8 @@ const TRANSITIONS = [
     vignetteOpacity, 
     fontFamily, 
     showTranslation, 
+    translationLang,
+    showTransliteration,
     watermark, 
     visualizerStyle, 
     visualizerColor, 
@@ -937,8 +1054,9 @@ const TRANSITIONS = [
 
   // Export / Record video logic
   const handleExportVideo = async () => {
-    if (mode === 'hadith') {
-      await handleExportHadith();
+    if (mode === 'hadith' || mode === 'dua') {
+      if (mode === 'hadith') await handleExportHadith();
+      else await handleExportDua();
       return;
     }
     if (passageAyahs.length === 0) return;
@@ -950,7 +1068,7 @@ const TRANSITIONS = [
 
     setIsRecording(true);
     setRecordingProgress(5);
-    setRecordingStatus('Initializing media recorder...');
+    setRecordingStatus(T('status.initMedia'));
 
     try {
       // Reset to primary audio element
@@ -1082,7 +1200,7 @@ const TRANSITIONS = [
       };
 
       recorderRef.current.onstop = () => {
-        setRecordingStatus('Compiling video file...');
+        setRecordingStatus(T('status.compiling'));
         setRecordingProgress(95);
 
         const blob = new Blob(chunks, { type: options.mimeType });
@@ -1110,7 +1228,7 @@ const TRANSITIONS = [
       if (activeA) await activeA.play();
       setIsPlaying(true);
       setRecordingProgress(10);
-      setRecordingStatus(`Recording Ayah ${startAyah} of ${endAyah}...`);
+      setRecordingStatus(T('status.recordingAyah', { n: startAyah, total: endAyah }));
 
     } catch (err) {
       console.error(err);
@@ -1127,7 +1245,7 @@ const TRANSITIONS = [
     setIsPlaying(false);
     setIsRecording(true);
     setRecordingProgress(5);
-    setRecordingStatus('Initializing hadith reel...');
+    setRecordingStatus(T('status.initHadith'));
 
     try {
       setCurrentHadithIndex(0);
@@ -1203,7 +1321,7 @@ const TRANSITIONS = [
       };
 
       recorderRef.current.onstop = () => {
-        setRecordingStatus('Compiling video file...');
+        setRecordingStatus(T('status.compiling'));
         setRecordingProgress(95);
 
         const blob = new Blob(chunks, { type: options.mimeType });
@@ -1228,11 +1346,12 @@ const TRANSITIONS = [
 
       // Auto-advance through hadiths every 10 seconds
       setIsPlaying(true);
-      setRecordingStatus(`Recording Hadith 1 of ${hadithData.length}...`);
+      setRecordingStatus(T('status.recordingHadith', { n: 1, total: hadithData.length }));
+      setRecordingProgress(10);
 
       for (let i = 0; i < hadithData.length; i++) {
         setCurrentHadithIndex(i);
-        setRecordingStatus(`Recording Hadith ${i + 1} of ${hadithData.length}...`);
+        setRecordingStatus(T('status.recordingHadith', { n: i + 1, total: hadithData.length }));
         setRecordingProgress(Math.round(((i + 1) / hadithData.length) * 80 + 10));
 
         const secondsPerHadith = 10;
@@ -1241,6 +1360,136 @@ const TRANSITIONS = [
           await new Promise(resolve => setTimeout(resolve, secondsPerHadith * 1000));
         } else {
           await new Promise(resolve => setTimeout(resolve, secondsPerHadith * 1000));
+        }
+      }
+
+      setIsPlaying(false);
+      if (recorderRef.current && recorderRef.current.state === 'recording') {
+        recorderRef.current.stop();
+      }
+      if (bgAudioRef.current) bgAudioRef.current.pause();
+    } catch (err) {
+      console.error(err);
+      setError(`Recording failed: ${err.message}`);
+      setIsRecording(false);
+      setRecordingProgress(0);
+    }
+  };
+
+  // Export Dua reel (silent video, no audio — same pattern as hadith)
+  const handleExportDua = async () => {
+    if (duaData.length === 0) return;
+
+    setIsPlaying(false);
+    setIsRecording(true);
+    setRecordingProgress(5);
+    setRecordingStatus(T('status.initDua'));
+
+    try {
+      setCurrentDuaIndex(0);
+
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      let audioCtx;
+      if (audioCtxRef.current && audioCtxRef.current.state !== 'closed') {
+        audioCtx = audioCtxRef.current;
+        if (audioCtx.state === 'suspended') await audioCtx.resume();
+      } else {
+        audioCtx = new AudioContextClass();
+        audioCtxRef.current = audioCtx;
+      }
+
+      const destNode = audioCtx.createMediaStreamDestination();
+      let hasBgAudio = false;
+      if (bgAudioFile && bgAudioRef.current) {
+        bgAudioRef.current.src = bgAudioFile;
+        bgAudioRef.current.loop = true;
+        await bgAudioRef.current.play();
+
+        if (bgAudioSourceNodeRef.current) {
+          bgAudioSourceNodeRef.current.disconnect();
+        } else {
+          const src = audioCtx.createMediaElementSource(bgAudioRef.current);
+          bgAudioSourceNodeRef.current = src;
+        }
+        const bgGain = audioCtx.createGain();
+        bgGain.gain.value = bgAudioVolume / 100;
+        bgAudioSourceNodeRef.current.connect(bgGain);
+        bgGain.connect(destNode);
+        bgGainNodeRef.current = bgGain;
+
+        const audioTrack = destNode.stream.getAudioTracks()[0];
+        if (audioTrack) hasBgAudio = true;
+      }
+
+      const canvasStream = canvasRef.current.captureStream(30);
+      const videoTrack = canvasStream.getVideoTracks()[0];
+      if (!videoTrack) throw new Error('Failed to capture canvas video track.');
+
+      const tracks = [videoTrack];
+      if (hasBgAudio) {
+        const audioTrack = destNode.stream.getAudioTracks()[0];
+        if (audioTrack) tracks.push(audioTrack);
+      }
+      const recorderStream = new MediaStream(tracks);
+
+      let options;
+      if (MediaRecorder.isTypeSupported('video/mp4;codecs=h264,aac')) {
+        options = { mimeType: 'video/mp4;codecs=h264,aac' };
+      } else if (MediaRecorder.isTypeSupported('video/mp4;codecs=avc1.42E01E,mp4a.40.2')) {
+        options = { mimeType: 'video/mp4;codecs=avc1.42E01E,mp4a.40.2' };
+      } else if (MediaRecorder.isTypeSupported('video/mp4')) {
+        options = { mimeType: 'video/mp4' };
+      } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')) {
+        options = { mimeType: 'video/webm;codecs=vp9,opus' };
+      } else {
+        options = { mimeType: 'video/webm' };
+      }
+
+      const chunks = [];
+      recorderRef.current = new MediaRecorder(recorderStream, options);
+
+      recorderRef.current.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) chunks.push(e.data);
+      };
+
+      recorderRef.current.onstop = () => {
+        setRecordingStatus(T('status.compiling'));
+        setRecordingProgress(95);
+
+        const blob = new Blob(chunks, { type: options.mimeType });
+        const downloadUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = downloadUrl;
+        const categoryName = DUA_SHORTCUTS.find(s => s.id === duaCategory)?.name || 'Dua';
+        const extension = options.mimeType.includes('mp4') ? 'mp4' : 'webm';
+        a.download = `DuaReel_${categoryName}_${duaData.length}_duas.${extension}`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+
+        setTimeout(() => {
+          setIsRecording(false);
+          setRecordingProgress(0);
+          setRecordingStatus('');
+        }, 1500);
+      };
+
+      recorderRef.current.start();
+
+      setIsPlaying(true);
+      setRecordingStatus(T('status.recordingDua', { n: 1, total: duaData.length }));
+      setRecordingProgress(10);
+
+      for (let i = 0; i < duaData.length; i++) {
+        setCurrentDuaIndex(i);
+        setRecordingStatus(T('status.recordingDua', { n: i + 1, total: duaData.length }));
+        setRecordingProgress(Math.round(((i + 1) / duaData.length) * 80 + 10));
+
+        const secondsPerDua = 10;
+        if (i === duaData.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, secondsPerDua * 1000));
+        } else {
+          await new Promise(resolve => setTimeout(resolve, secondsPerDua * 1000));
         }
       }
 
@@ -1273,7 +1522,7 @@ const TRANSITIONS = [
   useEffect(() => {
     if (isRecording && passageAyahs.length > 0 && currentAyahIndex !== prevAyahIndexRef.current) {
       prevAyahIndexRef.current = currentAyahIndex;
-      setRecordingStatus(`Recording Ayah ${startAyah + currentAyahIndex} of ${endAyah}...`);
+      setRecordingStatus(T('status.recordingAyah', { n: startAyah + currentAyahIndex, total: endAyah }));
       setRecordingProgress(Math.round((currentAyahIndex / passageAyahs.length) * 80 + 10));
     }
   }, [currentAyahIndex, isRecording, passageAyahs.length, startAyah, endAyah]);
@@ -1286,11 +1535,11 @@ const TRANSITIONS = [
           <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
           <path d="M2 12h20"/>
         </svg>
-        Visual Style
+        {T('style.visualStyle')}
       </h2>
 
       <div className="form-group">
-        <label>Arabic Script Font</label>
+        <label>{T('style.arabicFont')}</label>
         <select 
           value={fontFamily} 
           onChange={(e) => setFontFamily(e.target.value)}
@@ -1306,7 +1555,7 @@ const TRANSITIONS = [
       </div>
 
       <div className="form-group">
-        <label>Arabic Font Size</label>
+        <label>{T('style.arabicFontSize')}</label>
         <div className="slider-group">
           <input 
             type="range" 
@@ -1329,13 +1578,13 @@ const TRANSITIONS = [
             disabled={isRecording}
           />
           <div className="checkmark"></div>
-          <span>Show English Translation</span>
+          <span>{T('style.showTranslation')}</span>
         </label>
       </div>
 
       {showTranslation && (
         <div className="form-group">
-          <label>Translation Font Size</label>
+          <label>{T('style.translationFontSize')}</label>
           <div className="slider-group">
             <input 
               type="range" 
@@ -1351,21 +1600,21 @@ const TRANSITIONS = [
       )}
 
       <div className="form-group">
-        <label htmlFor="textPosition">Text Center Alignment</label>
+        <label htmlFor="textPosition">{T('style.textAlignment')}</label>
         <select 
           id="textPosition" 
           value={textPosition} 
           onChange={(e) => setTextPosition(e.target.value)}
           disabled={isRecording}
         >
-          <option value="top">Top Third</option>
-          <option value="center">Center</option>
-          <option value="bottom">Bottom Third</option>
+          <option value="top">{T('style.alignTop')}</option>
+          <option value="center">{T('style.alignCenter')}</option>
+          <option value="bottom">{T('style.alignBottom')}</option>
         </select>
       </div>
 
       <div className="form-group">
-        <label>Dark Vignette Opacity</label>
+        <label>{T('style.vignette')}</label>
         <div className="slider-group">
           <input 
             type="range" 
@@ -1381,46 +1630,46 @@ const TRANSITIONS = [
       </div>
 
       <div className="form-group">
-        <label htmlFor="watermark">Watermark Header</label>
+        <label htmlFor="watermark">{T('style.watermark')}</label>
         <input 
           type="text" 
           id="watermark" 
           value={watermark} 
           onChange={(e) => setWatermark(e.target.value.toUpperCase())}
-          placeholder="e.g. QURAN REEL"
+          placeholder={T('style.watermarkPlaceholder')}
           maxLength="20"
           disabled={isRecording}
         />
       </div>
 
       <div className="form-group">
-        <label htmlFor="visStyle">Audio Visualizer</label>
+        <label htmlFor="visStyle">{T('style.visualizer')}</label>
         <select 
           id="visStyle" 
           value={visualizerStyle} 
           onChange={(e) => setVisualizerStyle(e.target.value)}
           disabled={isRecording}
         >
-          <option value="bars">Symmetric Glow Bars</option>
-          <option value="waves">Continuous Waves</option>
-          <option value="none">Disabled</option>
+          <option value="bars">{T('style.visBars')}</option>
+          <option value="waves">{T('style.visWaves')}</option>
+          <option value="none">{T('style.visDisabled')}</option>
         </select>
       </div>
 
       {visualizerStyle !== 'none' && (
         <div className="form-group">
-          <label htmlFor="visColor">Visualizer Glow Color</label>
+          <label htmlFor="visColor">{T('style.visColor')}</label>
           <select 
             id="visColor" 
             value={visualizerColor} 
             onChange={(e) => setVisualizerColor(e.target.value)}
             disabled={isRecording}
           >
-            <option value="#60a5fa">Deep Blue</option>
-            <option value="#34d399">Emerald Green</option>
-            <option value="#fbbf24">Aesthetic Gold</option>
-            <option value="#f472b6">Blossom Pink</option>
-            <option value="#ffffff">Minimal White</option>
+            <option value="#60a5fa">{T('style.colorBlue')}</option>
+            <option value="#34d399">{T('style.colorGreen')}</option>
+            <option value="#fbbf24">{T('style.colorGold')}</option>
+            <option value="#f472b6">{T('style.colorPink')}</option>
+            <option value="#ffffff">{T('style.colorWhite')}</option>
           </select>
         </div>
       )}
@@ -1452,7 +1701,7 @@ const TRANSITIONS = [
           <h1>
             <img src="/Quran.svg" alt="Quran" style={{height: 100, width: 'auto'}} />
           </h1>
-          <button className="theme-toggle" onClick={toggleTheme} title="Toggle theme">
+          <button className="theme-toggle" onClick={toggleTheme} title={T('header.toggleTheme')}>
             {theme === 'dark' ? (
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
@@ -1478,7 +1727,7 @@ const TRANSITIONS = [
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
               </svg>
-              Settings
+              {T('mobile.settings')}
             </button>
             <button 
               className={`tab-btn ${mobileSection === 'style' ? 'active' : ''}`}
@@ -1488,7 +1737,7 @@ const TRANSITIONS = [
                 <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
                 <path d="M2 12h20"/>
               </svg>
-              Style
+              {T('mobile.style')}
             </button>
           </div>
 
@@ -1497,11 +1746,11 @@ const TRANSITIONS = [
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
             </svg>
-            Passage Settings
+            {T('mode.contentSettings')}
           </h2>
 
           <div className="form-group mode-toggle">
-            <label>Content Type</label>
+            <label>{T('mode.contentType')}</label>
             <div className="btn-group">
               <button 
                 className={`btn-sm ${mode === 'quran' ? 'btn-active' : ''}`}
@@ -1512,7 +1761,7 @@ const TRANSITIONS = [
                   <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
                   <path d="M20 2H6.5a2.5 2.5 0 0 0 0 5H20v14H6.5A2.5 2.5 0 0 1 4 18.5V4"/>
                 </svg>
-                Quran
+                {T('mode.quran')}
               </button>
               <button 
                 className={`btn-sm ${mode === 'hadith' ? 'btn-active' : ''}`}
@@ -1522,7 +1771,19 @@ const TRANSITIONS = [
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
                 </svg>
-                Hadith
+                {T('mode.hadith')}
+              </button>
+              <button 
+                className={`btn-sm ${mode === 'dua' ? 'btn-active' : ''}`}
+                onClick={() => setMode('dua')}
+                disabled={isRecording}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z"/>
+                  <path d="M9 10a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1v-4z"/>
+                  <path d="M12 7v2M12 15v2"/>
+                </svg>
+                {T('mode.dua')}
               </button>
             </div>
           </div>
@@ -1530,7 +1791,7 @@ const TRANSITIONS = [
           {mode === 'quran' ? (
             <>
             <div className="form-group">
-              <label htmlFor="reciter">Reciter</label>
+              <label htmlFor="reciter">{T('quran.reciter')}</label>
               <select 
                 id="reciter" 
                 value={reciterId} 
@@ -1546,7 +1807,7 @@ const TRANSITIONS = [
             </div>
 
             <div className="form-group">
-              <label htmlFor="surah">Surah</label>
+              <label htmlFor="surah">{T('quran.surah')}</label>
               <select 
                 id="surah" 
                 value={surahNum} 
@@ -1574,7 +1835,7 @@ const TRANSITIONS = [
 
             <div className="form-row">
               <div className="form-group">
-                <label htmlFor="startAyah">Start Ayah</label>
+                <label htmlFor="startAyah">{T('quran.startAyah')}</label>
                 <input 
                   type="number" 
                   id="startAyah"
@@ -1596,7 +1857,7 @@ const TRANSITIONS = [
                 />
               </div>
               <div className="form-group">
-                <label htmlFor="endAyah">End Ayah</label>
+                <label htmlFor="endAyah">{T('quran.endAyah')}</label>
                 <input 
                   type="number" 
                   id="endAyah"
@@ -1620,13 +1881,13 @@ const TRANSITIONS = [
               onClick={applyLocalRangeChange} 
               disabled={loading || isRecording}
             >
-              Apply Ayah Range
+              {T('quran.applyRange')}
             </button>
             </>
-          ) : (
+          ) : mode === 'hadith' ? (
             <>
             <div className="form-group">
-              <label htmlFor="hadithBook">Hadith Book</label>
+              <label htmlFor="hadithBook">{T('hadith.book')}</label>
               <select 
                 id="hadithBook" 
                 value={hadithBook} 
@@ -1643,7 +1904,7 @@ const TRANSITIONS = [
 
             <div className="form-row">
               <div className="form-group">
-                <label htmlFor="hadithNumber">Hadith Number</label>
+                <label htmlFor="hadithNumber">{T('hadith.number')}</label>
                 <input 
                   type="number" 
                   id="hadithNumber"
@@ -1660,8 +1921,44 @@ const TRANSITIONS = [
               onClick={fetchHadiths} 
               disabled={loading || isRecording}
             >
-              Load Hadith
+              {T('hadith.load')}
             </button>
+            </>
+          ) : (
+            <>
+            <div className="form-group">
+              <label htmlFor="duaCategory">{T('dua.category')}</label>
+              <select 
+                id="duaCategory" 
+                value={duaCategory} 
+                onChange={(e) => setDuaCategory(e.target.value)}
+                disabled={isRecording}
+              >
+                {DUA_SHORTCUTS.map(cat => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name} ({cat.arabic})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {duaData.length > 0 && (
+            <div className="form-group">
+              <label>{T('dua.choose')}</label>
+              <select
+                value={currentDuaIndex}
+                onChange={(e) => setCurrentDuaIndex(parseInt(e.target.value))}
+                disabled={isRecording}
+              >
+                {duaData.map((d, i) => (
+                  <option key={i} value={i}>
+                    {T('dua.prefix')} #{d.number} ({i + 1}/{duaData.length})
+                  </option>
+                ))}
+              </select>
+        </div>
+      )}
+
             </>
           )}
 
@@ -1674,35 +1971,39 @@ const TRANSITIONS = [
               <circle cx="8.5" cy="8.5" r="1.5"/>
               <polyline points="21 15 16 10 5 21"/>
             </svg>
-            Background Video
+            {T('bg.video')}
           </h2>
 
+          {mode === 'quran' && (
           <div className="form-group mode-toggle">
-            <label>Video Mode</label>
+            <label>{T('bg.videoMode')}</label>
             <div className="btn-group">
               <button
                 className={`btn-sm ${videoMode === 'single' ? 'btn-active' : ''}`}
                 onClick={() => setVideoMode('single')}
                 disabled={isRecording}
               >
-                Single Video
+                {T('bg.single')}
               </button>
+              {mode === 'quran' && (
               <button
                 className={`btn-sm ${videoMode === 'per-ayah' ? 'btn-active' : ''}`}
                 onClick={() => setVideoMode('per-ayah')}
                 disabled={isRecording}
               >
-                Per Ayah
+                {T('bg.perAyah')}
               </button>
+              )}
             </div>
           </div>
+          )}
 
           {videoMode === 'single' ? (
           <div className="file-upload">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
             </svg>
-            <span>{uploadedBgUrl ? 'Video Uploaded ✓' : 'Upload Vertical Video'}</span>
+            <span>{uploadedBgUrl ? T('bg.uploaded') : T('bg.upload')}</span>
             <input 
               type="file" 
               ref={fileInputRef} 
@@ -1718,7 +2019,7 @@ const TRANSITIONS = [
               const hasVideo = !!perAyahVideos[ayahNum];
               return (
                 <div key={ayahNum} className={`ayah-video-item ${hasVideo ? 'uploaded' : ''}`}>
-                  <span className="ayah-label">{mode === 'quran' ? `Ayah ${ayahNum}` : `#${a.number || (a.numberInSurah || i + 1)}`}</span>
+                  <span className="ayah-label">{mode === 'quran' ? `Ayah ${ayahNum}` : mode === 'hadith' ? `#${a.number || (a.numberInSurah || i + 1)}` : `${T('dua.prefix')} #${a.number || (a.numberInSurah || i + 1)}`}</span>
                   <button
                     className="btn-ghost btn-xs"
                     onClick={() => {
@@ -1741,7 +2042,7 @@ const TRANSITIONS = [
 
           {videoMode === 'per-ayah' && (
           <div className="form-group">
-            <label htmlFor="transitionEffect">Ayah Transition</label>
+            <label htmlFor="transitionEffect">{T('bg.transition')}</label>
             <select 
               id="transitionEffect" 
               value={transitionEffect} 
@@ -1756,7 +2057,7 @@ const TRANSITIONS = [
           )}
 
           <div className="form-group">
-            <label htmlFor="colorEffect">Color Effect</label>
+            <label htmlFor="colorEffect">{T('bg.colorEffect')}</label>
             <select 
               id="colorEffect" 
               value={colorEffect} 
@@ -1769,7 +2070,7 @@ const TRANSITIONS = [
             </select>
           </div>
 
-          {mode === 'hadith' && (<>
+          {mode !== 'quran' && (<>
           <hr />
 
           <h2 className="section-title">
@@ -1778,24 +2079,24 @@ const TRANSITIONS = [
               <circle cx="6" cy="18" r="3"/>
               <circle cx="18" cy="16" r="3"/>
             </svg>
-            Background Audio
+            {T('audio.title')}
           </h2>
 
           <div className="form-group">
-            <label>Choose Sound</label>
+            <label>{T('audio.chooseSound')}</label>
             <select
               value={selectedBgSound}
               onChange={(e) => handleSelectBgSound(e.target.value)}
               disabled={isRecording}
             >
-              <optgroup label="🌿 Pure Nature Sounds (50)">
-                {NATURE_SOUNDS.map(s => (
+              <optgroup label="🎵 Islamic Nasheeds & Ambience (30)">
+                {ISLAMIC_SOUNDS.map(s => (
                   <option key={s.id} value={s.id}>
                     {s.name}
                   </option>
                 ))}
               </optgroup>
-              <option value="__custom__">—— Upload Custom ——</option>
+              <option value="__custom__">{T('audio.uploadCustom')}</option>
             </select>
           </div>
 
@@ -1806,7 +2107,7 @@ const TRANSITIONS = [
                 <circle cx="6" cy="18" r="3"/>
                 <circle cx="18" cy="16" r="3"/>
               </svg>
-              <span>{bgAudioFile && selectedBgSound === '__custom__' ? 'Audio Uploaded ✓' : 'Upload Audio File'}</span>
+              <span>{bgAudioFile && selectedBgSound === '__custom__' ? T('audio.uploaded') : T('audio.upload')}</span>
               <input 
                 type="file" 
                 accept="audio/*" 
@@ -1820,11 +2121,11 @@ const TRANSITIONS = [
             <div className="bg-audio-player">
               <div className="bg-audio-info">
                 <span className="bg-audio-label">
-                  {selectedBgSound === '__custom__' ? 'Custom Audio' : NATURE_SOUNDS.find(s => s.id === selectedBgSound)?.name || 'Background Audio'}
+                  {selectedBgSound === '__custom__' ? T('audio.customLabel') : ISLAMIC_SOUNDS.find(s => s.id === selectedBgSound)?.name || T('audio.title')}
                 </span>
               </div>
               <div className="bg-audio-controls">
-                <button className={`btn-circle-sm ${bgAudioEnabled ? 'active' : ''}`} onClick={toggleBgAudio} title={bgAudioEnabled ? 'Pause' : 'Play'}>
+                <button className={`btn-circle-sm ${bgAudioEnabled ? 'active' : ''}`} onClick={toggleBgAudio} title={bgAudioEnabled ? T('audio.pause') : T('audio.play')}>
                   {bgAudioEnabled ? (
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
                       <rect x="6" y="4" width="4" height="16" rx="1"/>
@@ -1852,19 +2153,19 @@ const TRANSITIONS = [
           <button 
             className="btn-generate" 
             onClick={handleExportVideo} 
-            disabled={loading || isRecording || passageAyahs.length === 0}
+            disabled={loading || isRecording || (mode === 'quran' ? passageAyahs.length === 0 : mode === 'hadith' ? hadithData.length === 0 : duaData.length === 0)}
           >
             {isRecording ? (
               <>
                 <span className="pulse-icon"></span>
-                Exporting...
+                {T('export.exporting')}
               </>
             ) : (
               <>
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
                 </svg>
-                Generate Reel
+                {T('export.generate')}
               </>
             )}
           </button>
@@ -1882,14 +2183,14 @@ const TRANSITIONS = [
                 className="btn-stop"
                 onClick={stopRecording}
               >
-                ■ Stop
+                {T('export.stop')}
               </button>
             </div>
           )}
 
           {error && (
             <div className="status-card" style={{borderLeftColor: 'var(--danger)', color: 'var(--danger)'}}>
-              <strong>Error:</strong> {error}
+              <strong>{T('export.error')}</strong> {error}
             </div>
           )}
           </div>
@@ -1903,6 +2204,20 @@ const TRANSITIONS = [
         <section className="preview-container anim-fade-in anim-delay-2">
           <div className="phone-mockup anim-float">
             <div className="phone-notch"></div>
+            <div className="phone-lang-toggle">
+              <button 
+                className={`lang-btn ${uiLang === 'en' ? 'active' : ''}`}
+                onClick={() => setUiLang('en')}
+              >EN</button>
+              <button 
+                className={`lang-btn ${uiLang === 'ar' ? 'active' : ''}`}
+                onClick={() => setUiLang('ar')}
+              >AR</button>
+              <button 
+                className={`lang-btn ${uiLang === 'fr' ? 'active' : ''}`}
+                onClick={() => setUiLang('fr')}
+              >FR</button>
+            </div>
             
             <div className="video-frame">
               {/* Actual loop canvas */}
@@ -1945,8 +2260,8 @@ const TRANSITIONS = [
             <button 
               className={`btn-circle ${isPlaying ? 'active' : ''}`} 
               onClick={togglePlay}
-            disabled={loading || isRecording || (mode === 'quran' ? passageAyahs.length === 0 : hadithData.length === 0)}
-              title={isPlaying ? "Pause Preview" : "Play Preview"}
+            disabled={loading || isRecording || (mode === 'quran' ? passageAyahs.length === 0 : mode === 'hadith' ? hadithData.length === 0 : duaData.length === 0)}
+              title={isPlaying ? T('preview.pause') : T('preview.play')}
             >
               {isPlaying ? (
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

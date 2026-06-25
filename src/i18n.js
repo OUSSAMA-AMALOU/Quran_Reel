@@ -77,6 +77,7 @@ export const translations = {
     'status.recordingHadith': 'Recording Hadith {n} of {total}...',
     'status.initDua': 'Initializing dua reel...',
     'status.recordingDua': 'Recording Dua {n} of {total}...',
+    'export.duration': 'Duration',
   },
 
   ar: {
@@ -157,6 +158,7 @@ export const translations = {
     'status.recordingHadith': 'تسجيل الحديث {n} من {total}...',
     'status.initDua': 'جاري تهيئة شريط الأدعية...',
     'status.recordingDua': 'تسجيل الدعاء {n} من {total}...',
+    'export.duration': 'المدة',
   },
 
   fr: {
@@ -237,6 +239,7 @@ export const translations = {
     'status.recordingHadith': 'Enregistrement hadith {n} sur {total}...',
     'status.initDua': 'Initialisation des dou\'as...',
     'status.recordingDua': 'Enregistrement dou\'a {n} sur {total}...',
+    'export.duration': 'Durée',
   },
 };
 

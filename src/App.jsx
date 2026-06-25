@@ -404,6 +404,7 @@ const TRANSITIONS = [
   const [isRecording, setIsRecording] = useState(false);
   const [recordingProgress, setRecordingProgress] = useState(0);
   const [recordingStatus, setRecordingStatus] = useState('');
+  const [itemDuration, setItemDuration] = useState(10);
   
   // DOM References
   const canvasRef = useRef(null);
@@ -1354,7 +1355,7 @@ const TRANSITIONS = [
         setRecordingStatus(T('status.recordingHadith', { n: i + 1, total: hadithData.length }));
         setRecordingProgress(Math.round(((i + 1) / hadithData.length) * 80 + 10));
 
-        const secondsPerHadith = 10;
+        const secondsPerHadith = itemDuration;
         if (i === hadithData.length - 1) {
           // Last hadith: wait then stop
           await new Promise(resolve => setTimeout(resolve, secondsPerHadith * 1000));
@@ -1485,7 +1486,7 @@ const TRANSITIONS = [
         setRecordingStatus(T('status.recordingDua', { n: i + 1, total: duaData.length }));
         setRecordingProgress(Math.round(((i + 1) / duaData.length) * 80 + 10));
 
-        const secondsPerDua = 10;
+        const secondsPerDua = itemDuration;
         if (i === duaData.length - 1) {
           await new Promise(resolve => setTimeout(resolve, secondsPerDua * 1000));
         } else {
@@ -1923,6 +1924,21 @@ const TRANSITIONS = [
             >
               {T('hadith.load')}
             </button>
+
+            <div className="form-group">
+              <label>{T('export.duration')}: {itemDuration}s</label>
+              <div className="slider-group">
+                <input 
+                  type="range" 
+                  min="3" 
+                  max="30" 
+                  value={itemDuration} 
+                  onChange={(e) => setItemDuration(parseInt(e.target.value))}
+                  disabled={isRecording}
+                />
+                <span>{itemDuration}s</span>
+              </div>
+            </div>
             </>
           ) : (
             <>
@@ -1959,6 +1975,20 @@ const TRANSITIONS = [
         </div>
       )}
 
+            <div className="form-group">
+              <label>{T('export.duration')}: {itemDuration}s</label>
+              <div className="slider-group">
+                <input 
+                  type="range" 
+                  min="3" 
+                  max="30" 
+                  value={itemDuration} 
+                  onChange={(e) => setItemDuration(parseInt(e.target.value))}
+                  disabled={isRecording}
+                />
+                <span>{itemDuration}s</span>
+              </div>
+            </div>
             </>
           )}
 

@@ -1462,8 +1462,9 @@ const TRANSITIONS = [
         const a = document.createElement('a');
         a.href = downloadUrl;
         const categoryName = DUA_SHORTCUTS.find(s => s.id === duaCategory)?.name || 'Dua';
+        const duaNum = duaData[currentDuaIndex]?.number || (currentDuaIndex + 1);
         const extension = options.mimeType.includes('mp4') ? 'mp4' : 'webm';
-        a.download = `DuaReel_${categoryName}_${duaData.length}_duas.${extension}`;
+        a.download = `DuaReel_${categoryName}_${duaNum}.${extension}`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -1478,21 +1479,10 @@ const TRANSITIONS = [
       recorderRef.current.start();
 
       setIsPlaying(true);
-      setRecordingStatus(T('status.recordingDua', { n: 1, total: duaData.length }));
+      setRecordingStatus(T('status.recordingDua', { n: 1, total: 1 }));
       setRecordingProgress(10);
 
-      for (let i = 0; i < duaData.length; i++) {
-        setCurrentDuaIndex(i);
-        setRecordingStatus(T('status.recordingDua', { n: i + 1, total: duaData.length }));
-        setRecordingProgress(Math.round(((i + 1) / duaData.length) * 80 + 10));
-
-        const secondsPerDua = itemDuration;
-        if (i === duaData.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, secondsPerDua * 1000));
-        } else {
-          await new Promise(resolve => setTimeout(resolve, secondsPerDua * 1000));
-        }
-      }
+      await new Promise(resolve => setTimeout(resolve, itemDuration * 1000));
 
       setIsPlaying(false);
       if (recorderRef.current && recorderRef.current.state === 'recording') {

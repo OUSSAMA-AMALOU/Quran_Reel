@@ -278,7 +278,7 @@ function App() {
   const [showTranslation, setShowTranslation] = useState(false);
   const [translationLang, setTranslationLang] = useState('en');
   const [uiLang, setUiLang] = useState('en');
-  const [showTransliteration, setShowTransliteration] = useState(true);
+  const [showTransliteration, setShowTransliteration] = useState(false);
   const [watermark, setWatermark] = useState('');
   const [visualizerStyle, setVisualizerStyle] = useState('none'); // 'waves', 'bars', 'none'
   const [visualizerColor, setVisualizerColor] = useState('#60a5fa');

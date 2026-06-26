@@ -275,7 +275,7 @@ function App() {
   const [textPosition, setTextPosition] = useState('center'); // 'top', 'center', 'bottom'
   const [vignetteOpacity, setVignetteOpacity] = useState(0.4);
   const [fontFamily, setFontFamily] = useState('amiri');
-  const [showTranslation, setShowTranslation] = useState(true);
+  const [showTranslation, setShowTranslation] = useState(false);
   const [translationLang, setTranslationLang] = useState('en');
   const [uiLang, setUiLang] = useState('en');
   const [showTransliteration, setShowTransliteration] = useState(true);

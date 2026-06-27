@@ -357,7 +357,9 @@ export function drawFrame({
     }[config.fontFamily] || "'Amiri', serif";
 
     // Compute display text with word grouping and text effects
-    const progress = config.ayahDuration > 0 ? Math.min(config.ayahElapsed / config.ayahDuration, 1) : 1;
+    const progress = isPlaying && config.ayahDuration > 0
+      ? Math.min(config.ayahElapsed / config.ayahDuration, 1)
+      : 1;
     let displayText = currentAyah.text;
 
     if (config.wordGroupSize && config.wordGroupSize !== 'all') {

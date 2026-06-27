@@ -978,7 +978,7 @@ const TRANSITIONS = [
         transliteration: rawItem.transliteration || ''
       } : null;
       const elapsed = isPlaying ? performance.now() - ayahStartRef.current : 0;
-      const ayahProgress = ayahDurationRef.current > 0 ? Math.min(elapsed / ayahDurationRef.current, 1) : 1;
+      const ayahProgress = isPlaying && ayahDurationRef.current > 0 ? Math.min(elapsed / ayahDurationRef.current, 1) : 1;
       const referenceText = mode === 'hadith' && currentItem
         ? `${currentItem.bookName}, Hadith ${currentItem.number}`
         : mode === 'dua' && currentItem

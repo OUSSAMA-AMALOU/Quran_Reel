@@ -981,6 +981,11 @@ const TRANSITIONS = [
         transliteration: rawItem.transliteration || ''
       } : null;
       const ayahElapsed = isPlaying ? performance.now() - ayahStartRef.current : 0;
+      const activeAudio = getAudio();
+      const audioDur = activeAudio?.duration;
+      const ayahProgress = isPlaying && audioDur && isFinite(audioDur) && audioDur > 0
+        ? Math.min((activeAudio?.currentTime || 0) / audioDur, 1)
+        : 1;
       const referenceText = mode === 'hadith' && currentItem
         ? `${currentItem.bookName}, Hadith ${currentItem.number}`
         : mode === 'dua' && currentItem
@@ -1011,8 +1016,7 @@ const TRANSITIONS = [
           referenceText,
           wordGroupSize,
           textEffect,
-          ayahElapsed,
-          ayahDuration: ayahDurationRef.current,
+          ayahProgress,
         },
         isPlaying,
         currentTime

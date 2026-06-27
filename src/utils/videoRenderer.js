@@ -364,9 +364,10 @@ export function drawFrame({
       const allWords = currentAyah.text.split(' ');
       const groupSize = parseInt(config.wordGroupSize);
       const numGroups = Math.ceil(allWords.length / groupSize);
-      const groupsToShow = Math.max(1, Math.ceil(numGroups * progress));
-      const wordsToShow = Math.min(groupsToShow * groupSize, allWords.length);
-      displayText = allWords.slice(0, wordsToShow).join(' ');
+      const currentGroup = Math.min(Math.floor(numGroups * progress), numGroups - 1);
+      const startIdx = currentGroup * groupSize;
+      const endIdx = Math.min(startIdx + groupSize, allWords.length);
+      displayText = progress >= 1 ? currentAyah.text : allWords.slice(startIdx, endIdx).join(' ');
     }
 
     if (config.textEffect === 'typewriter') {

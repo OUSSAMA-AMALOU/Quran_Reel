@@ -975,7 +975,6 @@ const TRANSITIONS = [
           : (rawItem.translationEn || rawItem.translationFr || ''),
         transliteration: rawItem.transliteration || ''
       } : null;
-      const ayahElapsed = isPlaying ? performance.now() - ayahStartRef.current : 0;
       const activeAudio = getAudio();
       const audioDur = activeAudio?.duration;
       const ayahProgress = isPlaying && audioDur && isFinite(audioDur) && audioDur > 0

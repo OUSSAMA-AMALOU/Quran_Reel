@@ -284,8 +284,6 @@ function App() {
   const [visualizerColor, setVisualizerColor] = useState('#60a5fa');
   const [colorEffect, setColorEffect] = useState('none');
   const [transitionEffect, setTransitionEffect] = useState('none');
-  const [wordGroupSize, setWordGroupSize] = useState('all');
-  const [textEffect, setTextEffect] = useState('none');
 
 const COLOR_EFFECTS = [
   { id: 'none', name: '♾ None' },
@@ -431,8 +429,6 @@ const TRANSITIONS = [
   const activeIsPrimaryRef = useRef(true);
   const getAudio = () => activeIsPrimaryRef.current ? audioRef.current : nextAudioRef.current;
   const getIdleAudio = () => activeIsPrimaryRef.current ? nextAudioRef.current : audioRef.current;
-  const ayahStartRef = useRef(performance.now());
-  const ayahDurationRef = useRef(10000);
 
   const selectedSurahDetails = surahs.find(s => s.number === parseInt(surahNum));
 
@@ -977,8 +973,6 @@ const TRANSITIONS = [
           : (rawItem.translationEn || rawItem.translationFr || ''),
         transliteration: rawItem.transliteration || ''
       } : null;
-      const elapsed = isPlaying ? performance.now() - ayahStartRef.current : 0;
-      const ayahProgress = isPlaying && ayahDurationRef.current > 0 ? Math.min(elapsed / ayahDurationRef.current, 1) : 1;
       const referenceText = mode === 'hadith' && currentItem
         ? `${currentItem.bookName}, Hadith ${currentItem.number}`
         : mode === 'dua' && currentItem
@@ -1007,9 +1001,6 @@ const TRANSITIONS = [
           surahNumber: surahNum,
           backgroundType,
           referenceText,
-          wordGroupSize,
-          textEffect,
-          ayahProgress,
         },
         isPlaying,
         currentTime
@@ -1060,8 +1051,6 @@ const TRANSITIONS = [
     selectedSurahDetails, 
     surahNum,
     currentTime,
-    wordGroupSize,
-    textEffect,
   ]);
 
   // Export / Record video logic
@@ -1239,9 +1228,6 @@ const TRANSITIONS = [
       const activeA = getAudio();
       if (activeA) await activeA.play();
       setIsPlaying(true);
-      ayahStartRef.current = performance.now();
-      const firstDur = activeA?.duration;
-      ayahDurationRef.current = (firstDur && isFinite(firstDur) && firstDur > 0) ? firstDur * 1000 : itemDuration * 1000;
       setRecordingProgress(10);
       setRecordingStatus(T('status.recordingAyah', { n: startAyah, total: endAyah }));
 
@@ -1852,31 +1838,6 @@ const TRANSITIONS = [
                     {reciter.name} ({reciter.style})
                   </option>
                 ))}
-        </select>
-      </div>
-
-      <div className="form-group">
-        <label>Word Group</label>
-        <select value={wordGroupSize} onChange={(e) => setWordGroupSize(e.target.value)} disabled={isRecording || mode !== 'quran'}>
-          <option value="all">All words</option>
-          <option value="2">2 words at a time</option>
-          <option value="3">3 words at a time</option>
-        </select>
-      </div>
-
-      <div className="form-group">
-        <label>Text Effect</label>
-        <select value={textEffect} onChange={(e) => setTextEffect(e.target.value)} disabled={isRecording}>
-          <option value="none">None</option>
-          <option value="typewriter">Typewriter</option>
-          <option value="reveal">Word Reveal</option>
-          <option value="fade">Fade In</option>
-          <option value="slide-up">Slide Up</option>
-          <option value="scale">Scale In</option>
-          <option value="glow">Glow</option>
-          <option value="gradient">Gradient</option>
-          <option value="shimmer">Shimmer</option>
-          <option value="blur">Blur In</option>
         </select>
       </div>
 

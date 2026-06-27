@@ -431,8 +431,6 @@ const TRANSITIONS = [
   const activeIsPrimaryRef = useRef(true);
   const getAudio = () => activeIsPrimaryRef.current ? audioRef.current : nextAudioRef.current;
   const getIdleAudio = () => activeIsPrimaryRef.current ? nextAudioRef.current : audioRef.current;
-  const ayahStartRef = useRef(performance.now());
-  const ayahDurationRef = useRef(10000);
 
   const selectedSurahDetails = surahs.find(s => s.number === parseInt(surahNum));
 
@@ -845,9 +843,6 @@ const TRANSITIONS = [
       if (nextA) {
         nextA.play().then(() => {
           setIsPlaying(true);
-          ayahStartRef.current = performance.now();
-          const dur = nextA.duration;
-          ayahDurationRef.current = (dur && isFinite(dur) && dur > 0) ? dur * 1000 : itemDuration * 1000;
           // Preload next ayah into the idle element
           const nextNextIdx = nextIdx + 1;
           if (nextNextIdx < passageAyahs.length && passageAyahs[nextNextIdx]?.audio) {
@@ -1246,9 +1241,6 @@ const TRANSITIONS = [
       const activeA = getAudio();
       if (activeA) await activeA.play();
       setIsPlaying(true);
-      ayahStartRef.current = performance.now();
-      const dur = activeA?.duration;
-      ayahDurationRef.current = (dur && isFinite(dur) && dur > 0) ? dur * 1000 : itemDuration * 1000;
       setRecordingProgress(10);
       setRecordingStatus(T('status.recordingAyah', { n: startAyah, total: endAyah }));
 

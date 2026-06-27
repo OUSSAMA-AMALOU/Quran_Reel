@@ -355,10 +355,36 @@ export function drawFrame({
       'hacen-sudan': '"Hacen Sudan", sans-serif',
       'hacen-tunisia': '"Hacen Tunisia", sans-serif',
     }[config.fontFamily] || "'Amiri', serif";
+
+    // Compute display text with word grouping and text effects
+    const progress = config.ayahDuration > 0 ? Math.min(config.ayahElapsed / config.ayahDuration, 1) : 1;
+    let displayText = currentAyah.text;
+
+    if (config.wordGroupSize && config.wordGroupSize !== 'all') {
+      const allWords = currentAyah.text.split(' ');
+      const groupSize = parseInt(config.wordGroupSize);
+      const numGroups = Math.ceil(allWords.length / groupSize);
+      const groupsToShow = Math.max(1, Math.ceil(numGroups * progress));
+      const wordsToShow = Math.min(groupsToShow * groupSize, allWords.length);
+      displayText = allWords.slice(0, wordsToShow).join(' ');
+    }
+
+    if (config.textEffect === 'typewriter') {
+      const totalChars = displayText.length;
+      const charsToShow = Math.floor(totalChars * progress);
+      displayText = displayText.slice(0, charsToShow);
+    }
+
+    if (config.textEffect === 'reveal') {
+      const allWords = displayText.split(' ');
+      const wordsToShow = Math.max(1, Math.ceil(allWords.length * progress));
+      displayText = allWords.slice(0, wordsToShow).join(' ');
+    }
+
     ctx.font = `700 ${arabicFontSize}px ${arabicFontFamily}`;
-    
+
     const tempArabicLines = [];
-    const words = currentAyah.text.split(' ');
+    const words = displayText.split(' ');
     let currentLine = '';
     for (let i = 0; i < words.length; i++) {
       const testLine = currentLine + words[i] + ' ';
@@ -418,18 +444,78 @@ export function drawFrame({
       + (config.showTranslation ? textSpacing + englishHeight : 0);
     const startY = centerY - (totalBlockHeight / 2);
 
-    // Draw Arabic Text
+    // Draw Arabic Text with effects
     ctx.font = `700 ${arabicFontSize}px ${arabicFontFamily}`;
-    ctx.fillStyle = '#ffffff';
-    let currentY = startY + arabicFontSize;
+
+    const effect = config.textEffect || 'none';
+    let textAlpha = 1;
+    let textOffsetY = 0;
+    let textScale = 1;
+
+    if (effect === 'fade') {
+      textAlpha = Math.min(1, progress * 2);
+    } else if (effect === 'slide-up') {
+      textOffsetY = (1 - Math.min(1, progress * 1.5)) * 80;
+    } else if (effect === 'scale') {
+      textScale = 0.5 + 0.5 * Math.min(1, progress * 1.5);
+    }
+
+    ctx.save();
+
+    if (effect === 'blur') {
+      const blurPx = Math.max(0, (1 - progress) * 6);
+      ctx.filter = `blur(${blurPx}px)`;
+    }
+
+    if (textAlpha < 1) ctx.globalAlpha = textAlpha;
+
+    if (textScale !== 1) {
+      const cx = width / 2, cy = startY + arabicFontSize / 2;
+      ctx.translate(cx, cy);
+      ctx.scale(textScale, textScale);
+      ctx.translate(-cx, -cy);
+    }
+
+    if (effect === 'glow') {
+      ctx.shadowColor = 'rgba(255, 215, 0, 0.8)';
+      ctx.shadowBlur = 12 + progress * 40;
+    }
+
+    ctx.fillStyle = effect === 'gradient'
+      ? (() => {
+          const g = ctx.createLinearGradient(0, startY, width, startY + arabicHeight);
+          g.addColorStop(0, '#ffd700');
+          g.addColorStop(0.3, '#ff6b6b');
+          g.addColorStop(0.6, '#a855f7');
+          g.addColorStop(1, '#3b82f6');
+          return g;
+        })()
+      : '#ffffff';
+
+    let currentY = startY + arabicFontSize + textOffsetY;
     const arabicTextHeight = wrapText(
       ctx,
-      currentAyah.text,
+      displayText,
       width / 2,
       currentY,
       maxWidth,
       arabicFontSize * 1.5
     );
+
+    ctx.restore();
+
+    // Shimmer effect overlay
+    if (effect === 'shimmer' && progress > 0 && progress < 1) {
+      ctx.save();
+      const shimmerX = (progress - 0.3) / 0.4 * width;
+      const grad = ctx.createLinearGradient(shimmerX - 150, 0, shimmerX + 150, 0);
+      grad.addColorStop(0, 'rgba(255,255,255,0)');
+      grad.addColorStop(0.5, 'rgba(255,255,255,0.3)');
+      grad.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, currentY - arabicTextHeight, width, arabicTextHeight);
+      ctx.restore();
+    }
 
     currentY += arabicTextHeight;
 

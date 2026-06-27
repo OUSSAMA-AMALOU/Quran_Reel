@@ -431,6 +431,8 @@ const TRANSITIONS = [
   const activeIsPrimaryRef = useRef(true);
   const getAudio = () => activeIsPrimaryRef.current ? audioRef.current : nextAudioRef.current;
   const getIdleAudio = () => activeIsPrimaryRef.current ? nextAudioRef.current : audioRef.current;
+  const ayahStartRef = useRef(performance.now());
+  const ayahDurationRef = useRef(10000);
 
   const selectedSurahDetails = surahs.find(s => s.number === parseInt(surahNum));
 
@@ -975,11 +977,8 @@ const TRANSITIONS = [
           : (rawItem.translationEn || rawItem.translationFr || ''),
         transliteration: rawItem.transliteration || ''
       } : null;
-      const activeAudio = getAudio();
-      const audioDur = activeAudio?.duration;
-      const ayahProgress = isPlaying && audioDur && isFinite(audioDur) && audioDur > 0
-        ? Math.min((activeAudio?.currentTime || 0) / audioDur, 1)
-        : 1;
+      const elapsed = isPlaying ? performance.now() - ayahStartRef.current : 0;
+      const ayahProgress = ayahDurationRef.current > 0 ? Math.min(elapsed / ayahDurationRef.current, 1) : 1;
       const referenceText = mode === 'hadith' && currentItem
         ? `${currentItem.bookName}, Hadith ${currentItem.number}`
         : mode === 'dua' && currentItem
@@ -1240,6 +1239,9 @@ const TRANSITIONS = [
       const activeA = getAudio();
       if (activeA) await activeA.play();
       setIsPlaying(true);
+      ayahStartRef.current = performance.now();
+      const firstDur = activeA?.duration;
+      ayahDurationRef.current = (firstDur && isFinite(firstDur) && firstDur > 0) ? firstDur * 1000 : itemDuration * 1000;
       setRecordingProgress(10);
       setRecordingStatus(T('status.recordingAyah', { n: startAyah, total: endAyah }));
 

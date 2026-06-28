@@ -933,7 +933,13 @@ const TRANSITIONS = [
     canvas.height = 1920;
 
     let animId;
+    let lastFrameTime = 0;
     const renderLoop = (now) => {
+      if (isRecording && now - lastFrameTime < 33) {
+        animId = requestAnimationFrame(renderLoop);
+        return;
+      }
+      lastFrameTime = now;
       const rawItem = mode === 'hadith'
         ? hadithData[currentHadithIndex]
         : mode === 'dua'

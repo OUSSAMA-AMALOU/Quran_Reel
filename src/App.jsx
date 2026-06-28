@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { surahs } from './data/surahData';
-import { drawFrame } from './utils/videoRenderer';
+import { drawFrame, getWordPositions } from './utils/videoRenderer';
 import { t } from './i18n';
 import {
   exportVideo, exportWithMediaRecorder, isWebCodecsSupported,
@@ -287,34 +287,12 @@ function App() {
   const [watermark, setWatermark] = useState('');
   const [visualizerStyle, setVisualizerStyle] = useState('none'); // 'waves', 'bars', 'none'
   const [visualizerColor, setVisualizerColor] = useState('#60a5fa');
-  const [colorEffect, setColorEffect] = useState('none');
+  const [highlightColor, setHighlightColor] = useState('#fbbf24');
   const [transitionEffect, setTransitionEffect] = useState('none');
   const [canvasResolution, setCanvasResolution] = useState('720p');
+  const [visualEffect, setVisualEffect] = useState('none');
 
 const DIMS = { '1080p': [1080,1920], '720p': [720,1280], '540p': [540,960] };
-
-const COLOR_EFFECTS = [
-  { id: 'none', name: '♾ None' },
-  { id: 'warm', name: '🌅 Warm Glow', filter: 'saturate(1.1) sepia(0.2) brightness(1.05)' },
-  { id: 'cool', name: '❄ Cool Mist', filter: 'saturate(0.9) hue-rotate(10deg) brightness(1.05)' },
-  { id: 'vintage', name: '📜 Vintage', filter: 'sepia(0.5) saturate(0.7) contrast(0.85) brightness(1.1)' },
-  { id: 'noir', name: '🖤 Noir', filter: 'grayscale(1) contrast(1.3) brightness(0.9)' },
-  { id: 'golden', name: '✨ Golden Hour', filter: 'sepia(0.3) saturate(1.3) hue-rotate(-5deg) brightness(1.1)' },
-  { id: 'ocean', name: '🌊 Ocean', filter: 'saturate(1.2) hue-rotate(180deg) brightness(0.95) contrast(1.1)' },
-  { id: 'forest', name: '🌲 Forest', filter: 'saturate(1.3) sepia(0.2) hue-rotate(60deg) brightness(0.9)' },
-  { id: 'sunset', name: '🌇 Sunset', filter: 'sepia(0.4) saturate(1.4) hue-rotate(-15deg) brightness(1.05)' },
-  { id: 'moody', name: '🌧 Moody', filter: 'grayscale(0.3) saturate(0.6) brightness(0.8) contrast(1.2)' },
-  { id: 'fade', name: '🌫 Fade', filter: 'saturate(0.5) contrast(0.8) brightness(1.15) opacity(0.9)' },
-  { id: 'cinematic', name: '🎬 Cinematic', filter: 'contrast(1.15) saturate(0.85) brightness(0.9) sepia(0.15)' },
-  { id: 'grayscale', name: '⚫ Grayscale', filter: 'grayscale(1) brightness(1.05)' },
-  { id: 'sepia', name: '🟫 Sepia', filter: 'sepia(0.8) saturate(0.9) brightness(1.05)' },
-  { id: 'vibrant', name: '🌈 Vibrant', filter: 'saturate(1.8) contrast(1.15) brightness(1.05)' },
-  { id: 'soft', name: '☁ Soft', filter: 'brightness(1.1) contrast(0.85) saturate(0.8) blur(0.3px)' },
-  { id: 'dramatic', name: '🎭 Dramatic', filter: 'contrast(1.5) brightness(0.75) saturate(0.7)' },
-  { id: 'retro', name: '📺 Retro', filter: 'sepia(0.6) saturate(0.6) contrast(0.9) hue-rotate(-20deg)' },
-  { id: 'coolblue', name: '🧊 Cool Blue', filter: 'saturate(1.1) hue-rotate(200deg) brightness(1.05) contrast(0.9)' },
-  { id: 'warmglow', name: '🔥 Warm Glow', filter: 'sepia(0.2) saturate(1.2) hue-rotate(-10deg) brightness(1.1)' },
-];
 
 const TRANSITIONS = [
   { id: 'none', name: '— None (Cut)' },
@@ -406,6 +384,7 @@ const TRANSITIONS = [
   // Player States
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
+  const [highlightedWords, setHighlightedWords] = useState({}); // { ayahKey: [wordIdx, ...] }
 
   // Recording / Export States
   const [isRecording, setIsRecording] = useState(false);
@@ -457,8 +436,8 @@ const TRANSITIONS = [
     const cfg = {
       fontSize, translationFontSize, textPosition, vignetteOpacity,
       fontFamily, showTranslation, translationLang, showTransliteration,
-      watermark, visualizerStyle, visualizerColor, colorEffect,
-      backgroundType: 'upload', bgImage,
+      watermark, visualizerStyle, visualizerColor, visualEffect,
+      backgroundType: 'upload', bgImage, highlightColor,
     };
     const itemsPerFrame = fps * durPerItem;
     const videoEl = videoRef.current;
@@ -479,12 +458,13 @@ const TRANSITIONS = [
         currentAyah: currentItem,
         config: cfg,
         isPlaying: false,
-        currentTime: 0,
+        currentTime: frameIdx / fps,
+        highlightedWords: [],
       });
     };
   }, [fontSize, translationFontSize, textPosition, vignetteOpacity, fontFamily,
       showTranslation, translationLang, showTransliteration, watermark,
-      visualizerStyle, visualizerColor, colorEffect, bgImage]);
+      visualizerStyle, visualizerColor, visualEffect, bgImage, highlightColor]);
 
   // Handle Fetching Surah Data (Arabic text, translation, audio)
   const fetchPassage = useCallback(async () => {
@@ -559,6 +539,7 @@ const TRANSITIONS = [
       const rangeSlice = combined.slice(startAyah - 1, endAyah);
       setPassageAyahs(rangeSlice);
       setCurrentAyahIndex(0);
+      setHighlightedWords({});
       
       // Load first audio URL
       if (rangeSlice.length > 0 && audioRef.current) {
@@ -649,6 +630,7 @@ const TRANSITIONS = [
       const rangeSlice = combined.slice(startAyah - 1, endAyah);
       setPassageAyahs(rangeSlice);
       setCurrentAyahIndex(0);
+      setHighlightedWords({});
 
       if (rangeSlice.length > 0 && audioRef.current) {
         audioRef.current.src = rangeSlice[0].audio;
@@ -937,6 +919,44 @@ const TRANSITIONS = [
     }
   };
 
+  // Shared helper to find clicked/hovered word
+  const getWordAtPoint = (e) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return null;
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const x = (e.clientX - rect.left) * scaleX;
+    const y = (e.clientY - rect.top) * scaleY;
+    const raw = mode === 'quran' ? passageAyahs[currentAyahIndex] : null;
+    if (!raw) return null;
+    const ayahKey = `a${raw.number || raw.numberInSurah || 0}`;
+    const positions = getWordPositions(ayahKey);
+    return positions.find(pos => x >= pos.x && x <= pos.x + pos.width && y >= pos.y && y <= pos.y + pos.height) || null;
+  };
+
+  const handleCanvasMouseMove = (e) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    canvas.style.cursor = getWordAtPoint(e) ? 'pointer' : 'default';
+  };
+
+  // Toggle word highlight on canvas click
+  const handleCanvasClick = (e) => {
+    const pos = getWordAtPoint(e);
+    if (!pos) return;
+    const raw = mode === 'quran' ? passageAyahs[currentAyahIndex] : null;
+    if (!raw) return;
+    const ayahKey = `a${raw.number || raw.numberInSurah || 0}`;
+    setHighlightedWords(prev => {
+      const current = prev[ayahKey] || [];
+      const set = new Set(current);
+      if (set.has(pos.idx)) set.delete(pos.idx);
+      else set.add(pos.idx);
+      return { ...prev, [ayahKey]: [...set] };
+    });
+  };
+
   // Per-ayah video: swap video source when ayah changes
   useEffect(() => {
     if (videoMode !== 'per-ayah') return;
@@ -1000,7 +1020,9 @@ const TRANSITIONS = [
 
     let animId;
     let lastFrameTime = 0;
+    let renderStartTime = 0;
     const renderLoop = (now) => {
+      if (renderStartTime === 0) renderStartTime = now;
       if (isRecording && now - lastFrameTime < 33) {
         animId = requestAnimationFrame(renderLoop);
         return;
@@ -1018,6 +1040,7 @@ const TRANSITIONS = [
           : (rawItem.translationEn || rawItem.translationFr || ''),
         transliteration: rawItem.transliteration || ''
       } : null;
+      const ayahKey = currentItem ? `a${currentItem.number || currentItem.numberInSurah || 0}` : '';
       drawFrame({
         ctx,
         canvas,
@@ -1036,12 +1059,14 @@ const TRANSITIONS = [
           watermark,
           visualizerStyle,
           visualizerColor,
-          colorEffect,
+          visualEffect,
           backgroundType,
           bgImage,
+          highlightColor,
         },
         isPlaying,
-        currentTime
+        currentTime: (now - renderStartTime) / 1000,
+        highlightedWords: highlightedWords[ayahKey] || [],
       });
 
       // Apply transition post-processing
@@ -1084,13 +1109,14 @@ const TRANSITIONS = [
     showTransliteration,
     watermark, 
     visualizerStyle, 
-    visualizerColor, 
-    colorEffect,
-    selectedSurahDetails, 
+    visualizerColor,
+    selectedSurahDetails,
     surahNum,
-    currentTime,
     canvasResolution,
+    visualEffect,
     bgImage,
+    highlightedWords,
+    highlightColor,
   ]);
 
   // Export / Record video logic
@@ -1633,6 +1659,19 @@ const TRANSITIONS = [
       </div>
 
       <div className="form-group">
+        <label>🎨 Word Highlight Color</label>
+        <select value={highlightColor} onChange={(e) => setHighlightColor(e.target.value)}>
+          <option value="#fbbf24">Gold</option>
+          <option value="#f472b6">Pink</option>
+          <option value="#60a5fa">Blue</option>
+          <option value="#34d399">Green</option>
+          <option value="#a78bfa">Purple</option>
+          <option value="#fb923c">Orange</option>
+          <option value="#ffffff">White</option>
+        </select>
+      </div>
+
+      <div className="form-group">
         <label className="checkbox-group">
           <input 
             type="checkbox" 
@@ -1749,7 +1788,8 @@ const TRANSITIONS = [
     </>
   ), [
     fontFamily, fontSize, translationFontSize, textPosition,
-    transitionEffect, colorEffect, visualizerStyle, visualizerColor,
+    transitionEffect, visualizerStyle, visualizerColor,
+    visualEffect,
     isRecording, uiLang, watermark, vignetteOpacity, showTranslation, canvasResolution, bgImage
   ]);
 
@@ -2162,16 +2202,23 @@ const TRANSITIONS = [
           )}
 
           <div className="form-group">
-            <label htmlFor="colorEffect">{T('bg.colorEffect')}</label>
-            <select 
-              id="colorEffect" 
-              value={colorEffect} 
-              onChange={(e) => setColorEffect(e.target.value)}
-              disabled={isRecording}
-            >
-              {COLOR_EFFECTS.map(e => (
-                <option key={e.id} value={e.id}>{e.name}</option>
-              ))}
+            <label>✨ Visual Effect</label>
+            <select value={visualEffect} onChange={(e) => setVisualEffect(e.target.value)} disabled={isRecording}>
+              <option value="none">— None —</option>
+              <option value="particles">✨ Floating Particles</option>
+              <option value="halos">🌟 Light Halos</option>
+              <option value="breathing">🎬 Breathing Frame</option>
+              <option value="scanline">💡 Scan Light</option>
+              <option value="stars">🌠 Falling Stars</option>
+              <option value="rays">🔆 Light Rays</option>
+              <option value="shimmer">💎 Shimmer</option>
+              <option value="fog">🌫️ Soft Fog</option>
+              <option value="bokeh">🌀 Bokeh</option>
+              <option value="fireflies">🪲 Fireflies</option>
+              <option value="aurora">🌌 Aurora</option>
+              <option value="snow">❄️ Snowfall</option>
+              <option value="lightleak">💡 Light Leak</option>
+              <option value="sparkle">✨ Sparkle</option>
             </select>
           </div>
 
@@ -2326,7 +2373,7 @@ const TRANSITIONS = [
             
             <div className="video-frame">
               {/* Actual loop canvas */}
-              <canvas ref={canvasRef} className="canvas-preview"></canvas>
+              <canvas ref={canvasRef} className="canvas-preview" onClick={handleCanvasClick} onMouseMove={handleCanvasMouseMove}></canvas>
             </div>
 
             {/* Hidden Video element for uploaded background */}

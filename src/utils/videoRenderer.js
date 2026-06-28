@@ -1,11 +1,15 @@
 /**
  * Helper to wrap and draw text on canvas with centering and shadows
  */
-let _filterCanvas = null;
 const _wrapCache = new Map();
 const _WRAP_CACHE_MAX = 200;
 const _gradientCache = {};
 let _bgImageCache = null; // { url: string, img: HTMLImageElement }
+const _wordPositions = {};
+
+export function getWordPositions(ayahKey) {
+  return _wordPositions[ayahKey] || [];
+}
 
 function _cachedSet(map, key, value) {
   map.set(key, value);
@@ -100,6 +104,354 @@ export function wrapText(ctx, text, x, y, maxWidth, lineHeight, align = 'center'
  * Handles background cropping (object-fit: cover), text wrapping,
  * vignettes, watermarks, and audio visualizers.
  */
+// ─── Visual Effects ───
+
+function _drawVisualEffect(ctx, width, height, effect, time) {
+  if (!effect || effect === 'none') return;
+  const t = (time || 0);
+  ctx.save();
+  ctx.globalCompositeOperation = 'screen';
+
+  switch (effect) {
+    // ── 1. Floating Particles (Pro) ──
+    case 'particles': {
+      const count = 60;
+      for (let i = 0; i < count; i++) {
+        const s = i * 137.5;
+        const x = (Math.sin(s + t * 0.15 + i * 0.3) * 0.5 + 0.5) * width;
+        const y = ((s * 1.7 + t * 12 + i * 50) % (height + 120)) - 60;
+        const sz = 1.5 + Math.sin(s + t * 0.8 + i) * 1.2;
+        const alpha = 0.25 + Math.sin(s + t * 0.5 + i * 0.7) * 0.2;
+        const hue = 40 + Math.sin(s + t * 0.3) * 20;
+        ctx.beginPath();
+        ctx.arc(x, y, Math.max(0.5, sz), 0, Math.PI * 2);
+        ctx.fillStyle = `hsla(${hue},80%,70%,${Math.max(0, alpha)})`;
+        ctx.shadowColor = `hsla(${hue},80%,70%,0.3)`;
+        ctx.shadowBlur = 6;
+        ctx.fill();
+      }
+      ctx.shadowBlur = 0;
+      break;
+    }
+
+    // ── 2. Light Halos (Pro) ──
+    case 'halos': {
+      const haloColors = [
+        { h: 45, s: 80 },
+        { h: 330, s: 70 },
+        { h: 200, s: 70 },
+        { h: 120, s: 60 },
+        { h: 280, s: 60 },
+        { h: 15, s: 75 },
+      ];
+      for (let i = 0; i < 6; i++) {
+        const s = i * 97.3;
+        const cx = (Math.sin(s + t * 0.08 + i * 0.5) * 0.5 + 0.5) * width;
+        const cy = (Math.cos(s * 1.3 + t * 0.06 + i * 0.3) * 0.5 + 0.5) * height;
+        const radius = 100 + Math.sin(t * 0.4 + i * 1.2) * 40;
+        const { h, s: sat } = haloColors[i % 6];
+        const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
+        const a1 = 0.1 + Math.sin(t * 0.3 + i * 0.9) * 0.05;
+        const a2 = 0.04 + Math.sin(t * 0.2 + i * 0.7) * 0.02;
+        grad.addColorStop(0, `hsla(${h},${sat}%,70%,${Math.max(0, a1)})`);
+        grad.addColorStop(0.4, `hsla(${h},${sat}%,60%,${Math.max(0, a2)})`);
+        grad.addColorStop(1, `hsla(${h},${sat}%,50%,0)`);
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, width, height);
+      }
+      break;
+    }
+
+    // ── 3. Breathing Frame (Pro) ──
+    case 'breathing': {
+      const pulse = 0.5 + Math.sin(t * 0.9) * 0.5;
+      const bw = 2 + pulse * 5;
+      ctx.strokeStyle = `rgba(255,255,255,${0.15 + pulse * 0.35})`;
+      ctx.lineWidth = bw;
+      ctx.shadowColor = `hsla(45,80%,70%,${0.1 + pulse * 0.2})`;
+      ctx.shadowBlur = 8 + pulse * 25;
+      ctx.strokeRect(15, 15, width - 30, height - 30);
+      // Inner glow ring
+      ctx.strokeStyle = `hsla(45,60%,60%,${0.05 + pulse * 0.12})`;
+      ctx.lineWidth = 1;
+      ctx.shadowBlur = 0;
+      ctx.strokeRect(30, 30, width - 60, height - 60);
+      ctx.shadowBlur = 0;
+      break;
+    }
+
+    // ── 4. Scan Light (Pro) ──
+    case 'scanline': {
+      const scanY = ((t * 50) % (height + 150)) - 75;
+      const grad = ctx.createLinearGradient(0, scanY - 80, 0, scanY + 80);
+      grad.addColorStop(0, 'rgba(255,255,255,0)');
+      grad.addColorStop(0.3, `rgba(255,255,255,${0.04 + Math.sin(t * 2.5) * 0.02})`);
+      grad.addColorStop(0.5, `rgba(255,255,255,${0.12 + Math.sin(t * 2) * 0.04})`);
+      grad.addColorStop(0.7, `rgba(255,255,255,${0.04 + Math.sin(t * 2.5) * 0.02})`);
+      grad.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = grad;
+      ctx.shadowColor = 'rgba(255,255,255,0.05)';
+      ctx.shadowBlur = 20;
+      ctx.fillRect(0, scanY - 80, width, 160);
+      ctx.shadowBlur = 0;
+      break;
+    }
+
+    // ── 5. Falling Stars (Pro) ──
+    case 'stars': {
+      for (let i = 0; i < 30; i++) {
+        const s = i * 211.7;
+        const startX = (Math.sin(s) * 0.5 + 0.5) * width * 1.2 - width * 0.1;
+        const x = startX - (t * 60 + s * 0.3) * 0.3;
+        const y = ((s * 2.1 + t * 90 + i * 30) % (height + 120)) - 60;
+        const sz = 1 + Math.sin(s + t * 1.5 + i) * 1.2;
+        const alpha = 0.5 + Math.sin(s + t * 1.2 + i * 0.5) * 0.3;
+        // Glow core
+        ctx.beginPath();
+        ctx.arc(x, y, Math.max(0.5, sz * 0.6), 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255,255,255,${Math.max(0, alpha)})`;
+        ctx.shadowColor = `rgba(255,240,200,${Math.max(0, alpha * 0.4)})`;
+        ctx.shadowBlur = 8;
+        ctx.fill();
+        // Tail
+        ctx.shadowBlur = 0;
+        const tailLen = 15 + sz * 5;
+        const grad = ctx.createLinearGradient(x, y, x + tailLen * 0.6, y + tailLen * 0.8);
+        grad.addColorStop(0, `rgba(255,240,200,${Math.max(0, alpha * 0.6)})`);
+        grad.addColorStop(1, 'rgba(255,240,200,0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + tailLen * 0.6, y + tailLen * 0.8);
+        ctx.lineTo(x + tailLen * 0.3, y + tailLen * 0.4);
+        ctx.closePath();
+        ctx.fill();
+      }
+      ctx.shadowBlur = 0;
+      break;
+    }
+
+    // ── 6. Light Rays (Pro) ──
+    case 'rays': {
+      const cx = width / 2;
+      const cy = height / 2;
+      for (let i = 0; i < 12; i++) {
+        const angle = (i / 12) * Math.PI * 2 + t * 0.03;
+        const spread = 0.15 + Math.sin(t * 0.2 + i * 0.5) * 0.05;
+        const grad = ctx.createLinearGradient(
+          cx, cy,
+          cx + Math.cos(angle) * width, cy + Math.sin(angle) * height
+        );
+        const a1 = 0.04 + Math.sin(t * 0.2 + i * 0.8) * 0.025;
+        const a2 = 0.015 + Math.sin(t * 0.15 + i * 0.6) * 0.01;
+        grad.addColorStop(0, `rgba(255,220,100,${Math.max(0, a1)})`);
+        grad.addColorStop(0.3, `rgba(255,200,80,${Math.max(0, a2)})`);
+        grad.addColorStop(1, 'rgba(255,200,80,0)');
+        ctx.save();
+        ctx.fillStyle = grad;
+        ctx.translate(cx, cy);
+        ctx.rotate(angle);
+        ctx.fillRect(0, -width * spread, width * 1.2, width * spread * 2);
+        ctx.restore();
+      }
+      break;
+    }
+
+    // ── 7. Shimmer (Pro) ──
+    case 'shimmer': {
+      for (let b = 0; b < 3; b++) {
+        const offset = b * (width + 200) / 3;
+        const shimmerX = ((t * 35 + offset) % (width + 300)) - 150;
+        const grad = ctx.createLinearGradient(shimmerX - 100, 0, shimmerX + 100, height);
+        grad.addColorStop(0, 'rgba(255,255,255,0)');
+        grad.addColorStop(0.3, `rgba(255,255,255,${0.03 + Math.sin(t * 1.5 + b) * 0.015})`);
+        grad.addColorStop(0.5, `rgba(255,255,255,${0.08 + Math.sin(t * 1.2 + b * 0.5) * 0.03})`);
+        grad.addColorStop(0.7, `rgba(255,255,255,${0.03 + Math.sin(t * 1.5 + b) * 0.015})`);
+        grad.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, width, height);
+      }
+      break;
+    }
+
+    // ── 8. Soft Fog (Pro) ──
+    case 'fog': {
+      const fogColors = [
+        { h: 210, s: 30, l: 80 },
+        { h: 270, s: 25, l: 75 },
+        { h: 180, s: 20, l: 80 },
+        { h: 320, s: 15, l: 78 },
+      ];
+      for (let i = 0; i < 5; i++) {
+        const s = i * 137.5;
+        const fx = (Math.sin(s + t * 0.05 + i * 8) * 0.5 + 0.5) * width;
+        const fy = (Math.cos(s * 1.3 + t * 0.035 + i * 15) * 0.5 + 0.5) * height;
+        const radius = 200 + i * 100 + Math.sin(t * 0.1 + i * 0.7) * 40;
+        const { h, s: sat, l } = fogColors[i % 4];
+        const grad = ctx.createRadialGradient(fx, fy, 0, fx, fy, radius);
+        grad.addColorStop(0, `hsla(${h},${sat}%,${l}%,${0.035 + Math.sin(t * 0.15 + i * 0.5) * 0.015})`);
+        grad.addColorStop(1, `hsla(${h},${sat}%,${l}%,0)`);
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, width, height);
+      }
+      break;
+    }
+
+    // ── 9. Bokeh ──
+    case 'bokeh': {
+      ctx.save();
+      ctx.filter = 'blur(4px)';
+      for (let i = 0; i < 18; i++) {
+        const s = i * 173.3;
+        const bx = (Math.sin(s * 0.7 + t * 0.02 + i * 0.1) * 0.5 + 0.5) * width;
+        const by = (Math.cos(s * 0.9 + t * 0.015 + i * 0.2) * 0.5 + 0.5) * height;
+        const r = 12 + Math.sin(s + t * 0.1 + i) * 8;
+        const hue = (i * 37 + t * 5) % 360;
+        const alpha = 0.04 + Math.sin(s + t * 0.05 + i * 0.3) * 0.02;
+        ctx.beginPath();
+        ctx.arc(bx, by, Math.max(4, r), 0, Math.PI * 2);
+        ctx.fillStyle = `hsla(${hue},60%,70%,${Math.max(0, alpha)})`;
+        ctx.fill();
+      }
+      ctx.restore();
+      break;
+    }
+
+    // ── 10. Fireflies ──
+    case 'fireflies': {
+      for (let i = 0; i < 14; i++) {
+        const s = i * 251.3;
+        const fx = (Math.sin(s * 0.3 + t * 0.04 + i * 0.5) * 0.5 + 0.5) * width;
+        const fy = (Math.cos(s * 0.4 + t * 0.03 + i * 0.3) * 0.5 + 0.5) * height;
+        const glow = 0.4 + Math.sin(s + t * 0.8 + i * 1.5) * 0.3;
+        // Glow halo
+        const grad = ctx.createRadialGradient(fx, fy, 0, fx, fy, 20 + glow * 10);
+        grad.addColorStop(0, `rgba(255,240,150,${Math.max(0, glow * 0.25)})`);
+        grad.addColorStop(1, 'rgba(255,240,150,0)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, width, height);
+        // Core dot
+        ctx.beginPath();
+        ctx.arc(fx, fy, 1.5 + glow * 1.5, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255,255,220,${Math.max(0, glow * 0.7)})`;
+        ctx.shadowColor = 'rgba(255,240,150,0.5)';
+        ctx.shadowBlur = 10;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
+      break;
+    }
+
+    // ── 11. Aurora ──
+    case 'aurora': {
+      ctx.save();
+      ctx.filter = 'blur(25px)';
+      const layers = 4;
+      for (let i = 0; i < layers; i++) {
+        ctx.beginPath();
+        const hue = 180 + i * 30 + Math.sin(t * 0.02) * 20;
+        const alpha = 0.03 + Math.sin(t * 0.05 + i * 1.2) * 0.015;
+        const centerY = height * (0.15 + i * 0.12);
+        ctx.moveTo(0, centerY);
+        for (let x = 0; x <= width; x += 15) {
+          const wave = Math.sin(x * 0.008 + t * 0.04 + i * 2.5) * height * 0.08
+                     + Math.sin(x * 0.02 + t * 0.06 + i * 1.3) * height * 0.04;
+          ctx.lineTo(x, centerY + wave);
+        }
+        ctx.lineTo(width, centerY + 80);
+        ctx.lineTo(0, centerY + 80);
+        ctx.closePath();
+        ctx.fillStyle = `hsla(${hue},70%,60%,${Math.max(0, alpha)})`;
+        ctx.fill();
+      }
+      ctx.restore();
+      break;
+    }
+
+    // ── 12. Snowfall ──
+    case 'snow': {
+      for (let i = 0; i < 40; i++) {
+        const s = i * 157.1;
+        const x = ((s * 0.7 + t * 8 + Math.sin(s + t * 0.3 + i) * 20) % (width + 40)) - 20;
+        const y = ((s * 1.3 + t * 35 + i * 15) % (height + 60)) - 30;
+        const sz = 1.5 + Math.sin(s + t * 0.2 + i) * 1.2;
+        const alpha = 0.2 + Math.sin(s + t * 0.4 + i * 0.6) * 0.15;
+        ctx.beginPath();
+        ctx.arc(x, y, Math.max(0.5, sz), 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255,255,255,${Math.max(0, alpha)})`;
+        ctx.shadowColor = 'rgba(255,255,255,0.1)';
+        ctx.shadowBlur = 4;
+        ctx.fill();
+      }
+      ctx.shadowBlur = 0;
+      break;
+    }
+
+    // ── 13. Light Leak ──
+    case 'lightleak': {
+      const leaks = [
+        { angle: -0.3 + Math.sin(t * 0.1) * 0.2, hue: 30, w: 0.3 },
+        { angle: 0.8 + Math.sin(t * 0.08 + 1) * 0.15, hue: 320, w: 0.2 },
+        { angle: 2.5 + Math.sin(t * 0.06 + 2) * 0.2, hue: 200, w: 0.25 },
+      ];
+      for (const L of leaks) {
+        const alpha = 0.04 + Math.sin(t * 0.12 + L.hue) * 0.02;
+        const centerX = width * (0.3 + Math.sin(t * 0.05 + L.angle) * 0.2);
+        const centerY = height * (0.3 + Math.cos(t * 0.04 + L.angle) * 0.2);
+        const grad = ctx.createRadialGradient(
+          centerX, centerY, 0,
+          centerX, centerY, width * L.w
+        );
+        grad.addColorStop(0, `hsla(${L.hue},70%,60%,${Math.max(0, alpha)})`);
+        grad.addColorStop(0.5, `hsla(${L.hue},60%,50%,${Math.max(0, alpha * 0.5)})`);
+        grad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, width, height);
+      }
+      break;
+    }
+
+    // ── 14. Sparkle ──
+    case 'sparkle': {
+      for (let i = 0; i < 20; i++) {
+        const s = i * 189.7;
+        const sx = (Math.sin(s * 0.5 + t * 0.03 + i * 0.2) * 0.5 + 0.5) * width;
+        const sy = (Math.cos(s * 0.6 + t * 0.02 + i * 0.3) * 0.5 + 0.5) * height;
+        const pulse = 0.3 + Math.sin(s + t * 1.5 + i * 2) * 0.4;
+        const sz = 2 + pulse * 5;
+        if (pulse < 0.1) continue;
+        const hue = (45 + i * 25 + t * 20) % 360;
+        // 4-point star
+        ctx.save();
+        ctx.translate(sx, sy);
+        ctx.rotate(t * 0.1 + i * 0.5);
+        ctx.beginPath();
+        for (let p = 0; p < 4; p++) {
+          const a = (p / 4) * Math.PI * 2;
+          const ox = Math.cos(a) * sz;
+          const oy = Math.sin(a) * sz;
+          const ix = Math.cos(a + Math.PI / 4) * sz * 0.3;
+          const iy = Math.sin(a + Math.PI / 4) * sz * 0.3;
+          if (p === 0) ctx.moveTo(ox, oy);
+          else ctx.lineTo(ox, oy);
+          ctx.lineTo(ix, iy);
+        }
+        ctx.closePath();
+        ctx.fillStyle = `hsla(${hue},80%,70%,${Math.max(0, pulse * 0.5)})`;
+        ctx.shadowColor = `hsla(${hue},80%,70%,0.3)`;
+        ctx.shadowBlur = 8;
+        ctx.fill();
+        ctx.restore();
+      }
+      ctx.shadowBlur = 0;
+      break;
+    }
+  }
+
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.restore();
+}
+
 export function drawFrame({
   ctx,
   canvas,
@@ -108,14 +460,17 @@ export function drawFrame({
   currentAyah,
   config,
   isPlaying,
-  currentTime
+  currentTime,
+  highlightedWords = []
 }) {
+  // Store word positions for this ayah (for click detection)
+  const ayahKey = currentAyah ? `a${currentAyah.number || currentAyah.numberInSurah || 0}` : '';
+  const positions = [];
   const width = canvas.width; // 1080
   const height = canvas.height; // 1920
 
   // 1. Draw Background
 
-  // Uploaded custom video takes priority
   if (config.backgroundType === 'upload' && videoElement && videoElement.readyState >= 2) {
     const canvasAspect = width / height;
     const videoAspect = videoElement.videoWidth / videoElement.videoHeight;
@@ -133,7 +488,6 @@ export function drawFrame({
     }
     ctx.drawImage(videoElement, sx, sy, sWidth, sHeight, 0, 0, width, height);
   } else if (config.bgImage) {
-    // Uploaded image background (object-fit: cover) — cached to avoid blink
     if (!_bgImageCache || _bgImageCache.url !== config.bgImage) {
       _bgImageCache = { url: config.bgImage, img: new Image() };
       _bgImageCache.img.src = config.bgImage;
@@ -156,7 +510,6 @@ export function drawFrame({
       }
       ctx.drawImage(img, sx2, sy2, sWidth2, sHeight2, 0, 0, width, height);
     } else {
-      // Fallback to gradient if image not loaded
       _drawGradientBg(ctx, width, height, _gradientCache, config);
     }
   } else {
@@ -363,26 +716,62 @@ export function drawFrame({
       + (config.showTranslation ? textSpacing + englishHeight : 0);
     const startY = centerY - (totalBlockHeight / 2);
 
-    // Draw Arabic Text
+    // Draw Arabic Text (word-by-word with highlight)
     ctx.font = `700 ${arabicFontSize}px ${arabicFontFamily}`;
-    ctx.fillStyle = '#ffffff';
-    let currentY = startY + arabicFontSize;
-    const arabicTextHeight = wrapText(
-      ctx,
-      currentAyah.text,
-      width / 2,
-      currentY,
-      maxWidth,
-      arabicFontSize * 1.5
-    );
+    ctx.textAlign = 'right';
+    const aWords = currentAyah.text.split(' ');
+    const aWordLines = [];
+    let curLine = [];
+    let curLineWidth = 0;
+    const spaceW = ctx.measureText(' ').width;
+    for (let i = 0; i < aWords.length; i++) {
+      const w = aWords[i];
+      const ww = ctx.measureText(w).width + (curLine.length > 0 ? spaceW : 0);
+      if (curLineWidth + ww > maxWidth && curLine.length > 0) {
+        aWordLines.push(curLine);
+        curLine = [{ word: w, idx: i }];
+        curLineWidth = ctx.measureText(w).width;
+      } else {
+        curLine.push({ word: w, idx: i });
+        curLineWidth += ww;
+      }
+    }
+    if (curLine.length > 0) aWordLines.push(curLine);
 
-    currentY += arabicTextHeight;
+    let currentY = startY + arabicFontSize;
+    const lineHeight = arabicFontSize * 1.5;
+    for (const line of aWordLines) {
+      let totalWidth = 0;
+      for (let j = 0; j < line.length; j++) {
+        totalWidth += ctx.measureText(line[j].word).width;
+        if (j < line.length - 1) totalWidth += spaceW;
+      }
+      let drawX = width / 2 + totalWidth / 2;
+      for (const { word, idx } of line) {
+        const ww = ctx.measureText(word).width;
+        const isHighlighted = highlightedWords.includes(idx);
+        ctx.fillStyle = isHighlighted ? (config.highlightColor || '#fbbf24') : '#ffffff';
+        ctx.fillText(word, drawX, currentY);
+        positions.push({
+          idx, word,
+          x: drawX - ww,
+          y: currentY - arabicFontSize * 1.5,
+          width: ww + spaceW,
+          height: arabicFontSize * 1.5,
+        });
+        drawX -= (ww + spaceW);
+      }
+      currentY += lineHeight;
+    }
+    const arabicTextHeight = aWordLines.length * lineHeight;
+    if (ayahKey) _wordPositions[ayahKey] = positions;
 
     // Draw Transliteration
     if (showTr) {
       currentY += textSpacing;
       ctx.font = `400 italic ${transliterationFontSize}px 'Outfit', 'Inter', sans-serif`;
       ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
+      ctx.textAlign = 'center';
       const trHeight = wrapText(
         ctx,
         currentAyah.transliteration,
@@ -399,6 +788,7 @@ export function drawFrame({
       currentY += textSpacing;
       ctx.font = `400 ${translationFontSize}px Outfit, Inter, sans-serif`;
       ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+      ctx.textAlign = 'center';
       wrapText(
         ctx,
         currentAyah.translation,
@@ -501,45 +891,6 @@ export function drawFrame({
     ctx.restore();
   }
 
-  // 7. Apply Color Effect (CSS filter)
-  const effect = config.colorEffect || 'none';
-  if (effect !== 'none') {
-    const effectDef = {
-      warm: 'saturate(1.1) sepia(0.2) brightness(1.05)',
-      cool: 'saturate(0.9) hue-rotate(10deg) brightness(1.05)',
-      vintage: 'sepia(0.5) saturate(0.7) contrast(0.85) brightness(1.1)',
-      noir: 'grayscale(1) contrast(1.3) brightness(0.9)',
-      golden: 'sepia(0.3) saturate(1.3) hue-rotate(-5deg) brightness(1.1)',
-      ocean: 'saturate(1.2) hue-rotate(180deg) brightness(0.95) contrast(1.1)',
-      forest: 'saturate(1.3) sepia(0.2) hue-rotate(60deg) brightness(0.9)',
-      sunset: 'sepia(0.4) saturate(1.4) hue-rotate(-15deg) brightness(1.05)',
-      moody: 'grayscale(0.3) saturate(0.6) brightness(0.8) contrast(1.2)',
-      fade: 'saturate(0.5) contrast(0.8) brightness(1.15) opacity(0.9)',
-      cinematic: 'contrast(1.15) saturate(0.85) brightness(0.9) sepia(0.15)',
-      grayscale: 'grayscale(1) brightness(1.05)',
-      sepia: 'sepia(0.8) saturate(0.9) brightness(1.05)',
-      vibrant: 'saturate(1.8) contrast(1.15) brightness(1.05)',
-      soft: 'brightness(1.1) contrast(0.85) saturate(0.8) blur(0.3px)',
-      dramatic: 'contrast(1.5) brightness(0.75) saturate(0.7)',
-      retro: 'sepia(0.6) saturate(0.6) contrast(0.9) hue-rotate(-20deg)',
-      coolblue: 'saturate(1.1) hue-rotate(200deg) brightness(1.05) contrast(0.9)',
-      warmglow: 'sepia(0.2) saturate(1.2) hue-rotate(-10deg) brightness(1.1)',
-    };
-    const filter = effectDef[effect];
-    if (filter) {
-      const w = canvas.width, h = canvas.height;
-      if (!_filterCanvas || _filterCanvas.width !== w || _filterCanvas.height !== h) {
-        _filterCanvas = document.createElement('canvas');
-        _filterCanvas.width = w;
-        _filterCanvas.height = h;
-      }
-      const fc = _filterCanvas.getContext('2d');
-      fc.clearRect(0, 0, w, h);
-      fc.drawImage(canvas, 0, 0);
-      ctx.save();
-      ctx.filter = filter;
-      ctx.drawImage(_filterCanvas, 0, 0);
-      ctx.restore();
-    }
-  }
+  // 7. Visual Effects Overlay
+  _drawVisualEffect(ctx, width, height, config.visualEffect, currentTime);
 }

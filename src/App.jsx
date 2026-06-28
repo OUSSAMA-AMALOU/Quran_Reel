@@ -2,6 +2,10 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { surahs } from './data/surahData';
 import { drawFrame } from './utils/videoRenderer';
 import { t } from './i18n';
+import {
+  exportVideo, exportWithMediaRecorder, isWebCodecsSupported,
+  encodeVideoFrames, encodeAudioFromBuffer, decodeAudioFile, loopAudioBuffer, muxToWebM,
+} from './utils/videoEncoder';
 
 // Transition effect post-processing
 function applyTransition(ctx, canvas, fromCanvas, progress, effect) {
@@ -435,6 +439,53 @@ const TRANSITIONS = [
 
   const selectedSurahDetails = surahs.find(s => s.number === parseInt(surahNum));
 
+  // Cache for WebCodecs support
+  const webCodecsSupportedRef = useRef(null);
+  const getWebCodecsSupported = async () => {
+    if (webCodecsSupportedRef.current === null) {
+      webCodecsSupportedRef.current = await isWebCodecsSupported();
+    }
+    return webCodecsSupportedRef.current;
+  };
+
+  // Build an offline render function from captured config + data
+  const buildRenderFn = useCallback((items, fps, durPerItem) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return null;
+    const ctx = canvas.getContext('2d');
+    // Capture current config values into closure
+    const cfg = {
+      fontSize, translationFontSize, textPosition, vignetteOpacity,
+      fontFamily, showTranslation, translationLang, showTransliteration,
+      watermark, visualizerStyle, visualizerColor, colorEffect,
+      backgroundType: 'upload', bgImage,
+    };
+    const itemsPerFrame = fps * durPerItem;
+    const videoEl = videoRef.current;
+    return (frameIdx) => {
+      const idx = Math.min(Math.floor(frameIdx / itemsPerFrame), items.length - 1);
+      const raw = items[idx];
+      const currentItem = raw ? {
+        ...raw,
+        translation: translationLang === 'fr'
+          ? (raw.translationFr || raw.translationEn || '')
+          : (raw.translationEn || raw.translationFr || ''),
+        transliteration: raw.transliteration || '',
+      } : null;
+      drawFrame({
+        ctx, canvas,
+        videoElement: videoEl,
+        audioAnalyser: null,
+        currentAyah: currentItem,
+        config: cfg,
+        isPlaying: false,
+        currentTime: 0,
+      });
+    };
+  }, [fontSize, translationFontSize, textPosition, vignetteOpacity, fontFamily,
+      showTranslation, translationLang, showTransliteration, watermark,
+      visualizerStyle, visualizerColor, colorEffect, bgImage]);
+
   // Handle Fetching Surah Data (Arabic text, translation, audio)
   const fetchPassage = useCallback(async () => {
     setLoading(true);
@@ -850,12 +901,13 @@ const TRANSITIONS = [
     }
   };
 
-  // Handle Custom Video File Upload
+  // Handle Custom Video/Image File Upload
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
     const targetAyah = uploadedForAyahRef.current;
     if (videoMode === 'per-ayah' && targetAyah !== null) {
+      if (!file.type.startsWith('video/')) return;
       setPerAyahVideos(prev => {
         const old = prev[targetAyah];
         if (old) URL.revokeObjectURL(old);
@@ -863,8 +915,15 @@ const TRANSITIONS = [
       });
       uploadedForAyahRef.current = null;
     } else {
-      if (uploadedBgUrl) URL.revokeObjectURL(uploadedBgUrl);
-      setUploadedBgUrl(URL.createObjectURL(file));
+      if (file.type.startsWith('video/')) {
+        if (uploadedBgUrl) URL.revokeObjectURL(uploadedBgUrl);
+        if (bgImage) { URL.revokeObjectURL(bgImage); setBgImage(null); }
+        setUploadedBgUrl(URL.createObjectURL(file));
+      } else if (file.type.startsWith('image/')) {
+        if (bgImage) URL.revokeObjectURL(bgImage);
+        if (uploadedBgUrl) { URL.revokeObjectURL(uploadedBgUrl); setUploadedBgUrl(null); }
+        setBgImage(URL.createObjectURL(file));
+      }
     }
   };
 
@@ -1031,6 +1090,7 @@ const TRANSITIONS = [
     surahNum,
     currentTime,
     canvasResolution,
+    bgImage,
   ]);
 
   // Export / Record video logic
@@ -1229,137 +1289,120 @@ const TRANSITIONS = [
     }
   };
 
-  // Export Hadith reel (silent video, no audio)
+  // Export Hadith reel using WebCodecs (fast offline encoding)
   const handleExportHadith = async () => {
     if (hadithData.length === 0) return;
-
     setIsPlaying(false);
     setIsRecording(true);
     setRecordingProgress(5);
     setRecordingStatus(T('status.initHadith'));
 
+    const canvas = canvasRef.current;
+    const [cw, ch] = DIMS[canvasResolution] || DIMS['720p'];
+    canvas.width = cw;
+    canvas.height = ch;
+
     try {
       cleanupRecorder();
-      setCurrentHadithIndex(0);
+      const fps = 30;
+      const totalFrames = hadithData.length * itemDuration * fps;
+      const renderFn = buildRenderFn(hadithData, fps, itemDuration);
+      if (!renderFn) throw new Error('Failed to build render function');
 
-      // Setup Web Audio for background audio capture (same approach as Quran export)
-      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-      let audioCtx;
-      if (audioCtxRef.current && audioCtxRef.current.state !== 'closed') {
-        audioCtx = audioCtxRef.current;
-        if (audioCtx.state === 'suspended') await audioCtx.resume();
-      } else {
-        audioCtx = new AudioContextClass();
-        audioCtxRef.current = audioCtx;
-      }
+      let blob;
+      const supported = await getWebCodecsSupported();
 
-      const destNode = audioCtx.createMediaStreamDestination();
+      if (supported) {
+        let audioCtx = null;
+        let audioDurationMs = 0;
+        let audioAbortSignal = null;
 
-      let hasBgAudio = false;
-      if (bgAudioFile && bgAudioRef.current) {
-        // Set source and start playing
-        bgAudioRef.current.src = bgAudioFile;
-        bgAudioRef.current.loop = true;
-        await bgAudioRef.current.play();
-
-        // Connect bg audio to Web Audio pipeline
-        if (bgAudioSourceNodeRef.current) {
-          bgAudioSourceNodeRef.current.disconnect();
-        } else {
-          const src = audioCtx.createMediaElementSource(bgAudioRef.current);
-          bgAudioSourceNodeRef.current = src;
+        if (bgAudioFile) {
+          setRecordingStatus('Processing background audio...');
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          audioCtx = new AudioContextClass();
+          try {
+            const audioBuf = await decodeAudioFile(bgAudioFile);
+            if (audioBuf.length / audioBuf.sampleRate < totalFrames / fps) {
+              // Loop to fill duration
+              const targetSec = totalFrames / fps;
+              const looped = loopAudioBuffer(audioBuf, targetSec + 2);
+              const trimmed = looped; // muxer handles exact duration
+              audioCtx.close();
+              audioCtx = null;
+              // Encode the buffer directly
+              const videoChunks = await encodeVideoFrames(canvas, renderFn, totalFrames, fps, 2_000_000);
+              setRecordingStatus('Encoding background audio...');
+              const bgChunks = await encodeAudioFromBuffer(trimmed);
+              setRecordingStatus('Muxing final video...');
+              const webmBytes = muxToWebM(videoChunks, bgChunks, cw, ch, fps);
+              blob = new Blob([webmBytes], { type: 'video/webm' });
+            } else {
+              // Play through audio pipeline and capture in real-time
+              audioDurationMs = (totalFrames / fps) * 1000;
+              bgAudioRef.current.src = bgAudioFile;
+              bgAudioRef.current.loop = true;
+              await bgAudioRef.current.play();
+              if (bgAudioSourceNodeRef.current) bgAudioSourceNodeRef.current.disconnect();
+              const src = audioCtx.createMediaElementSource(bgAudioRef.current);
+              bgAudioSourceNodeRef.current = src;
+              const bgGain = audioCtx.createGain();
+              bgGain.gain.value = bgAudioVolume / 100;
+              src.connect(bgGain);
+              bgGain.connect(audioCtx.destination);
+              bgGainNodeRef.current = bgGain;
+            }
+          } catch (e) {
+            console.warn('Bg audio decode failed, continuing without audio:', e);
+            if (audioCtx) { audioCtx.close(); audioCtx = null; }
+          }
         }
-        const bgGain = audioCtx.createGain();
-        bgGain.gain.value = bgAudioVolume / 100;
-        bgAudioSourceNodeRef.current.connect(bgGain);
-        bgGain.connect(destNode);
-        bgGainNodeRef.current = bgGain;
 
-        const audioTrack = destNode.stream.getAudioTracks()[0];
-        if (audioTrack) hasBgAudio = true;
-      }
+        if (!blob) {
+          blob = await exportVideo({
+            canvas,
+            renderFrame: renderFn,
+            totalFrames,
+            fps,
+            bitrate: 2_000_000,
+            audioCtx,
+            audioDurationMs: audioDurationMs || undefined,
+            signal: undefined,
+            onStatus: (msg) => setRecordingStatus(msg),
+            onProgress: (pct) => setRecordingProgress(Math.round(pct * 0.85 + 5)),
+          });
+        }
 
-      // Capture canvas video
-      const canvasStream = canvasRef.current.captureStream(30);
-      const videoTrack = canvasStream.getVideoTracks()[0];
-      if (!videoTrack) throw new Error('Failed to capture canvas video track.');
+        if (audioCtx) { try { audioCtx.close(); } catch (_) {} audioCtxRef.current = null; }
+        if (bgAudioRef.current) bgAudioRef.current.pause();
 
-      const tracks = [videoTrack];
-      if (hasBgAudio) {
-        const audioTrack = destNode.stream.getAudioTracks()[0];
-        if (audioTrack) tracks.push(audioTrack);
-      }
-      const recorderStream = new MediaStream(tracks);
-
-      // Set up MediaRecorder
-      let options;
-      if (MediaRecorder.isTypeSupported('video/mp4;codecs=h264,aac')) {
-        options = { mimeType: 'video/mp4;codecs=h264,aac' };
-      } else if (MediaRecorder.isTypeSupported('video/mp4;codecs=avc1.42E01E,mp4a.40.2')) {
-        options = { mimeType: 'video/mp4;codecs=avc1.42E01E,mp4a.40.2' };
-      } else if (MediaRecorder.isTypeSupported('video/mp4')) {
-        options = { mimeType: 'video/mp4' };
-      } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')) {
-        options = { mimeType: 'video/webm;codecs=vp9,opus' };
-      } else {
-        options = { mimeType: 'video/webm' };
-      }
-
-      const chunks = [];
-      recorderRef.current = new MediaRecorder(recorderStream, options);
-
-      recorderRef.current.ondataavailable = (e) => {
-        if (e.data && e.data.size > 0) chunks.push(e.data);
-      };
-
-      recorderRef.current.onstop = () => {
-        setRecordingStatus(T('status.compiling'));
-        setRecordingProgress(95);
-
-        const blob = new Blob(chunks, { type: options.mimeType });
-        const downloadUrl = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = downloadUrl;
         const bookName = HADITH_BOOKS.find(b => b.id === hadithBook)?.name || 'Hadith';
-        const extension = options.mimeType.includes('mp4') ? 'mp4' : 'webm';
-        a.download = `HadithReel_${bookName}_${hadithNumber}.${extension}`;
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `HadithReel_${bookName}_${hadithNumber}.webm`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
-
-        setTimeout(() => {
-          setIsRecording(false);
-          setRecordingProgress(0);
-          setRecordingStatus('');
-        }, 1500);
-      };
-
-      recorderRef.current.start();
-
-      // Auto-advance through hadiths every 10 seconds
-      setIsPlaying(true);
-      setRecordingStatus(T('status.recordingHadith', { n: 1, total: hadithData.length }));
-      setRecordingProgress(10);
-
-      for (let i = 0; i < hadithData.length; i++) {
-        setCurrentHadithIndex(i);
-        setRecordingStatus(T('status.recordingHadith', { n: i + 1, total: hadithData.length }));
-        setRecordingProgress(Math.round(((i + 1) / hadithData.length) * 80 + 10));
-
-        const secondsPerHadith = itemDuration;
-        if (i === hadithData.length - 1) {
-          // Last hadith: wait then stop
-          await new Promise(resolve => setTimeout(resolve, secondsPerHadith * 1000));
-        } else {
-          await new Promise(resolve => setTimeout(resolve, secondsPerHadith * 1000));
-        }
+        setIsRecording(false);
+        setRecordingProgress(0);
+        setRecordingStatus('');
+      } else {
+        // Fallback: MediaRecorder (fast offline, no audio)
+        setRecordingStatus(T('status.recordingHadith', { n: 1, total: hadithData.length }));
+        blob = await exportWithMediaRecorder(canvas, renderFn, totalFrames, fps);
+        const bookName = HADITH_BOOKS.find(b => b.id === hadithBook)?.name || 'Hadith';
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `HadithReel_${bookName}_${hadithNumber}.webm`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setIsRecording(false);
+        setRecordingProgress(0);
+        setRecordingStatus('');
       }
-
-      setIsPlaying(false);
-      if (recorderRef.current && recorderRef.current.state === 'recording') {
-        recorderRef.current.stop();
-      }
-      if (bgAudioRef.current) bgAudioRef.current.pause();
     } catch (err) {
       console.error(err);
       setError(`Recording failed: ${err?.message || err}`);
@@ -1369,119 +1412,110 @@ const TRANSITIONS = [
     }
   };
 
-  // Export Dua reel (silent video, no audio — same pattern as hadith)
+  // Export Dua reel using WebCodecs (fast offline encoding)
   const handleExportDua = async () => {
     if (duaData.length === 0) return;
-
     setIsPlaying(false);
     setIsRecording(true);
     setRecordingProgress(5);
     setRecordingStatus(T('status.initDua'));
 
+    const canvas = canvasRef.current;
+    const [cw, ch] = DIMS[canvasResolution] || DIMS['720p'];
+    canvas.width = cw;
+    canvas.height = ch;
+
     try {
       cleanupRecorder();
-      setCurrentDuaIndex(0);
+      const fps = 30;
+      const totalFrames = duaData.length * itemDuration * fps;
+      const renderFn = buildRenderFn(duaData, fps, itemDuration);
+      if (!renderFn) throw new Error('Failed to build render function');
 
-      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-      let audioCtx;
-      if (audioCtxRef.current && audioCtxRef.current.state !== 'closed') {
-        audioCtx = audioCtxRef.current;
-        if (audioCtx.state === 'suspended') await audioCtx.resume();
-      } else {
-        audioCtx = new AudioContextClass();
-        audioCtxRef.current = audioCtx;
-      }
+      let blob;
+      const supported = await getWebCodecsSupported();
 
-      const destNode = audioCtx.createMediaStreamDestination();
-      let hasBgAudio = false;
-      if (bgAudioFile && bgAudioRef.current) {
-        bgAudioRef.current.src = bgAudioFile;
-        bgAudioRef.current.loop = true;
-        await bgAudioRef.current.play();
+      if (supported) {
+        let audioCtx = null;
+        let audioDurationMs = 0;
 
-        if (bgAudioSourceNodeRef.current) {
-          bgAudioSourceNodeRef.current.disconnect();
-        } else {
-          const src = audioCtx.createMediaElementSource(bgAudioRef.current);
-          bgAudioSourceNodeRef.current = src;
+        if (bgAudioFile) {
+          setRecordingStatus('Processing background audio...');
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          audioCtx = new AudioContextClass();
+          try {
+            const audioBuf = await decodeAudioFile(bgAudioFile);
+            if (audioBuf.length / audioBuf.sampleRate < totalFrames / fps) {
+              const targetSec = totalFrames / fps;
+              const trimmed = loopAudioBuffer(audioBuf, targetSec + 2);
+              const videoChunks = await encodeVideoFrames(canvas, renderFn, totalFrames, fps, 2_000_000);
+              setRecordingStatus('Encoding background audio...');
+              const bgChunks = await encodeAudioFromBuffer(trimmed);
+              setRecordingStatus('Muxing final video...');
+              const webmBytes = muxToWebM(videoChunks, bgChunks, cw, ch, fps);
+              blob = new Blob([webmBytes], { type: 'video/webm' });
+            } else {
+              audioDurationMs = (totalFrames / fps) * 1000;
+              bgAudioRef.current.src = bgAudioFile;
+              bgAudioRef.current.loop = true;
+              await bgAudioRef.current.play();
+              if (bgAudioSourceNodeRef.current) bgAudioSourceNodeRef.current.disconnect();
+              const src = audioCtx.createMediaElementSource(bgAudioRef.current);
+              bgAudioSourceNodeRef.current = src;
+              const bgGain = audioCtx.createGain();
+              bgGain.gain.value = bgAudioVolume / 100;
+              src.connect(bgGain);
+              bgGain.connect(audioCtx.destination);
+              bgGainNodeRef.current = bgGain;
+            }
+          } catch (e) {
+            console.warn('Bg audio decode failed:', e);
+            if (audioCtx) { audioCtx.close(); audioCtx = null; }
+          }
         }
-        const bgGain = audioCtx.createGain();
-        bgGain.gain.value = bgAudioVolume / 100;
-        bgAudioSourceNodeRef.current.connect(bgGain);
-        bgGain.connect(destNode);
-        bgGainNodeRef.current = bgGain;
 
-        const audioTrack = destNode.stream.getAudioTracks()[0];
-        if (audioTrack) hasBgAudio = true;
-      }
+        if (!blob) {
+          blob = await exportVideo({
+            canvas,
+            renderFrame: renderFn,
+            totalFrames,
+            fps,
+            bitrate: 2_000_000,
+            audioCtx,
+            audioDurationMs: audioDurationMs || undefined,
+            onStatus: (msg) => setRecordingStatus(msg),
+          });
+        }
 
-      const canvasStream = canvasRef.current.captureStream(30);
-      const videoTrack = canvasStream.getVideoTracks()[0];
-      if (!videoTrack) throw new Error('Failed to capture canvas video track.');
+        if (audioCtx) { try { audioCtx.close(); } catch (_) {} audioCtxRef.current = null; }
+        if (bgAudioRef.current) bgAudioRef.current.pause();
 
-      const tracks = [videoTrack];
-      if (hasBgAudio) {
-        const audioTrack = destNode.stream.getAudioTracks()[0];
-        if (audioTrack) tracks.push(audioTrack);
-      }
-      const recorderStream = new MediaStream(tracks);
-
-      let options;
-      if (MediaRecorder.isTypeSupported('video/mp4;codecs=h264,aac')) {
-        options = { mimeType: 'video/mp4;codecs=h264,aac' };
-      } else if (MediaRecorder.isTypeSupported('video/mp4;codecs=avc1.42E01E,mp4a.40.2')) {
-        options = { mimeType: 'video/mp4;codecs=avc1.42E01E,mp4a.40.2' };
-      } else if (MediaRecorder.isTypeSupported('video/mp4')) {
-        options = { mimeType: 'video/mp4' };
-      } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')) {
-        options = { mimeType: 'video/webm;codecs=vp9,opus' };
-      } else {
-        options = { mimeType: 'video/webm' };
-      }
-
-      const chunks = [];
-      recorderRef.current = new MediaRecorder(recorderStream, options);
-
-      recorderRef.current.ondataavailable = (e) => {
-        if (e.data && e.data.size > 0) chunks.push(e.data);
-      };
-
-      recorderRef.current.onstop = () => {
-        setRecordingStatus(T('status.compiling'));
-        setRecordingProgress(95);
-
-        const blob = new Blob(chunks, { type: options.mimeType });
-        const downloadUrl = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = downloadUrl;
         const categoryName = DUA_SHORTCUTS.find(s => s.id === duaCategory)?.name || 'Dua';
-        const duaNum = duaData[currentDuaIndex]?.number || (currentDuaIndex + 1);
-        const extension = options.mimeType.includes('mp4') ? 'mp4' : 'webm';
-        a.download = `DuaReel_${categoryName}_${duaNum}.${extension}`;
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `DuaReel_${categoryName}.webm`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
-
-        setTimeout(() => {
-          setIsRecording(false);
-          setRecordingProgress(0);
-          setRecordingStatus('');
-        }, 1500);
-      };
-
-      recorderRef.current.start();
-
-      setIsPlaying(true);
-      setRecordingStatus(T('status.recordingDua', { n: 1, total: 1 }));
-      setRecordingProgress(10);
-
-      await new Promise(resolve => setTimeout(resolve, itemDuration * 1000));
-
-      setIsPlaying(false);
-      if (recorderRef.current && recorderRef.current.state === 'recording') {
-        recorderRef.current.stop();
+        setIsRecording(false);
+        setRecordingProgress(0);
+        setRecordingStatus('');
+      } else {
+        setRecordingStatus(T('status.recordingDua', { n: 1, total: 1 }));
+        blob = await exportWithMediaRecorder(canvas, renderFn, totalFrames, fps);
+        const categoryName = DUA_SHORTCUTS.find(s => s.id === duaCategory)?.name || 'Dua';
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `DuaReel_${categoryName}.webm`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setIsRecording(false);
+        setRecordingProgress(0);
+        setRecordingStatus('');
       }
-      if (bgAudioRef.current) bgAudioRef.current.pause();
     } catch (err) {
       console.error(err);
       setError(`Recording failed: ${err?.message || err}`);
@@ -1710,29 +1744,6 @@ const TRANSITIONS = [
           <option value="720p">720p (HD) — Recommended</option>
           <option value="540p">540p (Light)</option>
         </select>
-      </div>
-
-      <div className="form-group">
-        <label>Background Image</label>
-        <div className="file-upload">
-          <input type="file" accept="image/*" id="bgImageInput" style={{ display: 'none' }} onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) {
-              if (bgImage) URL.revokeObjectURL(bgImage);
-              setBgImage(URL.createObjectURL(file));
-            }
-            e.target.value = '';
-          }} />
-          <label htmlFor="bgImageInput" className="upload-btn" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 16px', background: 'var(--bg-surface-elevated)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m3 16 5-5 3 3 4-4 6 6"/></svg>
-            <span>{bgImage ? 'Change Image' : 'Upload Image'}</span>
-          </label>
-          {bgImage && (
-            <button className="clear-btn" onClick={() => { URL.revokeObjectURL(bgImage); setBgImage(null); }} style={{ marginLeft: 8, padding: '6px 12px', background: 'transparent', border: '1px solid var(--danger)', borderRadius: 'var(--radius-sm)', color: 'var(--danger)' }}>
-              ✕ Clear
-            </button>
-          )}
-        </div>
       </div>
 
     </>
@@ -2097,11 +2108,11 @@ const TRANSITIONS = [
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
             </svg>
-            <span>{uploadedBgUrl ? T('bg.uploaded') : T('bg.upload')}</span>
+            <span>{uploadedBgUrl ? T('bg.uploaded') : bgImage ? 'Image Uploaded ✓' : T('bg.upload')}</span>
             <input 
               type="file" 
               ref={fileInputRef} 
-              accept="video/*" 
+              accept="video/*,image/*" 
               onChange={handleFileUpload} 
               disabled={isRecording}
             />

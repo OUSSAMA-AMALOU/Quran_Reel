@@ -4,6 +4,7 @@
 let _filterCanvas = null;
 const _wrapCache = new Map();
 const _gradientCache = {};
+let _bgImageCache = null; // { url: string, img: HTMLImageElement }
 
 function _drawGradientBg(ctx, width, height, cache, config) {
   const bgId = config.backgroundId || 'starfield';
@@ -123,11 +124,12 @@ export function drawFrame({
     }
     ctx.drawImage(videoElement, sx, sy, sWidth, sHeight, 0, 0, width, height);
   } else if (config.bgImage) {
-    // Uploaded image background (object-fit: cover)
-    const img = new Image();
-    if (img.src !== config.bgImage) {
-      img.src = config.bgImage;
+    // Uploaded image background (object-fit: cover) — cached to avoid blink
+    if (!_bgImageCache || _bgImageCache.url !== config.bgImage) {
+      _bgImageCache = { url: config.bgImage, img: new Image() };
+      _bgImageCache.img.src = config.bgImage;
     }
+    const img = _bgImageCache.img;
     if (img.complete && img.naturalWidth > 0) {
       const imgAspect = img.naturalWidth / img.naturalHeight;
       const canvasAspect = width / height;

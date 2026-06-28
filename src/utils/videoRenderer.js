@@ -77,11 +77,10 @@ export function drawFrame({
     }
     ctx.drawImage(videoElement, sx, sy, sWidth, sHeight, 0, 0, width, height);
   } else {
-    // Programmatic backgrounds
+    // Static gradient backgrounds (no animations)
     const bgId = config.backgroundId || 'starfield';
 
     if (bgId === 'stars') {
-    // Starry Sky: dark gradient sky with twinkling stars
     let grad = _gradientCache['stars'];
     if (!grad) {
       grad = ctx.createLinearGradient(0, 0, 0, height);
@@ -93,41 +92,19 @@ export function drawFrame({
     }
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, width, height);
-
-    if (config.backgroundMode !== 'static') {
-    // Tree silhouettes
-    ctx.save();
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
-    for (let i = 0; i < 12; i++) {
-      const tx = (i * 95 + 20) % width;
-      const tw = 40 + (i % 5) * 20;
-      const th = 400 + (i % 4) * 200;
-      ctx.beginPath();
-      ctx.moveTo(tx - tw / 2, height);
-      ctx.lineTo(tx - tw / 4, height - th * 0.7);
-      ctx.lineTo(tx, height - th);
-      ctx.lineTo(tx + tw / 4, height - th * 0.7);
-      ctx.lineTo(tx + tw / 2, height);
-      ctx.closePath();
-      ctx.fill();
+  } else if (bgId === 'forest') {
+    let grad = _gradientCache['forest'];
+    if (!grad) {
+      grad = ctx.createLinearGradient(0, 0, 0, height);
+      grad.addColorStop(0, '#0a1a0e');
+      grad.addColorStop(0.3, '#0d2412');
+      grad.addColorStop(0.6, '#081a0e');
+      grad.addColorStop(1, '#030a06');
+      _gradientCache['forest'] = grad;
     }
-
-    // Animated light rays
-    for (let r = 0; r < 5; r++) {
-      const rx = (r * 250 + 80) % width;
-      const rayShift = Math.sin(t * 0.3 + r * 1.7) * 40;
-      ctx.fillStyle = `rgba(180, 230, 150, ${0.02 + 0.02 * Math.sin(t * 0.5 + r * 2.1)})`;
-      ctx.beginPath();
-      ctx.moveTo(rx + rayShift, 0);
-      ctx.lineTo(rx - 30 + rayShift, height * 0.4);
-      ctx.lineTo(rx + 30 + rayShift, height * 0.4);
-      ctx.closePath();
-      ctx.fill();
-    }
-    ctx.restore();
-    }
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, width, height);
   } else if (bgId === 'rain') {
-    // Rain Window: dark cool gradient with animated rain streaks
     let grad = _gradientCache['rain'];
     if (!grad) {
       grad = ctx.createLinearGradient(0, 0, 0, height);
@@ -139,32 +116,7 @@ export function drawFrame({
     }
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, width, height);
-
-    if (config.backgroundMode !== 'static') {
-    // Occasional lightning flash
-    const flash = Math.max(0, Math.sin(t * 0.7) ** 32 - 0.5) * 2;
-    if (flash > 0) {
-      ctx.fillStyle = `rgba(200, 220, 255, ${flash * 0.06})`;
-      ctx.fillRect(0, 0, width, height);
-    }
-
-    // Rain streaks
-    ctx.save();
-    ctx.strokeStyle = 'rgba(180, 200, 220, 0.15)';
-    ctx.lineWidth = 1.5;
-    for (let i = 0; i < 50; i++) {
-      const rx = (i * 37.7 + 10) % width;
-      const ry = ((i * 53.1 + t * 400 * (0.5 + (i % 3) * 0.25)) % (height * 1.5)) - height * 0.25;
-      const rlen = 30 + (i % 5) * 15;
-      ctx.beginPath();
-      ctx.moveTo(rx, ry);
-      ctx.lineTo(rx - 8, ry + rlen);
-      ctx.stroke();
-    }
-    ctx.restore();
-    }
     } else {
-      // starfield (default): cosmic gradient with floating particles
       let grad = _gradientCache['starfield'];
       if (!grad) {
         grad = ctx.createLinearGradient(0, 0, 0, height);
@@ -174,35 +126,7 @@ export function drawFrame({
         _gradientCache['starfield'] = grad;
       }
       ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, width, height);
-
-    if (config.backgroundMode !== 'static') {
-    ctx.save();
-      const particleCount = 60;
-      for (let i = 0; i < particleCount; i++) {
-        const speed = 0.2 + (i % 5) * 0.12;
-        const size = 1.5 + (i % 3) * 2;
-        const opacity = 0.15 + (i % 4) * 0.15;
-        
-        const x = ((i * 137.5) % 1) * width;
-        const drift = t * 35 * speed;
-        let y = (height - (((i * 83.3) + drift) % height)) % height;
-        if (y < 0) y += height;
-        
-        ctx.beginPath();
-        ctx.arc(x, y, size, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
-        
-        if (i % 8 === 0) {
-          ctx.shadowColor = 'rgba(255, 255, 255, 0.8)';
-          ctx.shadowBlur = 6;
-        } else {
-          ctx.shadowBlur = 0;
-        }
-      ctx.fill();
-    }
-    ctx.restore();
-    }
+      ctx.fillRect(0, 0, width, height);
     }
   }
 

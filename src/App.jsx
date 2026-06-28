@@ -285,6 +285,7 @@ function App() {
   const [colorEffect, setColorEffect] = useState('none');
   const [transitionEffect, setTransitionEffect] = useState('none');
   const [canvasResolution, setCanvasResolution] = useState('720p');
+  const [backgroundMode, setBackgroundMode] = useState('dynamic');
 
 const DIMS = { '1080p': [1080,1920], '720p': [720,1280], '540p': [540,960] };
 
@@ -978,6 +979,7 @@ const TRANSITIONS = [
           visualizerColor,
           colorEffect,
           backgroundType,
+          backgroundMode,
         },
         isPlaying,
         currentTime
@@ -1029,6 +1031,7 @@ const TRANSITIONS = [
     surahNum,
     currentTime,
     canvasResolution,
+    backgroundMode,
   ]);
 
   // Export / Record video logic
@@ -1710,11 +1713,19 @@ const TRANSITIONS = [
         </select>
       </div>
 
+      <div className="form-group">
+        <label>Background Mode</label>
+        <select value={backgroundMode} onChange={(e) => setBackgroundMode(e.target.value)}>
+          <option value="dynamic">Dynamic (Animated)</option>
+          <option value="static">Static (Light)</option>
+        </select>
+      </div>
+
     </>
   ), [
     fontFamily, fontSize, translationFontSize, textPosition,
     transitionEffect, colorEffect, visualizerStyle, visualizerColor,
-    isRecording, uiLang, watermark, vignetteOpacity, showTranslation, canvasResolution
+    isRecording, uiLang, watermark, vignetteOpacity, showTranslation, canvasResolution, backgroundMode
   ]);
 
   return (

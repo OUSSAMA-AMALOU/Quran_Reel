@@ -94,41 +94,7 @@ export function drawFrame({
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, width, height);
 
-    ctx.save();
-    const starCount = 80;
-    for (let i = 0; i < starCount; i++) {
-      const x = ((i * 137.5 + 50) % 1) * width;
-      const yBase = (i * 83.3) % height;
-      const size = 1 + (i % 4);
-      const baseOpacity = 0.2 + (i % 6) * 0.1;
-      const twinkle = 0.5 + 0.5 * Math.sin(t * (0.5 + (i % 3) * 0.3) + i * 2.1);
-      const opacity = baseOpacity * twinkle;
-
-      ctx.beginPath();
-      ctx.arc(x, yBase, size, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
-      if (i % 10 === 0) {
-        ctx.shadowColor = 'rgba(200, 220, 255, 0.6)';
-        ctx.shadowBlur = 8;
-      } else {
-        ctx.shadowBlur = 0;
-      }
-      ctx.fill();
-    }
-    ctx.restore();
-  } else if (bgId === 'forest') {
-    // Sunlit Forest: deep green with animated light rays
-    let grad = _gradientCache['forest'];
-    if (!grad) {
-      grad = ctx.createLinearGradient(0, 0, 0, height);
-      grad.addColorStop(0, '#0a1a0e');
-      grad.addColorStop(0.3, '#0d2412');
-      grad.addColorStop(0.6, '#081a0e');
-      grad.addColorStop(1, '#030a06');
-      _gradientCache['forest'] = grad;
-    }
-    ctx.fillStyle = grad;    ctx.fillRect(0, 0, width, height);
-
+    if (config.backgroundMode !== 'static') {
     // Tree silhouettes
     ctx.save();
     ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
@@ -159,6 +125,7 @@ export function drawFrame({
       ctx.fill();
     }
     ctx.restore();
+    }
   } else if (bgId === 'rain') {
     // Rain Window: dark cool gradient with animated rain streaks
     let grad = _gradientCache['rain'];
@@ -173,6 +140,7 @@ export function drawFrame({
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, width, height);
 
+    if (config.backgroundMode !== 'static') {
     // Occasional lightning flash
     const flash = Math.max(0, Math.sin(t * 0.7) ** 32 - 0.5) * 2;
     if (flash > 0) {
@@ -194,6 +162,7 @@ export function drawFrame({
       ctx.stroke();
     }
     ctx.restore();
+    }
     } else {
       // starfield (default): cosmic gradient with floating particles
       let grad = _gradientCache['starfield'];
@@ -205,9 +174,10 @@ export function drawFrame({
         _gradientCache['starfield'] = grad;
       }
       ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, width, height);
+    ctx.fillRect(0, 0, width, height);
 
-      ctx.save();
+    if (config.backgroundMode !== 'static') {
+    ctx.save();
       const particleCount = 60;
       for (let i = 0; i < particleCount; i++) {
         const speed = 0.2 + (i % 5) * 0.12;
@@ -229,9 +199,10 @@ export function drawFrame({
         } else {
           ctx.shadowBlur = 0;
         }
-        ctx.fill();
-      }
-      ctx.restore();
+      ctx.fill();
+    }
+    ctx.restore();
+    }
     }
   }
 

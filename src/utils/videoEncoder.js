@@ -204,9 +204,17 @@ function pickVideoCodec(width, height, bitrate, framerate) {
 
 /**
  * Encode all video frames using WebCodecs VideoEncoder.
+ * Uses a Web Worker when available to keep main thread responsive.
  * @returns {Array} chunks array with .codec property attached
  */
 export async function encodeVideoFrames(canvas, renderFrameFn, totalFrames, fps = 30, bitrate = 2_000_000, signal) {
+  // Try worker path first
+  try {
+    return await encodeViaWorker(canvas, renderFrameFn, totalFrames, fps, bitrate, signal);
+  } catch (_) {
+    // Fallback to main thread encoding
+  }
+
   const codecInfo = await pickVideoCodec(canvas.width, canvas.height, bitrate, fps);
   if (!codecInfo) throw new Error('No supported video codec found');
 
@@ -223,12 +231,97 @@ export async function encodeVideoFrames(canvas, renderFrameFn, totalFrames, fps 
     const frame = new VideoFrame(canvas, { timestamp: i * 1_000_000 / fps });
     encoder.encode(frame);
     frame.close();
+    // Yield every 15 frames to keep UI responsive
+    if (i % 15 === 0) await new Promise(r => setTimeout(r, 0));
   }
 
   await encoder.flush();
   encoder.close();
   chunks.codec = codecInfo.raw;
   return chunks;
+}
+
+async function encodeViaWorker(canvas, renderFrameFn, totalFrames, fps, bitrate, signal) {
+  if (typeof Worker === 'undefined') throw new Error('No Worker support');
+  const worker = new Worker(new URL('./encoderWorker.js', import.meta.url), { type: 'module' });
+
+  return new Promise((resolve, reject) => {
+    let chunks = [];
+    let frameCount = 0;
+    let workerReady = false;
+    let flushing = false;
+
+    worker.onmessage = async (e) => {
+      const msg = e.data;
+      if (msg.type === 'ready') {
+        workerReady = true;
+        // Start sending frames
+        sendNextFrame();
+      } else if (msg.type === 'chunk') {
+        chunks.push(msg);
+      } else if (msg.type === 'progress') {
+        // noop
+      } else if (msg.type === 'done') {
+        // Reconstruct chunks with codec info
+        const first = msg.chunks[0];
+        chunks = msg.chunks.map(c => ({
+          byteLength: c.data.byteLength,
+          copyTo: (dst) => { new Uint8Array(dst).set(new Uint8Array(c.data)); },
+          type: c.type,
+          timestamp: c.timestamp,
+        }));
+        chunks.codec = first?.codec || 'vp9';
+        worker.terminate();
+        resolve(chunks);
+      } else if (msg.type === 'error') {
+        worker.terminate();
+        reject(new Error(msg.message));
+      }
+    };
+
+    worker.onerror = (err) => {
+      worker.terminate();
+      reject(err);
+    };
+
+    async function sendNextFrame() {
+      if (signal?.aborted) {
+        worker.postMessage({ type: 'flush' });
+        return;
+      }
+      if (frameCount >= totalFrames) {
+        if (!flushing) { flushing = true; worker.postMessage({ type: 'flush' }); }
+        return;
+      }
+      renderFrameFn(frameCount);
+      let bitmap;
+      try {
+        bitmap = await createImageBitmap(canvas);
+      } catch (e) {
+        worker.terminate();
+        reject(e);
+        return;
+      }
+      const ts = frameCount * 1_000_000 / fps;
+      worker.postMessage({ type: 'frame', bitmap, timestamp: ts }, [bitmap]);
+      frameCount++;
+      // Yield every 15 frames for UI responsiveness
+      if (frameCount % 15 === 0) {
+        await new Promise(r => setTimeout(r, 0));
+      }
+      sendNextFrame();
+    }
+
+    // Init worker
+    worker.postMessage({
+      type: 'init',
+      width: canvas.width,
+      height: canvas.height,
+      fps,
+      bitrate,
+      totalFrames,
+    });
+  });
 }
 
 // ─── Audio encoder ───

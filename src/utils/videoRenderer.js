@@ -3,8 +3,17 @@
  */
 let _filterCanvas = null;
 const _wrapCache = new Map();
+const _WRAP_CACHE_MAX = 200;
 const _gradientCache = {};
 let _bgImageCache = null; // { url: string, img: HTMLImageElement }
+
+function _cachedSet(map, key, value) {
+  map.set(key, value);
+  if (map.size > _WRAP_CACHE_MAX) {
+    const first = map.keys().next().value;
+    if (first !== undefined) map.delete(first);
+  }
+}
 
 function _drawGradientBg(ctx, width, height, cache, config) {
   const bgId = config.backgroundId || 'starfield';
@@ -72,7 +81,7 @@ function wrapTextCached(ctx, text, x, y, maxWidth, lineHeight, font, align = 'ce
     }
     lines.push(currentLine.trim());
     cached = { lines, height: lines.length * lineHeight };
-    _wrapCache.set(key, cached);
+    _cachedSet(_wrapCache, key, cached);
   }
   ctx.font = font;
   ctx.textAlign = align;
@@ -290,7 +299,7 @@ export function drawFrame({
       }
       aLines.push(aLine.trim());
       arabicLayout = { lines: aLines, height: aLines.length * (arabicFontSize * 1.5) };
-      _wrapCache.set(arabicKey, arabicLayout);
+      _cachedSet(_wrapCache, arabicKey, arabicLayout);
     }
     const arabicHeight = arabicLayout.height;
 
@@ -317,7 +326,7 @@ export function drawFrame({
         }
         trLines.push(trLine.trim());
         trLayout = { lines: trLines, height: trLines.length * (transliterationFontSize * 1.4) };
-        _wrapCache.set(trKey, trLayout);
+        _cachedSet(_wrapCache, trKey, trLayout);
       }
       transliterationHeight = trLayout.height;
     }
@@ -344,7 +353,7 @@ export function drawFrame({
         }
         enLines.push(enLine.trim());
         enLayout = { lines: enLines, height: enLines.length * (translationFontSize * 1.4) };
-        _wrapCache.set(enKey, enLayout);
+        _cachedSet(_wrapCache, enKey, enLayout);
       }
       englishHeight = enLayout.height;
     }

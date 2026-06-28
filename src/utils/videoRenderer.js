@@ -273,34 +273,6 @@ export function drawFrame({
     ctx.restore();
   }
 
-  // 4. Draw Surah/Ayah Info Badge or Hadith Reference Badge
-  if (currentAyah) {
-    ctx.save();
-    const infoText = config.referenceText || `${config.surahName} [${config.surahNumber}:${currentAyah.numberInSurah}]`;
-    
-    // Draw badge background
-    ctx.font = '500 24px Outfit, Inter, sans-serif';
-    const textWidth = ctx.measureText(infoText).width;
-    const badgeW = textWidth + 40;
-    const badgeH = 48;
-    const badgeX = (width - badgeW) / 2;
-    const badgeY = 135;
-    
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 24);
-    ctx.fill();
-    ctx.stroke();
-    
-    // Draw badge text
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-    ctx.textAlign = 'center';
-    ctx.fillText(infoText, width / 2, badgeY + 32);
-    ctx.restore();
-  }
-
   // 5. Draw Quranic Arabic Text, Transliteration & Translation
   if (currentAyah) {
     ctx.save();

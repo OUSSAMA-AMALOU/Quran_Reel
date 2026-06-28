@@ -958,11 +958,6 @@ const TRANSITIONS = [
           : (rawItem.translationEn || rawItem.translationFr || ''),
         transliteration: rawItem.transliteration || ''
       } : null;
-      const referenceText = mode === 'hadith' && currentItem
-        ? `${currentItem.bookName}, Hadith ${currentItem.number}`
-        : mode === 'dua' && currentItem
-          ? `${DUA_SHORTCUTS.find(s => s.id === duaCategory)?.name || 'Dua'} #${currentItem.number}`
-          : undefined;
       drawFrame({
         ctx,
         canvas,
@@ -982,10 +977,7 @@ const TRANSITIONS = [
           visualizerStyle,
           visualizerColor,
           colorEffect,
-          surahName: selectedSurahDetails?.englishName,
-          surahNumber: surahNum,
           backgroundType,
-          referenceText,
         },
         isPlaying,
         currentTime

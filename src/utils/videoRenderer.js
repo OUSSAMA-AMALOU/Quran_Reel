@@ -2,35 +2,40 @@
  * Helper to wrap and draw text on canvas with centering and shadows
  */
 let _filterCanvas = null;
+const _wrapCache = new Map();
+const _gradientCache = {};
 
-export function wrapText(ctx, text, x, y, maxWidth, lineHeight, align = 'center') {
-  if (!text) return 0;
-  
-  const words = text.split(' ');
-  const lines = [];
-  let currentLine = '';
-
-  for (let i = 0; i < words.length; i++) {
-    const testLine = currentLine + words[i] + ' ';
-    const metrics = ctx.measureText(testLine);
-    const testWidth = metrics.width;
-    
-    if (testWidth > maxWidth && i > 0) {
-      lines.push(currentLine.trim());
-      currentLine = words[i] + ' ';
-    } else {
-      currentLine = testLine;
+function wrapTextCached(ctx, text, x, y, maxWidth, lineHeight, font, align = 'center') {
+  const key = `${text}|${font}|${maxWidth}`;
+  let cached = _wrapCache.get(key);
+  if (!cached) {
+    ctx.font = font;
+    const words = text.split(' ');
+    const lines = [];
+    let currentLine = '';
+    for (let i = 0; i < words.length; i++) {
+      const testLine = currentLine + words[i] + ' ';
+      if (ctx.measureText(testLine).width > maxWidth && i > 0) {
+        lines.push(currentLine.trim());
+        currentLine = words[i] + ' ';
+      } else {
+        currentLine = testLine;
+      }
     }
+    lines.push(currentLine.trim());
+    cached = { lines, height: lines.length * lineHeight };
+    _wrapCache.set(key, cached);
   }
-  lines.push(currentLine.trim());
-
+  ctx.font = font;
   ctx.textAlign = align;
-  
-  lines.forEach((line, index) => {
+  cached.lines.forEach((line, index) => {
     ctx.fillText(line, x, y + (index * lineHeight));
   });
+  return cached.height;
+}
 
-  return lines.length * lineHeight;
+export function wrapText(ctx, text, x, y, maxWidth, lineHeight, align = 'center') {
+  return wrapTextCached(ctx, text, x, y, maxWidth, lineHeight, ctx.font, align);
 }
 
 /**
@@ -77,11 +82,15 @@ export function drawFrame({
 
     if (bgId === 'stars') {
     // Starry Sky: dark gradient sky with twinkling stars
-    const grad = ctx.createLinearGradient(0, 0, 0, height);
-    grad.addColorStop(0, '#0a0e1a');
-    grad.addColorStop(0.4, '#0f1428');
-    grad.addColorStop(0.7, '#090b14');
-    grad.addColorStop(1, '#020306');
+    let grad = _gradientCache['stars'];
+    if (!grad) {
+      grad = ctx.createLinearGradient(0, 0, 0, height);
+      grad.addColorStop(0, '#0a0e1a');
+      grad.addColorStop(0.4, '#0f1428');
+      grad.addColorStop(0.7, '#090b14');
+      grad.addColorStop(1, '#020306');
+      _gradientCache['stars'] = grad;
+    }
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, width, height);
 
@@ -109,13 +118,16 @@ export function drawFrame({
     ctx.restore();
   } else if (bgId === 'forest') {
     // Sunlit Forest: deep green with animated light rays
-    const grad = ctx.createLinearGradient(0, 0, 0, height);
-    grad.addColorStop(0, '#0a1a0e');
-    grad.addColorStop(0.3, '#0d2412');
-    grad.addColorStop(0.6, '#081a0e');
-    grad.addColorStop(1, '#030a06');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, width, height);
+    let grad = _gradientCache['forest'];
+    if (!grad) {
+      grad = ctx.createLinearGradient(0, 0, 0, height);
+      grad.addColorStop(0, '#0a1a0e');
+      grad.addColorStop(0.3, '#0d2412');
+      grad.addColorStop(0.6, '#081a0e');
+      grad.addColorStop(1, '#030a06');
+      _gradientCache['forest'] = grad;
+    }
+    ctx.fillStyle = grad;    ctx.fillRect(0, 0, width, height);
 
     // Tree silhouettes
     ctx.save();
@@ -149,11 +161,15 @@ export function drawFrame({
     ctx.restore();
   } else if (bgId === 'rain') {
     // Rain Window: dark cool gradient with animated rain streaks
-    const grad = ctx.createLinearGradient(0, 0, 0, height);
-    grad.addColorStop(0, '#0a1218');
-    grad.addColorStop(0.3, '#101a24');
-    grad.addColorStop(0.6, '#0a1218');
-    grad.addColorStop(1, '#04080c');
+    let grad = _gradientCache['rain'];
+    if (!grad) {
+      grad = ctx.createLinearGradient(0, 0, 0, height);
+      grad.addColorStop(0, '#0a1218');
+      grad.addColorStop(0.3, '#101a24');
+      grad.addColorStop(0.6, '#0a1218');
+      grad.addColorStop(1, '#04080c');
+      _gradientCache['rain'] = grad;
+    }
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, width, height);
 
@@ -180,10 +196,14 @@ export function drawFrame({
     ctx.restore();
     } else {
       // starfield (default): cosmic gradient with floating particles
-      const grad = ctx.createLinearGradient(0, 0, 0, height);
-      grad.addColorStop(0, '#080a14');
-      grad.addColorStop(0.5, '#130e25');
-      grad.addColorStop(1, '#020306');
+      let grad = _gradientCache['starfield'];
+      if (!grad) {
+        grad = ctx.createLinearGradient(0, 0, 0, height);
+        grad.addColorStop(0, '#080a14');
+        grad.addColorStop(0.5, '#130e25');
+        grad.addColorStop(1, '#020306');
+        _gradientCache['starfield'] = grad;
+      }
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, width, height);
 
@@ -223,12 +243,17 @@ export function drawFrame({
     ctx.fillRect(0, 0, width, height);
 
     // Vignette (radial gradient)
-    const vignette = ctx.createRadialGradient(
-      width / 2, height / 2, height * 0.2,
-      width / 2, height / 2, height * 0.8
-    );
-    vignette.addColorStop(0, 'rgba(0, 0, 0, 0)');
-    vignette.addColorStop(1, `rgba(0, 0, 0, ${overlayOpacity * 1.5})`);
+    const vKey = `vignette_${overlayOpacity}`;
+    let vignette = _gradientCache[vKey];
+    if (!vignette) {
+      vignette = ctx.createRadialGradient(
+        width / 2, height / 2, height * 0.2,
+        width / 2, height / 2, height * 0.8
+      );
+      vignette.addColorStop(0, 'rgba(0, 0, 0, 0)');
+      vignette.addColorStop(1, `rgba(0, 0, 0, ${overlayOpacity * 1.5})`);
+      _gradientCache[vKey] = vignette;
+    }
     ctx.fillStyle = vignette;
     ctx.fillRect(0, 0, width, height);
   }
@@ -355,62 +380,82 @@ export function drawFrame({
       'hacen-sudan': '"Hacen Sudan", sans-serif',
       'hacen-tunisia': '"Hacen Tunisia", sans-serif',
     }[config.fontFamily] || "'Amiri', serif";
-    ctx.font = `700 ${arabicFontSize}px ${arabicFontFamily}`;
-
-    const tempArabicLines = [];
-    const words = currentAyah.text.split(' ');
-    let currentLine = '';
-    for (let i = 0; i < words.length; i++) {
-      const testLine = currentLine + words[i] + ' ';
-      if (ctx.measureText(testLine).width > maxWidth && i > 0) {
-        tempArabicLines.push(currentLine.trim());
-        currentLine = words[i] + ' ';
-      } else {
-        currentLine = testLine;
+    const arabicFontStr = `700 ${arabicFontSize}px ${arabicFontFamily}`;
+    const arabicKey = `${currentAyah.text}|${arabicFontStr}|${maxWidth}`;
+    let arabicLayout = _wrapCache.get(arabicKey);
+    if (!arabicLayout) {
+      ctx.font = arabicFontStr;
+      const aWords = currentAyah.text.split(' ');
+      const aLines = [];
+      let aLine = '';
+      for (let i = 0; i < aWords.length; i++) {
+        const testLine = aLine + aWords[i] + ' ';
+        if (ctx.measureText(testLine).width > maxWidth && i > 0) {
+          aLines.push(aLine.trim());
+          aLine = aWords[i] + ' ';
+        } else {
+          aLine = testLine;
+        }
       }
+      aLines.push(aLine.trim());
+      arabicLayout = { lines: aLines, height: aLines.length * (arabicFontSize * 1.5) };
+      _wrapCache.set(arabicKey, arabicLayout);
     }
-    tempArabicLines.push(currentLine.trim());
-    const arabicHeight = tempArabicLines.length * (arabicFontSize * 1.5);
+    const arabicHeight = arabicLayout.height;
 
     // Measure Transliteration
     let transliterationHeight = 0;
-    const tempTrLines = [];
+    const transliterationFontStr = `400 ${transliterationFontSize}px 'Outfit', 'Inter', sans-serif`;
     const showTr = config.showTransliteration && currentAyah.transliteration;
     if (showTr) {
-      ctx.font = `400 ${transliterationFontSize}px 'Outfit', 'Inter', sans-serif`;
-      const trWords = currentAyah.transliteration.split(' ');
-      let trLine = '';
-      for (let i = 0; i < trWords.length; i++) {
-        const testLine = trLine + trWords[i] + ' ';
-        if (ctx.measureText(testLine).width > maxWidth && i > 0) {
-          tempTrLines.push(trLine.trim());
-          trLine = trWords[i] + ' ';
-        } else {
-          trLine = testLine;
+      const trKey = `${currentAyah.transliteration}|${transliterationFontStr}|${maxWidth}`;
+      let trLayout = _wrapCache.get(trKey);
+      if (!trLayout) {
+        ctx.font = transliterationFontStr;
+        const trWords = currentAyah.transliteration.split(' ');
+        const trLines = [];
+        let trLine = '';
+        for (let i = 0; i < trWords.length; i++) {
+          const testLine = trLine + trWords[i] + ' ';
+          if (ctx.measureText(testLine).width > maxWidth && i > 0) {
+            trLines.push(trLine.trim());
+            trLine = trWords[i] + ' ';
+          } else {
+            trLine = testLine;
+          }
         }
+        trLines.push(trLine.trim());
+        trLayout = { lines: trLines, height: trLines.length * (transliterationFontSize * 1.4) };
+        _wrapCache.set(trKey, trLayout);
       }
-      tempTrLines.push(trLine.trim());
-      transliterationHeight = tempTrLines.length * (transliterationFontSize * 1.4);
+      transliterationHeight = trLayout.height;
     }
 
     // Measure Translation
     let englishHeight = 0;
-    const tempEnglishLines = [];
+    const translationFontStr = `400 ${translationFontSize}px Outfit, Inter, sans-serif`;
     if (config.showTranslation && currentAyah.translation) {
-      ctx.font = `400 ${translationFontSize}px Outfit, Inter, sans-serif`;
-      const engWords = currentAyah.translation.split(' ');
-      let engLine = '';
-      for (let i = 0; i < engWords.length; i++) {
-        const testLine = engLine + engWords[i] + ' ';
-        if (ctx.measureText(testLine).width > maxWidth && i > 0) {
-          tempEnglishLines.push(engLine.trim());
-          engLine = engWords[i] + ' ';
-        } else {
-          engLine = testLine;
+      const enKey = `${currentAyah.translation}|${translationFontStr}|${maxWidth}`;
+      let enLayout = _wrapCache.get(enKey);
+      if (!enLayout) {
+        ctx.font = translationFontStr;
+        const enWords = currentAyah.translation.split(' ');
+        const enLines = [];
+        let enLine = '';
+        for (let i = 0; i < enWords.length; i++) {
+          const testLine = enLine + enWords[i] + ' ';
+          if (ctx.measureText(testLine).width > maxWidth && i > 0) {
+            enLines.push(enLine.trim());
+            enLine = enWords[i] + ' ';
+          } else {
+            enLine = testLine;
+          }
         }
+        enLines.push(enLine.trim());
+        enLayout = { lines: enLines, height: enLines.length * (translationFontSize * 1.4) };
+        _wrapCache.set(enKey, enLayout);
       }
-      tempEnglishLines.push(engLine.trim());
-      englishHeight = tempEnglishLines.length * (translationFontSize * 1.4);
+      englishHeight = enLayout.height;
     }
 
     const totalBlockHeight = arabicHeight

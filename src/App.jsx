@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { surahs } from './data/surahData';
 import { drawFrame } from './utils/videoRenderer';
 import { t } from './i18n';
@@ -276,9 +276,9 @@ function App() {
   const [vignetteOpacity, setVignetteOpacity] = useState(0.4);
   const [fontFamily, setFontFamily] = useState('amiri');
   const [showTranslation, setShowTranslation] = useState(false);
-  const [translationLang, setTranslationLang] = useState('en');
+  const translationLang = 'en';
   const [uiLang, setUiLang] = useState('en');
-  const [showTransliteration, setShowTransliteration] = useState(false);
+  const showTransliteration = false;
   const [watermark, setWatermark] = useState('');
   const [visualizerStyle, setVisualizerStyle] = useState('none'); // 'waves', 'bars', 'none'
   const [visualizerColor, setVisualizerColor] = useState('#60a5fa');
@@ -376,7 +376,6 @@ const TRANSITIONS = [
     { id: 'hajj', name: 'Hajj & Umrah', arabic: 'أذكار الحج والعمرة' },
   ];
   const [duaCategory, setDuaCategory] = useState('morning');
-  const [duaCategories, setDuaCategories] = useState([]);
   const [duaData, setDuaData] = useState([]);
   const [currentDuaIndex, setCurrentDuaIndex] = useState(0);
   
@@ -654,19 +653,6 @@ const TRANSITIONS = [
     }
   }, [hadithNumber, hadithBook]);
 
-  // Fetch Duas from islamic.app API (Hisn al-Muslim)
-  const fetchDuaCategories = useCallback(async () => {
-    try {
-      const res = await fetch('https://api.islamic.app/v1/dhikr');
-      const json = await res.json();
-      if (json.code === 200 && json.data) {
-        setDuaCategories(json.data.categories);
-      }
-    } catch (err) {
-      console.error('Failed to fetch dua categories:', err);
-    }
-  }, []);
-
   const fetchDuas = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -694,18 +680,6 @@ const TRANSITIONS = [
       setLoading(false);
     }
   }, [duaCategory]);
-
-  // Auto-load hadiths when switching to hadith mode
-  useEffect(() => {
-    if (mode === 'hadith') {
-      fetchHadiths();
-    }
-  }, [mode, fetchHadiths]);
-
-  // Fetch dua categories on mount
-  useEffect(() => {
-    fetchDuaCategories();
-  }, [fetchDuaCategories]);
 
   // Auto-load duas when switching to dua mode
   useEffect(() => {
@@ -959,7 +933,6 @@ const TRANSITIONS = [
     canvas.height = 1920;
 
     let animId;
-    let lastTransitionTime = 0;
     const renderLoop = (now) => {
       const rawItem = mode === 'hadith'
         ? hadithData[currentHadithIndex]
@@ -1519,7 +1492,7 @@ const TRANSITIONS = [
   }, [currentAyahIndex, isRecording, passageAyahs.length, startAyah, endAyah]);
 
   // Visual style JSX (used in right sidebar on desktop, and in left sidebar on mobile)
-  const visualStyleContent = (
+  const visualStyleContent = useMemo(() => (
     <>
       <h2 className="section-title">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -1710,7 +1683,11 @@ const TRANSITIONS = [
       )}
 
     </>
-  );
+  ), [
+    fontFamily, fontSize, translationFontSize, textPosition,
+    transitionEffect, colorEffect, visualizerStyle, visualizerColor,
+    isRecording, uiLang, watermark, vignetteOpacity, showTranslation
+  ]);
 
   return (
     <div className="app-container" data-theme={theme}>

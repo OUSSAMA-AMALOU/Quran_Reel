@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import { surahs } from './data/surahData';
 import { drawFrame } from './utils/videoRenderer';
 import { t } from './i18n';
@@ -2363,6 +2364,7 @@ const TRANSITIONS = [
         </section>
 
       </main>
+      <SpeedInsights />
     </div>
   );
 }

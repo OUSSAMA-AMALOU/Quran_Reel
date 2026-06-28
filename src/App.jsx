@@ -265,6 +265,7 @@ function App() {
   // Customization States
   const backgroundType = 'upload';
   const [uploadedBgUrl, setUploadedBgUrl] = useState(null);
+  const [bgImage, setBgImage] = useState(null);
   const [videoMode, setVideoMode] = useState('single'); // 'single' | 'per-ayah'
   const [perAyahVideos, setPerAyahVideos] = useState({}); // { ayahNum: blobUrl }
   const uploadedForAyahRef = useRef(null);
@@ -978,6 +979,7 @@ const TRANSITIONS = [
           visualizerColor,
           colorEffect,
           backgroundType,
+          bgImage,
         },
         isPlaying,
         currentTime
@@ -1710,11 +1712,34 @@ const TRANSITIONS = [
         </select>
       </div>
 
+      <div className="form-group">
+        <label>Background Image</label>
+        <div className="file-upload">
+          <input type="file" accept="image/*" id="bgImageInput" style={{ display: 'none' }} onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) {
+              if (bgImage) URL.revokeObjectURL(bgImage);
+              setBgImage(URL.createObjectURL(file));
+            }
+            e.target.value = '';
+          }} />
+          <label htmlFor="bgImageInput" className="upload-btn" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8, padding: '10px 16px', background: 'var(--bg-surface-elevated)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m3 16 5-5 3 3 4-4 6 6"/></svg>
+            <span>{bgImage ? 'Change Image' : 'Upload Image'}</span>
+          </label>
+          {bgImage && (
+            <button className="clear-btn" onClick={() => { URL.revokeObjectURL(bgImage); setBgImage(null); }} style={{ marginLeft: 8, padding: '6px 12px', background: 'transparent', border: '1px solid var(--danger)', borderRadius: 'var(--radius-sm)', color: 'var(--danger)' }}>
+              ✕ Clear
+            </button>
+          )}
+        </div>
+      </div>
+
     </>
   ), [
     fontFamily, fontSize, translationFontSize, textPosition,
     transitionEffect, colorEffect, visualizerStyle, visualizerColor,
-    isRecording, uiLang, watermark, vignetteOpacity, showTranslation, canvasResolution
+    isRecording, uiLang, watermark, vignetteOpacity, showTranslation, canvasResolution, bgImage
   ]);
 
   return (

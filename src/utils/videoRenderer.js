@@ -5,6 +5,53 @@ let _filterCanvas = null;
 const _wrapCache = new Map();
 const _gradientCache = {};
 
+function _drawGradientBg(ctx, width, height, cache, config) {
+  const bgId = config.backgroundId || 'starfield';
+  let grad;
+  if (bgId === 'stars') {
+    grad = cache['stars'];
+    if (!grad) {
+      grad = ctx.createLinearGradient(0, 0, 0, height);
+      grad.addColorStop(0, '#0a0e1a');
+      grad.addColorStop(0.4, '#0f1428');
+      grad.addColorStop(0.7, '#090b14');
+      grad.addColorStop(1, '#020306');
+      cache['stars'] = grad;
+    }
+  } else if (bgId === 'forest') {
+    grad = cache['forest'];
+    if (!grad) {
+      grad = ctx.createLinearGradient(0, 0, 0, height);
+      grad.addColorStop(0, '#0a1a0e');
+      grad.addColorStop(0.3, '#0d2412');
+      grad.addColorStop(0.6, '#081a0e');
+      grad.addColorStop(1, '#030a06');
+      cache['forest'] = grad;
+    }
+  } else if (bgId === 'rain') {
+    grad = cache['rain'];
+    if (!grad) {
+      grad = ctx.createLinearGradient(0, 0, 0, height);
+      grad.addColorStop(0, '#0a1218');
+      grad.addColorStop(0.3, '#101a24');
+      grad.addColorStop(0.6, '#0a1218');
+      grad.addColorStop(1, '#04080c');
+      cache['rain'] = grad;
+    }
+  } else {
+    grad = cache['starfield'];
+    if (!grad) {
+      grad = ctx.createLinearGradient(0, 0, 0, height);
+      grad.addColorStop(0, '#080a14');
+      grad.addColorStop(0.5, '#130e25');
+      grad.addColorStop(1, '#020306');
+      cache['starfield'] = grad;
+    }
+  }
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, width, height);
+}
+
 function wrapTextCached(ctx, text, x, y, maxWidth, lineHeight, font, align = 'center') {
   const key = `${text}|${font}|${maxWidth}`;
   let cached = _wrapCache.get(key);
@@ -57,7 +104,6 @@ export function drawFrame({
   const height = canvas.height; // 1920
 
   // 1. Draw Background
-  const t = currentTime || 0;
 
   // Uploaded custom video takes priority
   if (config.backgroundType === 'upload' && videoElement && videoElement.readyState >= 2) {
@@ -76,58 +122,34 @@ export function drawFrame({
       sy = (videoElement.videoHeight - sHeight) / 2;
     }
     ctx.drawImage(videoElement, sx, sy, sWidth, sHeight, 0, 0, width, height);
-  } else {
-    // Static gradient backgrounds (no animations)
-    const bgId = config.backgroundId || 'starfield';
-
-    if (bgId === 'stars') {
-    let grad = _gradientCache['stars'];
-    if (!grad) {
-      grad = ctx.createLinearGradient(0, 0, 0, height);
-      grad.addColorStop(0, '#0a0e1a');
-      grad.addColorStop(0.4, '#0f1428');
-      grad.addColorStop(0.7, '#090b14');
-      grad.addColorStop(1, '#020306');
-      _gradientCache['stars'] = grad;
+  } else if (config.bgImage) {
+    // Uploaded image background (object-fit: cover)
+    const img = new Image();
+    if (img.src !== config.bgImage) {
+      img.src = config.bgImage;
     }
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, width, height);
-  } else if (bgId === 'forest') {
-    let grad = _gradientCache['forest'];
-    if (!grad) {
-      grad = ctx.createLinearGradient(0, 0, 0, height);
-      grad.addColorStop(0, '#0a1a0e');
-      grad.addColorStop(0.3, '#0d2412');
-      grad.addColorStop(0.6, '#081a0e');
-      grad.addColorStop(1, '#030a06');
-      _gradientCache['forest'] = grad;
-    }
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, width, height);
-  } else if (bgId === 'rain') {
-    let grad = _gradientCache['rain'];
-    if (!grad) {
-      grad = ctx.createLinearGradient(0, 0, 0, height);
-      grad.addColorStop(0, '#0a1218');
-      grad.addColorStop(0.3, '#101a24');
-      grad.addColorStop(0.6, '#0a1218');
-      grad.addColorStop(1, '#04080c');
-      _gradientCache['rain'] = grad;
-    }
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, width, height);
-    } else {
-      let grad = _gradientCache['starfield'];
-      if (!grad) {
-        grad = ctx.createLinearGradient(0, 0, 0, height);
-        grad.addColorStop(0, '#080a14');
-        grad.addColorStop(0.5, '#130e25');
-        grad.addColorStop(1, '#020306');
-        _gradientCache['starfield'] = grad;
+    if (img.complete && img.naturalWidth > 0) {
+      const imgAspect = img.naturalWidth / img.naturalHeight;
+      const canvasAspect = width / height;
+      let sx2, sy2, sWidth2, sHeight2;
+      if (imgAspect > canvasAspect) {
+        sHeight2 = img.naturalHeight;
+        sWidth2 = sHeight2 * canvasAspect;
+        sx2 = (img.naturalWidth - sWidth2) / 2;
+        sy2 = 0;
+      } else {
+        sWidth2 = img.naturalWidth;
+        sHeight2 = sWidth2 / canvasAspect;
+        sx2 = 0;
+        sy2 = (img.naturalHeight - sHeight2) / 2;
       }
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, width, height);
+      ctx.drawImage(img, sx2, sy2, sWidth2, sHeight2, 0, 0, width, height);
+    } else {
+      // Fallback to gradient if image not loaded
+      _drawGradientBg(ctx, width, height, _gradientCache, config);
     }
+  } else {
+    _drawGradientBg(ctx, width, height, _gradientCache, config);
   }
 
   // 2. Dark Overlay / Vignette

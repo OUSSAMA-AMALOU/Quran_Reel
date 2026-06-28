@@ -284,6 +284,9 @@ function App() {
   const [visualizerColor, setVisualizerColor] = useState('#60a5fa');
   const [colorEffect, setColorEffect] = useState('none');
   const [transitionEffect, setTransitionEffect] = useState('none');
+  const [canvasResolution, setCanvasResolution] = useState('720p');
+
+const DIMS = { '1080p': [1080,1920], '720p': [720,1280], '540p': [540,960] };
 
 const COLOR_EFFECTS = [
   { id: 'none', name: '♾ None' },
@@ -929,8 +932,11 @@ const TRANSITIONS = [
     const ctx = canvas.getContext('2d');
     
     // Instagram Reels 9:16
-    canvas.width = 1080;
-    canvas.height = 1920;
+    const [cw, ch] = DIMS[canvasResolution] || DIMS['720p'];
+    if (canvas.width !== cw || canvas.height !== ch) {
+      canvas.width = cw;
+      canvas.height = ch;
+    }
 
     let animId;
     let lastFrameTime = 0;
@@ -1030,9 +1036,18 @@ const TRANSITIONS = [
     selectedSurahDetails, 
     surahNum,
     currentTime,
+    canvasResolution,
   ]);
 
   // Export / Record video logic
+
+  const cleanupRecorder = (keepRecorder = false) => {
+    if (recorderRef.current && recorderRef.current.state !== 'inactive') {
+      try { recorderRef.current.stop(); } catch (_) {}
+    }
+    if (!keepRecorder) recorderRef.current = null;
+  };
+
   const handleExportVideo = async () => {
     if (mode === 'hadith' || mode === 'dua') {
       if (mode === 'hadith') await handleExportHadith();
@@ -1051,6 +1066,7 @@ const TRANSITIONS = [
     setRecordingStatus(T('status.initMedia'));
 
     try {
+      cleanupRecorder();
       // Reset to primary audio element
       activeIsPrimaryRef.current = true;
       setCurrentAyahIndex(0);
@@ -1212,9 +1228,10 @@ const TRANSITIONS = [
 
     } catch (err) {
       console.error(err);
-      setError(`Recording failed: ${err.message}`);
+      setError(`Recording failed: ${err?.message || err}`);
       setIsRecording(false);
       setRecordingProgress(0);
+      cleanupRecorder(true);
     }
   };
 
@@ -1228,6 +1245,7 @@ const TRANSITIONS = [
     setRecordingStatus(T('status.initHadith'));
 
     try {
+      cleanupRecorder();
       setCurrentHadithIndex(0);
 
       // Setup Web Audio for background audio capture (same approach as Quran export)
@@ -1350,9 +1368,10 @@ const TRANSITIONS = [
       if (bgAudioRef.current) bgAudioRef.current.pause();
     } catch (err) {
       console.error(err);
-      setError(`Recording failed: ${err.message}`);
+      setError(`Recording failed: ${err?.message || err}`);
       setIsRecording(false);
       setRecordingProgress(0);
+      cleanupRecorder(true);
     }
   };
 
@@ -1366,6 +1385,7 @@ const TRANSITIONS = [
     setRecordingStatus(T('status.initDua'));
 
     try {
+      cleanupRecorder();
       setCurrentDuaIndex(0);
 
       const AudioContextClass = window.AudioContext || window.webkitAudioContext;
@@ -1470,9 +1490,10 @@ const TRANSITIONS = [
       if (bgAudioRef.current) bgAudioRef.current.pause();
     } catch (err) {
       console.error(err);
-      setError(`Recording failed: ${err.message}`);
+      setError(`Recording failed: ${err?.message || err}`);
       setIsRecording(false);
       setRecordingProgress(0);
+      cleanupRecorder(true);
     }
   };
 
@@ -1688,11 +1709,20 @@ const TRANSITIONS = [
         </div>
       )}
 
+      <div className="form-group">
+        <label>Export Resolution</label>
+        <select value={canvasResolution} onChange={(e) => setCanvasResolution(e.target.value)} disabled={isRecording}>
+          <option value="1080p">1080p (Full HD)</option>
+          <option value="720p">720p (HD) — Recommended</option>
+          <option value="540p">540p (Light)</option>
+        </select>
+      </div>
+
     </>
   ), [
     fontFamily, fontSize, translationFontSize, textPosition,
     transitionEffect, colorEffect, visualizerStyle, visualizerColor,
-    isRecording, uiLang, watermark, vignetteOpacity, showTranslation
+    isRecording, uiLang, watermark, vignetteOpacity, showTranslation, canvasResolution
   ]);
 
   return (

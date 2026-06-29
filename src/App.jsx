@@ -292,6 +292,28 @@ function App() {
   const [canvasResolution, setCanvasResolution] = useState('720p');
   const [visualEffect, setVisualEffect] = useState('none');
 
+  // New features
+  const [bgColor1, setBgColor1] = useState('');
+  const [bgColor2, setBgColor2] = useState('');
+  const [textAnim, setTextAnim] = useState('none');
+  const [introEnabled, setIntroEnabled] = useState(false);
+  const [introDuration, setIntroDuration] = useState(4);
+  const [introBgType, setIntroBgType] = useState('gradient');
+  const [introBgColor1, setIntroBgColor1] = useState('#0a1628');
+  const [introBgColor2, setIntroBgColor2] = useState('#1a2a4a');
+  const [introBgImage, setIntroBgImage] = useState(null);
+  const [introBgVideo, setIntroBgVideo] = useState(null);
+  const [introText, setIntroText] = useState('');
+  const [introSubtext, setIntroSubtext] = useState('');
+  const [introFontSize, setIntroFontSize] = useState(52);
+  const [introSubFontSize, setIntroSubFontSize] = useState(30);
+  const [introFontFamily, setIntroFontFamily] = useState('amiri');
+  const [introTextColor, setIntroTextColor] = useState('#ffffff');
+  const [introSubFontFamily, setIntroSubFontFamily] = useState('amiri');
+  const [introSubTextColor, setIntroSubTextColor] = useState('#ffffff');
+  const [introTransitionEffect, setIntroTransitionEffect] = useState('none');
+  const introTransitionRef = useRef(false);
+
 const DIMS = { '1080p': [1080,1920], '720p': [720,1280], '540p': [540,960] };
 
 const TRANSITIONS = [
@@ -399,6 +421,9 @@ const TRANSITIONS = [
   const bgAudioRef = useRef(null);
   const fileInputRef = useRef(null);
   const videoRef = useRef(null);
+  const introVideoRef = useRef(null);
+  const renderStartTimeRef = useRef(0);
+  const audioStartedRef = useRef(false);
   
   // Web Audio API References
   const audioCtxRef = useRef(null);
@@ -437,13 +462,34 @@ const TRANSITIONS = [
       fontSize, translationFontSize, textPosition, vignetteOpacity,
       fontFamily, showTranslation, translationLang, showTransliteration,
       watermark, visualizerStyle, visualizerColor, visualEffect,
+      bgColor1, bgColor2, textAnim,
       backgroundType: 'upload', bgImage, highlightColor,
+      introVideoElement: introVideoRef.current,
+      intro: introEnabled ? {
+        enabled: true,
+        duration: introDuration,
+        bgType: introBgType,
+        bgColor1: introBgColor1,
+        bgColor2: introBgColor2,
+        bgImage: introBgImage,
+        bgVideo: introBgVideo,
+        text: introText,
+        subtext: introSubtext,
+        fontSize: introFontSize,
+        subFontSize: introSubFontSize,
+        fontFamily: introFontFamily,
+        textColor: introTextColor,
+        subFontFamily: introSubFontFamily,
+        subTextColor: introSubTextColor,
+      } : null,
     };
     const itemsPerFrame = fps * durPerItem;
+    const introFrames = introEnabled ? introDuration * fps : 0;
     const videoEl = videoRef.current;
     return (frameIdx) => {
-      const idx = Math.min(Math.floor(frameIdx / itemsPerFrame), items.length - 1);
-      const raw = items[idx];
+      const adjustedFrameIdx = frameIdx - introFrames;
+      const idx = adjustedFrameIdx >= 0 ? Math.min(Math.floor(adjustedFrameIdx / itemsPerFrame), items.length - 1) : -1;
+      const raw = idx >= 0 ? items[idx] : null;
       const currentItem = raw ? {
         ...raw,
         translation: translationLang === 'fr'
@@ -464,7 +510,10 @@ const TRANSITIONS = [
     };
   }, [fontSize, translationFontSize, textPosition, vignetteOpacity, fontFamily,
       showTranslation, translationLang, showTransliteration, watermark,
-      visualizerStyle, visualizerColor, visualEffect, bgImage, highlightColor]);
+      visualizerStyle, visualizerColor, visualEffect, bgImage, highlightColor, bgColor1, bgColor2, textAnim,
+      introEnabled, introDuration, introBgType, introBgColor1, introBgColor2, introBgImage, introBgVideo,
+      introText, introSubtext, introFontSize, introSubFontSize, introFontFamily, introTextColor,
+      introSubFontFamily, introSubTextColor]);
 
   // Handle Fetching Surah Data (Arabic text, translation, audio)
   const fetchPassage = useCallback(async () => {
@@ -813,12 +862,19 @@ const TRANSITIONS = [
         a.src = ayah.audio;
         a.load();
       }
-      a.play().then(() => {
-        setIsPlaying(true);
-        preloadNextAyah();
-      }).catch(err => {
-        console.error("Audio playback error:", err);
-      });
+      renderStartTimeRef.current = 0;
+      audioStartedRef.current = false;
+      introTransitionRef.current = false;
+      setIsPlaying(true);
+      if (!introEnabled || mode !== 'quran') {
+        a.play().then(() => {
+          preloadNextAyah();
+        }).catch(err => {
+          console.error("Audio playback error:", err);
+        });
+      } else {
+        // Don't set src or load — render loop handles everything
+      }
     }
   };
 
@@ -1020,12 +1076,65 @@ const TRANSITIONS = [
 
     let animId;
     let lastFrameTime = 0;
-    let renderStartTime = 0;
     const renderLoop = (now) => {
-      if (renderStartTime === 0) renderStartTime = now;
+      if (renderStartTimeRef.current === 0) renderStartTimeRef.current = now;
       if (isRecording && now - lastFrameTime < 33) {
         animId = requestAnimationFrame(renderLoop);
         return;
+      }
+      const ct = (now - renderStartTimeRef.current) / 1000;
+      if (introEnabled && ct >= introDuration && !audioStartedRef.current) {
+        audioStartedRef.current = true;
+        if (mode === 'quran') {
+          const a = getAudio();
+          if (a) {
+            try {
+              if (isRecording) {
+                a.currentTime = 0;
+                a.play().then(() => preloadNextAyah()).catch(err => console.error("Audio playback error:", err));
+              } else {
+                const ayah = passageAyahs[currentAyahIndex];
+                if (ayah?.audio) {
+                  a.src = ayah.audio;
+                  a.load();
+                  a.play().then(() => {
+                    setIsPlaying(true);
+                    preloadNextAyah();
+                  }).catch(err => console.error("Audio playback error:", err));
+                }
+              }
+            } catch(e) {
+              console.error("Audio start error:", e);
+            }
+          }
+        }
+      }
+      // Capture intro frame for transition to content
+      if (introEnabled && ct >= introDuration && !introTransitionRef.current) {
+        introTransitionRef.current = true;
+        if (introTransitionEffect !== 'none' && canvasRef.current) {
+          const w = canvasRef.current.width, h = canvasRef.current.height;
+          if (!prevFrameRef.current || prevFrameRef.current.width !== w || prevFrameRef.current.height !== h) {
+            prevFrameRef.current = document.createElement('canvas');
+            prevFrameRef.current.width = w;
+            prevFrameRef.current.height = h;
+          }
+          prevFrameRef.current.getContext('2d').drawImage(canvasRef.current, 0, 0);
+          transitionRef.current = { active: true, startTime: performance.now(), duration: 500, effect: introTransitionEffect };
+        }
+      }
+      if (introEnabled && ct < introDuration) {
+        if (videoRef.current && !videoRef.current.paused) videoRef.current.pause();
+        if (!isRecording && !audioStartedRef.current) {
+          const a = getAudio();
+          if (a && !a.paused) a.pause();
+          if (nextAudioRef.current && !nextAudioRef.current.paused) nextAudioRef.current.pause();
+        }
+      } else if (introEnabled && ct >= introDuration && ct < introDuration + 0.5) {
+        if (videoRef.current && videoRef.current.paused) {
+          videoRef.current.currentTime = 0;
+          videoRef.current.play().catch(() => {});
+        }
       }
       lastFrameTime = now;
       const rawItem = mode === 'hadith'
@@ -1063,9 +1172,30 @@ const TRANSITIONS = [
           backgroundType,
           bgImage,
           highlightColor,
+          bgColor1,
+          bgColor2,
+          textAnim,
+          introVideoElement: introVideoRef.current,
+          intro: introEnabled ? {
+            enabled: true,
+            duration: introDuration,
+            bgType: introBgType,
+            bgColor1: introBgColor1,
+            bgColor2: introBgColor2,
+            bgImage: introBgImage,
+            bgVideo: introBgVideo,
+            text: introText,
+            subtext: introSubtext,
+            fontSize: introFontSize,
+            subFontSize: introSubFontSize,
+            fontFamily: introFontFamily,
+            textColor: introTextColor,
+            subFontFamily: introSubFontFamily,
+            subTextColor: introSubTextColor,
+          } : null,
         },
         isPlaying,
-        currentTime: (now - renderStartTime) / 1000,
+        currentTime: (now - renderStartTimeRef.current) / 1000,
         highlightedWords: highlightedWords[ayahKey] || [],
       });
 
@@ -1117,6 +1247,13 @@ const TRANSITIONS = [
     bgImage,
     highlightedWords,
     highlightColor,
+    bgColor1,
+    bgColor2,
+    textAnim,
+    introEnabled, introDuration, introBgType, introBgColor1, introBgColor2,
+    introBgImage, introBgVideo, introText, introSubtext,
+    introFontSize, introSubFontSize, introFontFamily, introTextColor,
+    introSubFontFamily, introSubTextColor,
   ]);
 
   // Export / Record video logic
@@ -1301,7 +1438,14 @@ const TRANSITIONS = [
 
       // 6. Begin playback
       const activeA = getAudio();
-      if (activeA) await activeA.play();
+      if (activeA) {
+        if (!introEnabled || mode !== 'quran') {
+          await activeA.play();
+        }
+      }
+      renderStartTimeRef.current = 0;
+      audioStartedRef.current = false;
+      introTransitionRef.current = false;
       setIsPlaying(true);
       setRecordingProgress(10);
       setRecordingStatus(T('status.recordingAyah', { n: startAyah, total: endAyah }));
@@ -1331,7 +1475,8 @@ const TRANSITIONS = [
     try {
       cleanupRecorder();
       const fps = 30;
-      const totalFrames = hadithData.length * itemDuration * fps;
+      const introFrames = introEnabled ? introDuration * fps : 0;
+      const totalFrames = introFrames + hadithData.length * itemDuration * fps;
       const renderFn = buildRenderFn(hadithData, fps, itemDuration);
       if (!renderFn) throw new Error('Failed to build render function');
 
@@ -1454,7 +1599,8 @@ const TRANSITIONS = [
     try {
       cleanupRecorder();
       const fps = 30;
-      const totalFrames = duaData.length * itemDuration * fps;
+      const introFrames = introEnabled ? introDuration * fps : 0;
+      const totalFrames = introFrames + duaData.length * itemDuration * fps;
       const renderFn = buildRenderFn(duaData, fps, itemDuration);
       if (!renderFn) throw new Error('Failed to build render function');
 
@@ -1754,6 +1900,7 @@ const TRANSITIONS = [
         >
           <option value="bars">{T('style.visBars')}</option>
           <option value="waves">{T('style.visWaves')}</option>
+          <option value="ring">{T('style.visRing')}</option>
           <option value="none">{T('style.visDisabled')}</option>
         </select>
       </div>
@@ -1777,6 +1924,27 @@ const TRANSITIONS = [
       )}
 
       <div className="form-group">
+        <label>📝 Text Animation</label>
+        <select value={textAnim} onChange={(e) => setTextAnim(e.target.value)} disabled={isRecording}>
+          <option value="none">— None —</option>
+          <option value="fade">Fade In</option>
+          <option value="slide-up">Slide Up</option>
+          <option value="slide-down">Slide Down</option>
+          <option value="zoom">Zoom In</option>
+        </select>
+      </div>
+
+      <div className="form-group">
+        <label>🎨 Custom Gradient</label>
+        <div style={{display:'flex', gap:8, alignItems:'center'}}>
+          <input type="color" value={bgColor1 || '#080a14'} onChange={(e) => setBgColor1(e.target.value)} disabled={isRecording} style={{width:40,height:32,padding:0,border:'1px solid var(--border-color)',borderRadius:6,background:'none',cursor:'pointer'}} />
+          <span style={{color:'var(--text-muted)',fontSize:12}}>→</span>
+          <input type="color" value={bgColor2 || '#020306'} onChange={(e) => setBgColor2(e.target.value)} disabled={isRecording} style={{width:40,height:32,padding:0,border:'1px solid var(--border-color)',borderRadius:6,background:'none',cursor:'pointer'}} />
+          {(bgColor1 || bgColor2) && <button className="btn-ghost" style={{padding:'4px 10px',fontSize:11,width:'auto'}} onClick={() => { setBgColor1(''); setBgColor2(''); }} disabled={isRecording}>×</button>}
+        </div>
+      </div>
+
+      <div className="form-group">
         <label>Export Resolution</label>
         <select value={canvasResolution} onChange={(e) => setCanvasResolution(e.target.value)} disabled={isRecording}>
           <option value="1080p">1080p (Full HD)</option>
@@ -1790,7 +1958,12 @@ const TRANSITIONS = [
     fontFamily, fontSize, translationFontSize, textPosition,
     transitionEffect, visualizerStyle, visualizerColor,
     visualEffect,
-    isRecording, uiLang, watermark, vignetteOpacity, showTranslation, canvasResolution, bgImage
+    isRecording, uiLang, watermark, vignetteOpacity, showTranslation, canvasResolution, bgImage,
+    bgColor1, bgColor2, textAnim,
+    introEnabled, introDuration, introBgType, introBgColor1, introBgColor2,
+    introBgImage, introBgVideo, introText, introSubtext,
+    introFontSize, introSubFontSize, introFontFamily, introTextColor,
+    introSubFontFamily, introSubTextColor
   ]);
 
   return (
@@ -2112,6 +2285,253 @@ const TRANSITIONS = [
 
           <h2 className="section-title">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+            </svg>
+            🎬 {T('intro.title')}
+          </h2>
+
+          <div className="form-group">
+            <label>{T('intro.enable')}</label>
+            <label className="switch" style={{marginLeft:8}}>
+              <input type="checkbox" checked={introEnabled} onChange={(e) => setIntroEnabled(e.target.checked)} disabled={isRecording} />
+              <span className="slider"></span>
+            </label>
+          </div>
+
+          {introEnabled && (<>
+          <div className="form-group">
+            <label>{T('intro.duration')}: {introDuration}{T('intro.seconds')}</label>
+            <div className="slider-group">
+              <input type="range" min="2" max="10" step="1" value={introDuration} onChange={(e) => setIntroDuration(parseInt(e.target.value))} disabled={isRecording} />
+              <span>{introDuration}s</span>
+            </div>
+          </div>
+
+          <details style={{marginBottom:8}}>
+            <summary style={{cursor:'pointer',fontSize:13,fontWeight:600,color:'var(--text-secondary)',padding:'6px 0'}}>🎨 {T('intro.bgType')}</summary>
+            <div style={{padding:'8px 0 4px 0'}}>
+            <div className="form-group">
+              <label>{T('intro.bgType')}</label>
+              <select value={introBgType} onChange={(e) => setIntroBgType(e.target.value)} disabled={isRecording}>
+                <option value="color">{T('intro.bgColor')}</option>
+                <option value="gradient">{T('intro.bgGradient')}</option>
+                <option value="image">{T('intro.bgImage')}</option>
+                <option value="video">{T('intro.bgVideo')}</option>
+              </select>
+            </div>
+
+            {introBgType === 'color' && (
+              <div className="form-group">
+                <label>{T('intro.bgColor')}</label>
+                <input type="color" value={introBgColor1} onChange={(e) => setIntroBgColor1(e.target.value)} disabled={isRecording} style={{width:'100%',height:36,padding:2,border:'1px solid var(--border-color)',borderRadius:6,background:'none',cursor:'pointer'}} />
+              </div>
+            )}
+
+            {introBgType === 'gradient' && (
+              <div className="form-group">
+                <label>{T('intro.bgGradient')}</label>
+                <div style={{display:'flex',gap:8}}>
+                  <input type="color" value={introBgColor1} onChange={(e) => setIntroBgColor1(e.target.value)} disabled={isRecording} style={{flex:1,height:36,padding:2,border:'1px solid var(--border-color)',borderRadius:6,background:'none',cursor:'pointer'}} />
+                  <input type="color" value={introBgColor2} onChange={(e) => setIntroBgColor2(e.target.value)} disabled={isRecording} style={{flex:1,height:36,padding:2,border:'1px solid var(--border-color)',borderRadius:6,background:'none',cursor:'pointer'}} />
+                </div>
+              </div>
+            )}
+
+            {introBgType === 'image' && (
+              <div className="form-group">
+                <label>{T('intro.bgImage')}</label>
+                <div className="file-upload" style={{padding:12,margin:0}}>
+                  <span style={{fontSize:12}}>{introBgImage ? '✓ Image' : 'Upload Image'}</span>
+                  <input type="file" accept="image/*" onChange={(e) => { const f = e.target.files?.[0]; if (f) setIntroBgImage(URL.createObjectURL(f)); }} disabled={isRecording} />
+                </div>
+                {introBgImage && <button className="btn-ghost" style={{padding:'4px 10px',fontSize:11,width:'auto'}} onClick={() => setIntroBgImage(null)} disabled={isRecording}>×</button>}
+              </div>
+            )}
+
+            {introBgType === 'video' && (
+              <div className="form-group">
+                <label>{T('intro.bgVideo')}</label>
+                <div className="file-upload" style={{padding:12,margin:0}}>
+                  <span style={{fontSize:12}}>{introBgVideo ? '✓ Video' : 'Upload Video'}</span>
+                  <input type="file" accept="video/*" onChange={(e) => { const f = e.target.files?.[0]; if (f) setIntroBgVideo(URL.createObjectURL(f)); }} disabled={isRecording} />
+                </div>
+                {introBgVideo && <button className="btn-ghost" style={{padding:'4px 10px',fontSize:11,width:'auto'}} onClick={() => setIntroBgVideo(null)} disabled={isRecording}>×</button>}
+              </div>
+            )}
+            </div>
+          </details>
+
+          <details style={{marginBottom:8}}>
+            <summary style={{cursor:'pointer',fontSize:13,fontWeight:600,color:'var(--text-secondary)',padding:'6px 0'}}>📝 {T('intro.text')}</summary>
+            <div style={{padding:'8px 0 4px 0'}}>
+            <div className="form-group">
+              <label>{T('intro.text')}</label>
+              <input type="text" value={introText} onChange={(e) => setIntroText(e.target.value)} disabled={isRecording} placeholder="e.g. The Holy Quran" style={{fontSize:13,padding:'8px 10px'}} />
+            </div>
+
+            <div className="form-group">
+              <label>{T('intro.subtext')}</label>
+              <input type="text" value={introSubtext} onChange={(e) => setIntroSubtext(e.target.value)} disabled={isRecording} placeholder="e.g. سُبْحَانَ اللَّهِ وَبِحَمْدِهِ" style={{fontSize:13,padding:'8px 10px'}} />
+            </div>
+
+            <div className="form-group">
+              <label>{T('intro.fontFamily')}</label>
+              <select value={introFontFamily} onChange={(e) => setIntroFontFamily(e.target.value)} disabled={isRecording}>
+                <option value="amiri">Amiri</option>
+                <option value="scheherazade">Scheherazade New</option>
+                <option value="noto-naskh">Noto Naskh Arabic</option>
+                <option value="lateef">Lateef</option>
+                <option value="reem-kufi">Reem Kufi</option>
+                <option value="cairo">Cairo</option>
+                <option value="tajawal">Tajawal</option>
+                <option value="markazi">Markazi Text</option>
+                <option value="el-messiri">El Messiri</option>
+                <option value="lemonada">Lemonada</option>
+                <option value="changa">Changa</option>
+                <option value="harmattan">Harmattan</option>
+                <option value="katibeh">Katibeh</option>
+                <option value="mada">Mada</option>
+                <option value="mirza">Mirza</option>
+                <option value="rakkas">Rakkas</option>
+                <option value="almarai">Almarai</option>
+                <option value="aref-ruqaa">Aref Ruqaa</option>
+                <option value="ibm-plex-sans-arabic">IBM Plex Sans Arabic</option>
+                <option value="jomhuria">Jomhuria</option>
+                <option value="kufam">Kufam</option>
+                <option value="lalezar">Lalezar</option>
+                <option value="noto-kufi-arabic">Noto Kufi Arabic</option>
+                <option value="noto-sans-arabic">Noto Sans Arabic</option>
+                <option value="qahiri">Qahiri</option>
+                <option value="ruwudu">Ruwudu</option>
+                <option value="reem-kufi-fun">Reem Kufi Fun</option>
+                <option value="reem-kufi-ink">Reem Kufi Ink</option>
+                <option value="cairo-play">Cairo Play</option>
+                <option value="amiri-quran">Amiri Quran</option>
+                <option value="bidaya">Bidaya</option>
+                <option value="thabit">Thabit</option>
+                <option value="traditional-arabic">Traditional Arabic</option>
+                <option value="arabic-typesetting">Arabic Typesetting</option>
+                <option value="sakkal-majalla">Sakkal Majalla</option>
+                <option value="simplified-arabic">Simplified Arabic</option>
+                <option value="diwani-letter">Diwani Letter</option>
+                <option value="andalus">Andalus</option>
+                <option value="tahoma">Tahoma</option>
+                <option value="arial">Arial</option>
+                <option value="times-new-roman">Times New Roman</option>
+                <option value="courier-new">Courier New</option>
+                <option value="uthmanic-hafs">Uthmanic Hafs</option>
+                <option value="decotype-naskh">DecoType Naskh</option>
+                <option value="decotype-thuluth">DecoType Thuluth</option>
+                <option value="decotype-kufi">DecoType Kufi</option>
+                <option value="kacst-book">KacstBook</option>
+                <option value="kacst-letter">KacstLetter</option>
+                <option value="hacen-sudan">Hacen Sudan</option>
+                <option value="hacen-tunisia">Hacen Tunisia</option>
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label>{T('intro.textColor')}</label>
+              <input type="color" value={introTextColor} onChange={(e) => setIntroTextColor(e.target.value)} disabled={isRecording} style={{width:'100%',height:36,padding:2,border:'1px solid var(--border-color)',borderRadius:6,background:'none',cursor:'pointer'}} />
+            </div>
+
+            <div className="form-group">
+              <label>{T('intro.fontSize')}: {introFontSize}px</label>
+              <div className="slider-group">
+                <input type="range" min="24" max="80" value={introFontSize} onChange={(e) => setIntroFontSize(parseInt(e.target.value))} disabled={isRecording} />
+                <span>{introFontSize}px</span>
+              </div>
+            </div>
+
+            <div style={{borderTop:'1px solid var(--border-color)',margin:'12px 0',paddingTop:'12px'}}>
+              <label style={{fontWeight:600,fontSize:12,color:'var(--text-secondary)',display:'block',marginBottom:8}}>{T('intro.subtext')}</label>
+
+            <div className="form-group">
+              <label>{T('intro.subFontFamily')}</label>
+              <select value={introSubFontFamily} onChange={(e) => setIntroSubFontFamily(e.target.value)} disabled={isRecording}>
+                <option value="amiri">Amiri</option>
+                <option value="scheherazade">Scheherazade New</option>
+                <option value="noto-naskh">Noto Naskh Arabic</option>
+                <option value="lateef">Lateef</option>
+                <option value="reem-kufi">Reem Kufi</option>
+                <option value="cairo">Cairo</option>
+                <option value="tajawal">Tajawal</option>
+                <option value="markazi">Markazi Text</option>
+                <option value="el-messiri">El Messiri</option>
+                <option value="lemonada">Lemonada</option>
+                <option value="changa">Changa</option>
+                <option value="harmattan">Harmattan</option>
+                <option value="katibeh">Katibeh</option>
+                <option value="mada">Mada</option>
+                <option value="mirza">Mirza</option>
+                <option value="rakkas">Rakkas</option>
+                <option value="almarai">Almarai</option>
+                <option value="aref-ruqaa">Aref Ruqaa</option>
+                <option value="ibm-plex-sans-arabic">IBM Plex Sans Arabic</option>
+                <option value="jomhuria">Jomhuria</option>
+                <option value="kufam">Kufam</option>
+                <option value="lalezar">Lalezar</option>
+                <option value="noto-kufi-arabic">Noto Kufi Arabic</option>
+                <option value="noto-sans-arabic">Noto Sans Arabic</option>
+                <option value="qahiri">Qahiri</option>
+                <option value="ruwudu">Ruwudu</option>
+                <option value="reem-kufi-fun">Reem Kufi Fun</option>
+                <option value="reem-kufi-ink">Reem Kufi Ink</option>
+                <option value="cairo-play">Cairo Play</option>
+                <option value="amiri-quran">Amiri Quran</option>
+                <option value="bidaya">Bidaya</option>
+                <option value="thabit">Thabit</option>
+                <option value="traditional-arabic">Traditional Arabic</option>
+                <option value="arabic-typesetting">Arabic Typesetting</option>
+                <option value="sakkal-majalla">Sakkal Majalla</option>
+                <option value="simplified-arabic">Simplified Arabic</option>
+                <option value="diwani-letter">Diwani Letter</option>
+                <option value="andalus">Andalus</option>
+                <option value="tahoma">Tahoma</option>
+                <option value="arial">Arial</option>
+                <option value="times-new-roman">Times New Roman</option>
+                <option value="courier-new">Courier New</option>
+                <option value="uthmanic-hafs">Uthmanic Hafs</option>
+                <option value="decotype-naskh">DecoType Naskh</option>
+                <option value="decotype-thuluth">DecoType Thuluth</option>
+                <option value="decotype-kufi">DecoType Kufi</option>
+                <option value="kacst-book">KacstBook</option>
+                <option value="kacst-letter">KacstLetter</option>
+                <option value="hacen-sudan">Hacen Sudan</option>
+                <option value="hacen-tunisia">Hacen Tunisia</option>
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label>{T('intro.subTextColor')}</label>
+              <input type="color" value={introSubTextColor} onChange={(e) => setIntroSubTextColor(e.target.value)} disabled={isRecording} style={{width:'100%',height:36,padding:2,border:'1px solid var(--border-color)',borderRadius:6,background:'none',cursor:'pointer'}} />
+            </div>
+
+            <div className="form-group">
+              <label>{T('intro.subFontSize')}: {introSubFontSize}px</label>
+              <div className="slider-group">
+                <input type="range" min="14" max="50" value={introSubFontSize} onChange={(e) => setIntroSubFontSize(parseInt(e.target.value))} disabled={isRecording} />
+                <span>{introSubFontSize}px</span>
+              </div>
+            </div>
+            </div>
+            </div>
+
+            <div className="form-group">
+              <label>{T('intro.transition')}</label>
+              <select value={introTransitionEffect} onChange={(e) => setIntroTransitionEffect(e.target.value)} disabled={isRecording}>
+                {TRANSITIONS.map(t => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
+              </select>
+            </div>
+          </details>
+          </>)}
+
+          <hr />
+
+          <h2 className="section-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
               <circle cx="8.5" cy="8.5" r="1.5"/>
               <polyline points="21 15 16 10 5 21"/>
@@ -2219,6 +2639,7 @@ const TRANSITIONS = [
               <option value="snow">❄️ Snowfall</option>
               <option value="lightleak">💡 Light Leak</option>
               <option value="sparkle">✨ Sparkle</option>
+              <option value="islamic">🪔 Islamic</option>
             </select>
           </div>
 
@@ -2384,6 +2805,17 @@ const TRANSITIONS = [
               loop={videoMode === 'single'}
               muted 
               autoPlay 
+              playsInline
+            />
+
+            {/* Hidden Video element for intro background */}
+            <video
+              ref={introVideoRef}
+              src={introBgVideo || undefined}
+              className="hidden-video"
+              loop
+              muted
+              autoPlay
               playsInline
             />
 

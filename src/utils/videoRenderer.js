@@ -4,7 +4,60 @@
 const _wrapCache = new Map();
 const _WRAP_CACHE_MAX = 200;
 const _gradientCache = {};
-let _bgImageCache = null; // { url: string, img: HTMLImageElement }
+let _bgImageCache = null;
+
+const FONT_MAP = {
+  amiri: "'Amiri', serif",
+  scheherazade: '"Scheherazade New", serif',
+  'noto-naskh': '"Noto Naskh Arabic", serif',
+  lateef: "'Lateef', serif",
+  'reem-kufi': '"Reem Kufi", sans-serif',
+  cairo: "'Cairo', sans-serif",
+  tajawal: "'Tajawal', sans-serif",
+  markazi: '"Markazi Text", serif',
+  'el-messiri': '"El Messiri", sans-serif',
+  lemonada: "'Lemonada', display",
+  changa: "'Changa', sans-serif",
+  harmattan: "'Harmattan', sans-serif",
+  katibeh: "'Katibeh', display",
+  mada: "'Mada', sans-serif",
+  mirza: "'Mirza', serif",
+  rakkas: "'Rakkas', display",
+  almarai: "'Almarai', sans-serif",
+  'aref-ruqaa': '"Aref Ruqaa", serif',
+  'ibm-plex-sans-arabic': '"IBM Plex Sans Arabic", sans-serif',
+  jomhuria: "'Jomhuria', display",
+  kufam: "'Kufam', sans-serif",
+  lalezar: "'Lalezar', display",
+  'noto-kufi-arabic': '"Noto Kufi Arabic", sans-serif',
+  'noto-sans-arabic': '"Noto Sans Arabic", sans-serif',
+  qahiri: "'Qahiri', sans-serif",
+  ruwudu: "'Ruwudu', serif",
+  'reem-kufi-fun': '"Reem Kufi Fun", sans-serif',
+  'reem-kufi-ink': '"Reem Kufi Ink", sans-serif',
+  'cairo-play': '"Cairo Play", sans-serif',
+  'amiri-quran': '"Amiri Quran", serif',
+  bidaya: "'Bidaya', display",
+  thabit: "'Thabit', monospace",
+  'traditional-arabic': '"Traditional Arabic", serif',
+  'arabic-typesetting': '"Arabic Typesetting", serif',
+  'sakkal-majalla': '"Sakkal Majalla", serif',
+  'simplified-arabic': '"Simplified Arabic", sans-serif',
+  'diwani-letter': '"Diwani Letter", cursive',
+  andalus: "'Andalus', serif",
+  tahoma: "'Tahoma', sans-serif",
+  arial: "'Arial', sans-serif",
+  'times-new-roman': '"Times New Roman", serif',
+  'courier-new': '"Courier New", monospace',
+  'uthmanic-hafs': '"Uthmanic Hafs", serif',
+  'decotype-naskh': '"DecoType Naskh", serif',
+  'decotype-thuluth': '"DecoType Thuluth", serif',
+  'decotype-kufi': '"DecoType Kufi", serif',
+  'kacst-book': "'KacstBook', sans-serif",
+  'kacst-letter': "'KacstLetter', sans-serif",
+  'hacen-sudan': '"Hacen Sudan", sans-serif',
+  'hacen-tunisia': '"Hacen Tunisia", sans-serif',
+}; // { url: string, img: HTMLImageElement }
 const _wordPositions = {};
 
 export function getWordPositions(ayahKey) {
@@ -20,6 +73,21 @@ function _cachedSet(map, key, value) {
 }
 
 function _drawGradientBg(ctx, width, height, cache, config) {
+  const c1 = config.bgColor1 || '';
+  const c2 = config.bgColor2 || '';
+  if (c1 && c2) {
+    const key = `custom_${c1}_${c2}`;
+    let grad = cache[key];
+    if (!grad) {
+      grad = ctx.createLinearGradient(0, 0, 0, height);
+      grad.addColorStop(0, c1);
+      grad.addColorStop(1, c2);
+      cache[key] = grad;
+    }
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, width, height);
+    return;
+  }
   const bgId = config.backgroundId || 'starfield';
   let grad;
   if (bgId === 'stars') {
@@ -446,6 +514,36 @@ function _drawVisualEffect(ctx, width, height, effect, time) {
       ctx.shadowBlur = 0;
       break;
     }
+
+    // ── 15. Islamic Geometric ──
+    case 'islamic': {
+      const repeat = 6;
+      const cellW = width / repeat;
+      const cellH = height / (repeat * 1.5);
+      const rot = t * 0.02;
+      ctx.strokeStyle = `rgba(255,215,150,${0.06 + Math.sin(t * 0.1) * 0.02})`;
+      ctx.lineWidth = 1;
+      for (let r = 0; r < repeat * 1.5; r++) {
+        for (let c = 0; c < repeat; c++) {
+          const cx2 = c * cellW + cellW / 2;
+          const cy2 = r * cellH + cellH / 2;
+          ctx.save();
+          ctx.translate(cx2, cy2);
+          ctx.rotate(rot + r * 0.1 + c * 0.05);
+          ctx.beginPath();
+          const sz2 = Math.min(cellW, cellH) * 0.35;
+          for (let p = 0; p < 8; p++) {
+            const a = (p / 8) * Math.PI * 2;
+            const dist = p % 2 === 0 ? sz2 : sz2 * 0.4;
+            ctx[p === 0 ? 'moveTo' : 'lineTo'](Math.cos(a) * dist, Math.sin(a) * dist);
+          }
+          ctx.closePath();
+          ctx.stroke();
+          ctx.restore();
+        }
+      }
+      break;
+    }
   }
 
   ctx.globalCompositeOperation = 'source-over';
@@ -468,6 +566,14 @@ export function drawFrame({
   const positions = [];
   const width = canvas.width; // 1080
   const height = canvas.height; // 1920
+
+  // Check for intro override
+  const introConfig = config.intro;
+  if (introConfig && introConfig.enabled && currentTime !== undefined && currentTime < introConfig.duration) {
+    _drawIntro(ctx, width, height, introConfig, currentTime);
+    _drawVisualEffect(ctx, width, height, config.visualEffect, currentTime);
+    return;
+  }
 
   // 1. Draw Background
 
@@ -554,10 +660,31 @@ export function drawFrame({
     ctx.restore();
   }
 
-  // 5. Draw Quranic Arabic Text, Transliteration & Translation
+  // 4. Draw Quranic Arabic Text, Transliteration & Translation
   if (currentAyah) {
     ctx.save();
     
+    // Text animation
+    const textAnim = config.textAnim || 'none';
+    if (textAnim !== 'none' && currentTime !== undefined) {
+      const progress = Math.min(currentTime / 0.4, 1);
+      if (textAnim === 'fade') {
+        ctx.globalAlpha = progress;
+      } else if (textAnim === 'slide-up') {
+        ctx.globalAlpha = progress;
+        ctx.translate(0, 30 * (1 - progress));
+      } else if (textAnim === 'slide-down') {
+        ctx.globalAlpha = progress;
+        ctx.translate(0, -30 * (1 - progress));
+      } else if (textAnim === 'zoom') {
+        ctx.globalAlpha = progress;
+        const s = 0.8 + 0.2 * progress;
+        ctx.translate(width / 2, height / 2);
+        ctx.scale(s, s);
+        ctx.translate(-width / 2, -height / 2);
+      }
+    }
+
     // Setup shadow for text legibility
     ctx.shadowColor = 'rgba(0, 0, 0, 0.95)';
     ctx.shadowBlur = 12;
@@ -581,58 +708,7 @@ export function drawFrame({
     }
 
     // Measure heights first to center the block as a whole
-    const arabicFontFamily = {
-      amiri: "'Amiri', serif",
-      scheherazade: '"Scheherazade New", serif',
-      'noto-naskh': '"Noto Naskh Arabic", serif',
-      lateef: "'Lateef', serif",
-      'reem-kufi': '"Reem Kufi", sans-serif',
-      cairo: "'Cairo', sans-serif",
-      tajawal: "'Tajawal', sans-serif",
-      markazi: '"Markazi Text", serif',
-      'el-messiri': '"El Messiri", sans-serif',
-      lemonada: "'Lemonada', display",
-      changa: "'Changa', sans-serif",
-      harmattan: "'Harmattan', sans-serif",
-      katibeh: "'Katibeh', display",
-      mada: "'Mada', sans-serif",
-      mirza: "'Mirza', serif",
-      rakkas: "'Rakkas', display",
-      almarai: "'Almarai', sans-serif",
-      'aref-ruqaa': '"Aref Ruqaa", serif',
-      'ibm-plex-sans-arabic': '"IBM Plex Sans Arabic", sans-serif',
-      jomhuria: "'Jomhuria', display",
-      kufam: "'Kufam', sans-serif",
-      lalezar: "'Lalezar', display",
-      'noto-kufi-arabic': '"Noto Kufi Arabic", sans-serif',
-      'noto-sans-arabic': '"Noto Sans Arabic", sans-serif',
-      qahiri: "'Qahiri', sans-serif",
-      ruwudu: "'Ruwudu', serif",
-      'reem-kufi-fun': '"Reem Kufi Fun", sans-serif',
-      'reem-kufi-ink': '"Reem Kufi Ink", sans-serif',
-      'cairo-play': '"Cairo Play", sans-serif',
-      'amiri-quran': '"Amiri Quran", serif',
-      bidaya: "'Bidaya', display",
-      thabit: "'Thabit', monospace",
-      'traditional-arabic': '"Traditional Arabic", serif',
-      'arabic-typesetting': '"Arabic Typesetting", serif',
-      'sakkal-majalla': '"Sakkal Majalla", serif',
-      'simplified-arabic': '"Simplified Arabic", sans-serif',
-      'diwani-letter': '"Diwani Letter", cursive',
-      andalus: "'Andalus', serif",
-      tahoma: "'Tahoma', sans-serif",
-      arial: "'Arial', sans-serif",
-      'times-new-roman': '"Times New Roman", serif',
-      'courier-new': '"Courier New", monospace',
-      'uthmanic-hafs': '"Uthmanic Hafs", serif',
-      'decotype-naskh': '"DecoType Naskh", serif',
-      'decotype-thuluth': '"DecoType Thuluth", serif',
-      'decotype-kufi': '"DecoType Kufi", serif',
-      'kacst-book': "'KacstBook', sans-serif",
-      'kacst-letter': "'KacstLetter', sans-serif",
-      'hacen-sudan': '"Hacen Sudan", sans-serif',
-      'hacen-tunisia': '"Hacen Tunisia", sans-serif',
-    }[config.fontFamily] || "'Amiri', serif";
+    const arabicFontFamily = FONT_MAP[config.fontFamily] || "'Amiri', serif";
     const arabicFontStr = `700 ${arabicFontSize}px ${arabicFontFamily}`;
     const arabicKey = `${currentAyah.text}|${arabicFontStr}|${maxWidth}`;
     let arabicLayout = _wrapCache.get(arabicKey);
@@ -886,6 +962,34 @@ export function drawFrame({
         // Draw double-sided bars extending up and down
         ctx.fillRect(x, visY - barHeight / 2, barWidth, barHeight);
       }
+    } else if (config.visualizerStyle === 'ring') {
+      const cx = width / 2;
+      const cy = height * 0.28;
+      const baseRadius = Math.min(width, height) * 0.12;
+      const bands = 36;
+      for (let i = 0; i < bands; i++) {
+        let value;
+        if (hasRealData) {
+          const binIndex = Math.floor((i / bands) * dataArray.length * 0.5);
+          value = dataArray[binIndex] || 0;
+        } else {
+          const t = (currentTime || 0);
+          value = Math.abs(Math.sin(t * 3 + i * 0.2) * 120 + Math.sin(t * 5 + i * 0.1) * 80);
+          value = Math.min(255, value);
+        }
+        const angle = (i / bands) * Math.PI * 2 - Math.PI / 2;
+        const r = baseRadius + (value / 255) * 50;
+        const x = cx + Math.cos(angle) * r;
+        const y = cy + Math.sin(angle) * r;
+        const px = cx + Math.cos(angle) * baseRadius;
+        const py = cy + Math.sin(angle) * baseRadius;
+        ctx.beginPath();
+        ctx.moveTo(px, py);
+        ctx.lineTo(x, y);
+        ctx.strokeStyle = visColor;
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+      }
     }
 
     ctx.restore();
@@ -893,4 +997,99 @@ export function drawFrame({
 
   // 7. Visual Effects Overlay
   _drawVisualEffect(ctx, width, height, config.visualEffect, currentTime);
+}
+
+function _drawIntro(ctx, width, height, intro, currentTime) {
+  // 1. Draw background
+  const bgType = intro.bgType || 'gradient';
+  if (bgType === 'image' && intro.bgImage) {
+    if (!_bgImageCache || _bgImageCache.url !== intro.bgImage) {
+      _bgImageCache = { url: intro.bgImage, img: new Image() };
+      _bgImageCache.img.src = intro.bgImage;
+    }
+    const img = _bgImageCache.img;
+    if (img.complete && img.naturalWidth > 0) {
+      const imgAspect = img.naturalWidth / img.naturalHeight;
+      const canvasAspect = width / height;
+      let sx, sy, sWidth, sHeight;
+      if (imgAspect > canvasAspect) {
+        sHeight = img.naturalHeight;
+        sWidth = sHeight * canvasAspect;
+        sx = (img.naturalWidth - sWidth) / 2;
+        sy = 0;
+      } else {
+        sWidth = img.naturalWidth;
+        sHeight = sWidth / canvasAspect;
+        sx = 0;
+        sy = (img.naturalHeight - sHeight) / 2;
+      }
+      ctx.drawImage(img, sx, sy, sWidth, sHeight, 0, 0, width, height);
+    } else {
+      fallbackGradient(ctx, width, height, intro);
+    }
+  } else if (bgType === 'color') {
+    ctx.fillStyle = intro.bgColor1 || '#0a1628';
+    ctx.fillRect(0, 0, width, height);
+  } else {
+    fallbackGradient(ctx, width, height, intro);
+  }
+
+  // 2. Vignette
+  ctx.fillStyle = 'rgba(0,0,0,0.25)';
+  ctx.fillRect(0, 0, width, height);
+
+  // 3. Main title (no typing, just fade in)
+  ctx.save();
+  const dur = intro.duration || 4;
+  const rawText = intro.text || '';
+  const subtext = intro.subtext || '';
+
+  if (rawText) {
+    const textSize = parseInt(intro.fontSize || 52);
+    ctx.shadowColor = 'rgba(0,0,0,0.85)';
+    ctx.shadowBlur = 18;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 5;
+    ctx.fillStyle = intro.textColor || '#ffffff';
+    const titleFamily = FONT_MAP[intro.fontFamily] || "'Amiri', serif";
+    ctx.font = `700 ${textSize}px ${titleFamily}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    const textFadeIn = Math.min(currentTime / (dur * 0.25), 1);
+    ctx.globalAlpha = textFadeIn;
+    ctx.fillText(rawText, width / 2, height * 0.48);
+  }
+
+  // 5. Subtitle
+  if (subtext) {
+    const subSize = parseInt(intro.subFontSize || 30);
+    const subFamily = FONT_MAP[intro.subFontFamily] || FONT_MAP[intro.fontFamily] || "'Amiri', serif";
+    const subColor = intro.subTextColor || '#ffffff';
+    ctx.shadowColor = 'rgba(0,0,0,0.85)';
+    ctx.shadowBlur = 14;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 3;
+    ctx.fillStyle = subColor;
+    ctx.globalAlpha = 0.8;
+    ctx.font = `400 ${subSize}px ${subFamily}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    const subDelay = dur * 0.45;
+    const subAppear = Math.max(0, Math.min((currentTime - subDelay) / (dur * 0.25), 1));
+    ctx.globalAlpha = subAppear * 0.85;
+    ctx.fillText(subtext, width / 2, height * 0.56);
+  }
+
+  ctx.restore();
+}
+
+function fallbackGradient(ctx, width, height, intro) {
+  const g = ctx.createLinearGradient(0, 0, 0, height);
+  g.addColorStop(0, intro.bgColor1 || '#0a1628');
+  g.addColorStop(0.5, intro.bgColor2 || '#1a2a4a');
+  g.addColorStop(1, intro.bgColor1 || '#0a1628');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, width, height);
 }

@@ -288,6 +288,7 @@ function App() {
   const [visualizerStyle, setVisualizerStyle] = useState('none'); // 'waves', 'bars', 'none'
   const [visualizerColor, setVisualizerColor] = useState('#60a5fa');
   const [highlightColor, setHighlightColor] = useState('#fbbf24');
+  const [arabicTextColor, setArabicTextColor] = useState('#ffffff');
   const [transitionEffect, setTransitionEffect] = useState('none');
   const [canvasResolution, setCanvasResolution] = useState('720p');
   const [visualEffect, setVisualEffect] = useState('none');
@@ -312,6 +313,19 @@ function App() {
   const [introSubFontFamily, setIntroSubFontFamily] = useState('amiri');
   const [introSubTextColor, setIntroSubTextColor] = useState('#ffffff');
   const [introTransitionEffect, setIntroTransitionEffect] = useState('none');
+  const [showTimer, setShowTimer] = useState(false);
+  const [showHijriDate, setShowHijriDate] = useState(false);
+  const [hijriDateX, setHijriDateX] = useState(50);
+  const [hijriDateY, setHijriDateY] = useState(92);
+  const [hijriDateColor, setHijriDateColor] = useState('#ffffff');
+  const [hijriDateFont, setHijriDateFont] = useState('Inter');
+  const [hijriDateSize, setHijriDateSize] = useState(100);
+  const [timerDuration, setTimerDuration] = useState(60);
+  const [timerStyle, setTimerStyle] = useState('analog');
+  const [timerSize, setTimerSize] = useState(100);
+  const [timerColor, setTimerColor] = useState('#ffffff');
+  const [timerX, setTimerX] = useState(50);
+  const [timerY, setTimerY] = useState(70);
   const introTransitionRef = useRef(false);
 
 const DIMS = { '1080p': [1080,1920], '720p': [720,1280], '540p': [540,960] };
@@ -461,9 +475,10 @@ const TRANSITIONS = [
     const cfg = {
       fontSize, translationFontSize, textPosition, vignetteOpacity,
       fontFamily, showTranslation, translationLang, showTransliteration,
+      showTimer, showHijriDate, hijriDateX, hijriDateY, hijriDateColor, hijriDateFont, hijriDateSize, timerDuration, timerStyle, timerSize, timerColor, timerX, timerY,
       watermark, visualizerStyle, visualizerColor, visualEffect,
       bgColor1, bgColor2, textAnim,
-      backgroundType: 'upload', bgImage, highlightColor,
+      backgroundType: 'upload', bgImage, highlightColor, arabicTextColor,
       introVideoElement: introVideoRef.current,
       intro: introEnabled ? {
         enabled: true,
@@ -509,7 +524,7 @@ const TRANSITIONS = [
       });
     };
   }, [fontSize, translationFontSize, textPosition, vignetteOpacity, fontFamily,
-      showTranslation, translationLang, showTransliteration, watermark,
+      showTranslation, translationLang, showTransliteration, showTimer, showHijriDate, hijriDateX, hijriDateY, hijriDateColor, hijriDateFont, hijriDateSize, timerDuration, timerStyle, timerSize, timerColor, timerX, timerY, arabicTextColor, watermark,
       visualizerStyle, visualizerColor, visualEffect, bgImage, highlightColor, bgColor1, bgColor2, textAnim,
       introEnabled, introDuration, introBgType, introBgColor1, introBgColor2, introBgImage, introBgVideo,
       introText, introSubtext, introFontSize, introSubFontSize, introFontFamily, introTextColor,
@@ -1165,6 +1180,19 @@ const TRANSITIONS = [
           showTranslation,
           translationLang,
           showTransliteration,
+          showTimer,
+          showHijriDate,
+          hijriDateX,
+          hijriDateY,
+          hijriDateColor,
+          hijriDateFont,
+          hijriDateSize,
+          timerDuration,
+          timerStyle,
+          timerSize,
+          timerColor,
+          timerX,
+          timerY,
           watermark,
           visualizerStyle,
           visualizerColor,
@@ -1172,6 +1200,7 @@ const TRANSITIONS = [
           backgroundType,
           bgImage,
           highlightColor,
+          arabicTextColor,
           bgColor1,
           bgColor2,
           textAnim,
@@ -1237,6 +1266,7 @@ const TRANSITIONS = [
     showTranslation, 
     translationLang,
     showTransliteration,
+    showTimer,
     watermark, 
     visualizerStyle, 
     visualizerColor,
@@ -1247,9 +1277,23 @@ const TRANSITIONS = [
     bgImage,
     highlightedWords,
     highlightColor,
+    arabicTextColor,
     bgColor1,
     bgColor2,
     textAnim,
+    showTimer,
+    showHijriDate,
+    hijriDateX,
+    hijriDateY,
+    hijriDateColor,
+    hijriDateFont,
+    hijriDateSize,
+    timerDuration,
+    timerStyle,
+    timerSize,
+    timerColor,
+    timerX,
+    timerY,
     introEnabled, introDuration, introBgType, introBgColor1, introBgColor2,
     introBgImage, introBgVideo, introText, introSubtext,
     introFontSize, introSubFontSize, introFontFamily, introTextColor,
@@ -1737,55 +1781,21 @@ const TRANSITIONS = [
           disabled={isRecording}
         >
           <option value="amiri">Amiri</option>
+          <option value="amiri-quran">Amiri Quran</option>
           <option value="scheherazade">Scheherazade New</option>
           <option value="noto-naskh">Noto Naskh Arabic</option>
           <option value="lateef">Lateef</option>
-          <option value="reem-kufi">Reem Kufi</option>
-          <option value="cairo">Cairo</option>
-          <option value="tajawal">Tajawal</option>
-          <option value="markazi">Markazi Text</option>
-          <option value="el-messiri">El Messiri</option>
-          <option value="lemonada">Lemonada</option>
-          <option value="changa">Changa</option>
-          <option value="harmattan">Harmattan</option>
-          <option value="katibeh">Katibeh</option>
-          <option value="mada">Mada</option>
-          <option value="mirza">Mirza</option>
-          <option value="rakkas">Rakkas</option>
-          <option value="almarai">Almarai</option>
           <option value="aref-ruqaa">Aref Ruqaa</option>
-          <option value="ibm-plex-sans-arabic">IBM Plex Sans Arabic</option>
-          <option value="jomhuria">Jomhuria</option>
-          <option value="kufam">Kufam</option>
-          <option value="lalezar">Lalezar</option>
-          <option value="noto-kufi-arabic">Noto Kufi Arabic</option>
-          <option value="noto-sans-arabic">Noto Sans Arabic</option>
-          <option value="qahiri">Qahiri</option>
-          <option value="ruwudu">Ruwudu</option>
-          <option value="reem-kufi-fun">Reem Kufi Fun</option>
-          <option value="reem-kufi-ink">Reem Kufi Ink</option>
-          <option value="cairo-play">Cairo Play</option>
-          <option value="amiri-quran">Amiri Quran</option>
-          <option value="bidaya">Bidaya</option>
-          <option value="thabit">Thabit</option>
-          <option value="traditional-arabic">Traditional Arabic</option>
-          <option value="arabic-typesetting">Arabic Typesetting</option>
-          <option value="sakkal-majalla">Sakkal Majalla</option>
-          <option value="simplified-arabic">Simplified Arabic</option>
-          <option value="diwani-letter">Diwani Letter</option>
-          <option value="andalus">Andalus</option>
-          <option value="tahoma">Tahoma</option>
-          <option value="arial">Arial</option>
-          <option value="times-new-roman">Times New Roman</option>
-          <option value="courier-new">Courier New</option>
           <option value="uthmanic-hafs">Uthmanic Hafs</option>
           <option value="decotype-naskh">DecoType Naskh</option>
-          <option value="decotype-thuluth">DecoType Thuluth</option>
-          <option value="decotype-kufi">DecoType Kufi</option>
-          <option value="kacst-book">KacstBook</option>
-          <option value="kacst-letter">KacstLetter</option>
-          <option value="hacen-sudan">Hacen Sudan</option>
-          <option value="hacen-tunisia">Hacen Tunisia</option>
+          <option value="cairo">Cairo</option>
+          <option value="tajawal">Tajawal</option>
+          <option value="almarai">Almarai</option>
+          <option value="noto-sans-arabic">Noto Sans Arabic</option>
+          <option value="reem-kufi">Reem Kufi</option>
+          <option value="noto-kufi-arabic">Noto Kufi Arabic</option>
+          <option value="el-messiri">El Messiri</option>
+          <option value="traditional-arabic">Traditional Arabic</option>
         </select>
       </div>
 
@@ -1818,17 +1828,121 @@ const TRANSITIONS = [
       </div>
 
       <div className="form-group">
+        <label>{T('style.arabicTextColor')}</label>
+        <input type="color" value={arabicTextColor} onChange={(e) => setArabicTextColor(e.target.value)} disabled={isRecording} style={{width:'100%',height:36,padding:2,border:'1px solid var(--border-color)',borderRadius:6,background:'none',cursor:'pointer'}} />
+      </div>
+
+      <div className="form-group">
         <label className="checkbox-group">
           <input 
             type="checkbox" 
-            checked={showTranslation} 
-            onChange={(e) => setShowTranslation(e.target.checked)}
+            checked={showTimer} 
+            onChange={(e) => setShowTimer(e.target.checked)}
             disabled={isRecording}
           />
           <div className="checkmark"></div>
-          <span>{T('style.showTranslation')}</span>
+          <span>{T('style.showTimer')}</span>
         </label>
       </div>
+
+      {showTimer && (
+        <>
+        <div className="form-group">
+          <label>{T('style.timerDuration')}: {timerDuration}s</label>
+          <div className="slider-group">
+            <input type="range" min="5" max="600" step="5" value={timerDuration} onChange={(e) => setTimerDuration(parseInt(e.target.value))} disabled={isRecording} />
+            <span>{timerDuration}s</span>
+          </div>
+        </div>
+        <div className="form-group">
+          <label>{T('style.timerStyle')}</label>
+          <select value={timerStyle} onChange={(e) => setTimerStyle(e.target.value)} disabled={isRecording}>
+            <option value="analog">Analog Clock</option>
+            <option value="digital">Digital LCD</option>
+            <option value="ring">Countdown Ring</option>
+            <option value="flip">Flip Clock</option>
+            <option value="pie">Pie Timer</option>
+            <option value="bar">Progress Bar</option>
+            <option value="nixie">Nixie Tube</option>
+            <option value="slimline">Slim Line</option>
+            <option value="segmented">Segmented LED</option>
+          </select>
+        </div>
+        <div className="form-group">
+          <label>{T('style.timerSize')}: {timerSize}%</label>
+          <div className="slider-group">
+            <input type="range" min="50" max="200" value={timerSize} onChange={(e) => setTimerSize(parseInt(e.target.value))} disabled={isRecording} />
+            <span>{timerSize}%</span>
+          </div>
+        </div>
+        <div className="form-group">
+          <label>{T('style.timerColor')}</label>
+          <input type="color" value={timerColor} onChange={(e) => setTimerColor(e.target.value)} disabled={isRecording} style={{width:'100%',height:36,padding:2,border:'1px solid var(--border-color)',borderRadius:6,background:'none',cursor:'pointer'}} />
+        </div>
+        <div className="form-group">
+          <label>{T('style.timerX')}: {timerX}%</label>
+          <div className="slider-group">
+            <input type="range" min="0" max="100" value={timerX} onChange={(e) => setTimerX(parseInt(e.target.value))} disabled={isRecording} />
+            <span>{timerX}%</span>
+          </div>
+        </div>
+        <div className="form-group">
+          <label>{T('style.timerY')}: {timerY}%</label>
+          <div className="slider-group">
+            <input type="range" min="0" max="100" value={timerY} onChange={(e) => setTimerY(parseInt(e.target.value))} disabled={isRecording} />
+            <span>{timerY}%</span>
+          </div>
+        </div>
+        </>
+      )}
+
+      <div className="form-group">
+        <label className="checkbox-group">
+          <input type="checkbox" checked={showHijriDate} onChange={(e) => setShowHijriDate(e.target.checked)} disabled={isRecording} />
+          <div className="checkmark"></div>
+          <span>{T('style.showHijriDate')}</span>
+        </label>
+      </div>
+      {showHijriDate && (
+        <>
+        <div className="form-group">
+          <label>{T('style.hijriDateX')}: {hijriDateX}%</label>
+          <div className="slider-group">
+            <input type="range" min="0" max="100" value={hijriDateX} onChange={(e) => setHijriDateX(parseInt(e.target.value))} disabled={isRecording} />
+            <span>{hijriDateX}%</span>
+          </div>
+        </div>
+        <div className="form-group">
+          <label>{T('style.hijriDateY')}: {hijriDateY}%</label>
+          <div className="slider-group">
+            <input type="range" min="0" max="100" value={hijriDateY} onChange={(e) => setHijriDateY(parseInt(e.target.value))} disabled={isRecording} />
+            <span>{hijriDateY}%</span>
+          </div>
+        </div>
+        <div className="form-group">
+          <label>{T('style.hijriDateColor')}</label>
+          <input type="color" value={hijriDateColor} onChange={(e) => setHijriDateColor(e.target.value)} disabled={isRecording} style={{width:'100%',height:36,padding:2,border:'1px solid var(--border-color)',borderRadius:6,background:'none',cursor:'pointer'}} />
+        </div>
+        <div className="form-group">
+          <label>{T('style.hijriDateFont')}</label>
+          <select value={hijriDateFont} onChange={(e) => setHijriDateFont(e.target.value)} disabled={isRecording}>
+            <option value="Inter">Inter</option>
+            <option value="Outfit">Outfit</option>
+            <option value="Amiri">Amiri</option>
+            <option value="Cairo">Cairo</option>
+            <option value="Tajawal">Tajawal</option>
+            <option value="Noto Sans Arabic">Noto Sans Arabic</option>
+          </select>
+        </div>
+        <div className="form-group">
+          <label>{T('style.hijriDateSize')}: {hijriDateSize}%</label>
+          <div className="slider-group">
+            <input type="range" min="50" max="200" value={hijriDateSize} onChange={(e) => setHijriDateSize(parseInt(e.target.value))} disabled={isRecording} />
+            <span>{hijriDateSize}%</span>
+          </div>
+        </div>
+        </>
+      )}
 
       {showTranslation && (
         <div className="form-group">
@@ -1958,7 +2072,7 @@ const TRANSITIONS = [
     fontFamily, fontSize, translationFontSize, textPosition,
     transitionEffect, visualizerStyle, visualizerColor,
     visualEffect,
-    isRecording, uiLang, watermark, vignetteOpacity, showTranslation, canvasResolution, bgImage,
+    isRecording, uiLang, watermark, vignetteOpacity, showTranslation, showTimer, showHijriDate, hijriDateX, hijriDateY, hijriDateColor, hijriDateFont, hijriDateSize, timerDuration, timerStyle, timerSize, timerColor, timerX, timerY, arabicTextColor, canvasResolution, bgImage,
     bgColor1, bgColor2, textAnim,
     introEnabled, introDuration, introBgType, introBgColor1, introBgColor2,
     introBgImage, introBgVideo, introText, introSubtext,
@@ -2378,55 +2492,21 @@ const TRANSITIONS = [
               <label>{T('intro.fontFamily')}</label>
               <select value={introFontFamily} onChange={(e) => setIntroFontFamily(e.target.value)} disabled={isRecording}>
                 <option value="amiri">Amiri</option>
+                <option value="amiri-quran">Amiri Quran</option>
                 <option value="scheherazade">Scheherazade New</option>
                 <option value="noto-naskh">Noto Naskh Arabic</option>
                 <option value="lateef">Lateef</option>
-                <option value="reem-kufi">Reem Kufi</option>
-                <option value="cairo">Cairo</option>
-                <option value="tajawal">Tajawal</option>
-                <option value="markazi">Markazi Text</option>
-                <option value="el-messiri">El Messiri</option>
-                <option value="lemonada">Lemonada</option>
-                <option value="changa">Changa</option>
-                <option value="harmattan">Harmattan</option>
-                <option value="katibeh">Katibeh</option>
-                <option value="mada">Mada</option>
-                <option value="mirza">Mirza</option>
-                <option value="rakkas">Rakkas</option>
-                <option value="almarai">Almarai</option>
                 <option value="aref-ruqaa">Aref Ruqaa</option>
-                <option value="ibm-plex-sans-arabic">IBM Plex Sans Arabic</option>
-                <option value="jomhuria">Jomhuria</option>
-                <option value="kufam">Kufam</option>
-                <option value="lalezar">Lalezar</option>
-                <option value="noto-kufi-arabic">Noto Kufi Arabic</option>
-                <option value="noto-sans-arabic">Noto Sans Arabic</option>
-                <option value="qahiri">Qahiri</option>
-                <option value="ruwudu">Ruwudu</option>
-                <option value="reem-kufi-fun">Reem Kufi Fun</option>
-                <option value="reem-kufi-ink">Reem Kufi Ink</option>
-                <option value="cairo-play">Cairo Play</option>
-                <option value="amiri-quran">Amiri Quran</option>
-                <option value="bidaya">Bidaya</option>
-                <option value="thabit">Thabit</option>
-                <option value="traditional-arabic">Traditional Arabic</option>
-                <option value="arabic-typesetting">Arabic Typesetting</option>
-                <option value="sakkal-majalla">Sakkal Majalla</option>
-                <option value="simplified-arabic">Simplified Arabic</option>
-                <option value="diwani-letter">Diwani Letter</option>
-                <option value="andalus">Andalus</option>
-                <option value="tahoma">Tahoma</option>
-                <option value="arial">Arial</option>
-                <option value="times-new-roman">Times New Roman</option>
-                <option value="courier-new">Courier New</option>
                 <option value="uthmanic-hafs">Uthmanic Hafs</option>
                 <option value="decotype-naskh">DecoType Naskh</option>
-                <option value="decotype-thuluth">DecoType Thuluth</option>
-                <option value="decotype-kufi">DecoType Kufi</option>
-                <option value="kacst-book">KacstBook</option>
-                <option value="kacst-letter">KacstLetter</option>
-                <option value="hacen-sudan">Hacen Sudan</option>
-                <option value="hacen-tunisia">Hacen Tunisia</option>
+                <option value="cairo">Cairo</option>
+                <option value="tajawal">Tajawal</option>
+                <option value="almarai">Almarai</option>
+                <option value="noto-sans-arabic">Noto Sans Arabic</option>
+                <option value="reem-kufi">Reem Kufi</option>
+                <option value="noto-kufi-arabic">Noto Kufi Arabic</option>
+                <option value="el-messiri">El Messiri</option>
+                <option value="traditional-arabic">Traditional Arabic</option>
               </select>
             </div>
 
@@ -2450,55 +2530,21 @@ const TRANSITIONS = [
               <label>{T('intro.subFontFamily')}</label>
               <select value={introSubFontFamily} onChange={(e) => setIntroSubFontFamily(e.target.value)} disabled={isRecording}>
                 <option value="amiri">Amiri</option>
+                <option value="amiri-quran">Amiri Quran</option>
                 <option value="scheherazade">Scheherazade New</option>
                 <option value="noto-naskh">Noto Naskh Arabic</option>
                 <option value="lateef">Lateef</option>
-                <option value="reem-kufi">Reem Kufi</option>
-                <option value="cairo">Cairo</option>
-                <option value="tajawal">Tajawal</option>
-                <option value="markazi">Markazi Text</option>
-                <option value="el-messiri">El Messiri</option>
-                <option value="lemonada">Lemonada</option>
-                <option value="changa">Changa</option>
-                <option value="harmattan">Harmattan</option>
-                <option value="katibeh">Katibeh</option>
-                <option value="mada">Mada</option>
-                <option value="mirza">Mirza</option>
-                <option value="rakkas">Rakkas</option>
-                <option value="almarai">Almarai</option>
                 <option value="aref-ruqaa">Aref Ruqaa</option>
-                <option value="ibm-plex-sans-arabic">IBM Plex Sans Arabic</option>
-                <option value="jomhuria">Jomhuria</option>
-                <option value="kufam">Kufam</option>
-                <option value="lalezar">Lalezar</option>
-                <option value="noto-kufi-arabic">Noto Kufi Arabic</option>
-                <option value="noto-sans-arabic">Noto Sans Arabic</option>
-                <option value="qahiri">Qahiri</option>
-                <option value="ruwudu">Ruwudu</option>
-                <option value="reem-kufi-fun">Reem Kufi Fun</option>
-                <option value="reem-kufi-ink">Reem Kufi Ink</option>
-                <option value="cairo-play">Cairo Play</option>
-                <option value="amiri-quran">Amiri Quran</option>
-                <option value="bidaya">Bidaya</option>
-                <option value="thabit">Thabit</option>
-                <option value="traditional-arabic">Traditional Arabic</option>
-                <option value="arabic-typesetting">Arabic Typesetting</option>
-                <option value="sakkal-majalla">Sakkal Majalla</option>
-                <option value="simplified-arabic">Simplified Arabic</option>
-                <option value="diwani-letter">Diwani Letter</option>
-                <option value="andalus">Andalus</option>
-                <option value="tahoma">Tahoma</option>
-                <option value="arial">Arial</option>
-                <option value="times-new-roman">Times New Roman</option>
-                <option value="courier-new">Courier New</option>
                 <option value="uthmanic-hafs">Uthmanic Hafs</option>
                 <option value="decotype-naskh">DecoType Naskh</option>
-                <option value="decotype-thuluth">DecoType Thuluth</option>
-                <option value="decotype-kufi">DecoType Kufi</option>
-                <option value="kacst-book">KacstBook</option>
-                <option value="kacst-letter">KacstLetter</option>
-                <option value="hacen-sudan">Hacen Sudan</option>
-                <option value="hacen-tunisia">Hacen Tunisia</option>
+                <option value="cairo">Cairo</option>
+                <option value="tajawal">Tajawal</option>
+                <option value="almarai">Almarai</option>
+                <option value="noto-sans-arabic">Noto Sans Arabic</option>
+                <option value="reem-kufi">Reem Kufi</option>
+                <option value="noto-kufi-arabic">Noto Kufi Arabic</option>
+                <option value="el-messiri">El Messiri</option>
+                <option value="traditional-arabic">Traditional Arabic</option>
               </select>
             </div>
 

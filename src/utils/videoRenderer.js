@@ -8,55 +8,21 @@ let _bgImageCache = null;
 
 const FONT_MAP = {
   amiri: "'Amiri', serif",
+  'amiri-quran': '"Amiri Quran", serif',
   scheherazade: '"Scheherazade New", serif',
   'noto-naskh': '"Noto Naskh Arabic", serif',
   lateef: "'Lateef', serif",
-  'reem-kufi': '"Reem Kufi", sans-serif',
-  cairo: "'Cairo', sans-serif",
-  tajawal: "'Tajawal', sans-serif",
-  markazi: '"Markazi Text", serif',
-  'el-messiri': '"El Messiri", sans-serif',
-  lemonada: "'Lemonada', display",
-  changa: "'Changa', sans-serif",
-  harmattan: "'Harmattan', sans-serif",
-  katibeh: "'Katibeh', display",
-  mada: "'Mada', sans-serif",
-  mirza: "'Mirza', serif",
-  rakkas: "'Rakkas', display",
-  almarai: "'Almarai', sans-serif",
   'aref-ruqaa': '"Aref Ruqaa", serif',
-  'ibm-plex-sans-arabic': '"IBM Plex Sans Arabic", sans-serif',
-  jomhuria: "'Jomhuria', display",
-  kufam: "'Kufam', sans-serif",
-  lalezar: "'Lalezar', display",
-  'noto-kufi-arabic': '"Noto Kufi Arabic", sans-serif',
-  'noto-sans-arabic': '"Noto Sans Arabic", sans-serif',
-  qahiri: "'Qahiri', sans-serif",
-  ruwudu: "'Ruwudu', serif",
-  'reem-kufi-fun': '"Reem Kufi Fun", sans-serif',
-  'reem-kufi-ink': '"Reem Kufi Ink", sans-serif',
-  'cairo-play': '"Cairo Play", sans-serif',
-  'amiri-quran': '"Amiri Quran", serif',
-  bidaya: "'Bidaya', display",
-  thabit: "'Thabit', monospace",
-  'traditional-arabic': '"Traditional Arabic", serif',
-  'arabic-typesetting': '"Arabic Typesetting", serif',
-  'sakkal-majalla': '"Sakkal Majalla", serif',
-  'simplified-arabic': '"Simplified Arabic", sans-serif',
-  'diwani-letter': '"Diwani Letter", cursive',
-  andalus: "'Andalus', serif",
-  tahoma: "'Tahoma', sans-serif",
-  arial: "'Arial', sans-serif",
-  'times-new-roman': '"Times New Roman", serif',
-  'courier-new': '"Courier New", monospace',
   'uthmanic-hafs': '"Uthmanic Hafs", serif',
   'decotype-naskh': '"DecoType Naskh", serif',
-  'decotype-thuluth': '"DecoType Thuluth", serif',
-  'decotype-kufi': '"DecoType Kufi", serif',
-  'kacst-book': "'KacstBook', sans-serif",
-  'kacst-letter': "'KacstLetter', sans-serif",
-  'hacen-sudan': '"Hacen Sudan", sans-serif',
-  'hacen-tunisia': '"Hacen Tunisia", sans-serif',
+  cairo: "'Cairo', sans-serif",
+  tajawal: "'Tajawal', sans-serif",
+  almarai: "'Almarai', sans-serif",
+  'noto-sans-arabic': '"Noto Sans Arabic", sans-serif',
+  'reem-kufi': '"Reem Kufi", sans-serif',
+  'noto-kufi-arabic': '"Noto Kufi Arabic", sans-serif',
+  'el-messiri': '"El Messiri", sans-serif',
+  'traditional-arabic': '"Traditional Arabic", serif',
 }; // { url: string, img: HTMLImageElement }
 const _wordPositions = {};
 
@@ -661,6 +627,7 @@ export function drawFrame({
   }
 
   // 4. Draw Quranic Arabic Text, Transliteration & Translation
+  let textBlockBottom = height * 0.85;
   if (currentAyah) {
     ctx.save();
     
@@ -791,6 +758,7 @@ export function drawFrame({
       + (showTr ? textSpacing + transliterationHeight : 0)
       + (config.showTranslation ? textSpacing + englishHeight : 0);
     const startY = centerY - (totalBlockHeight / 2);
+    textBlockBottom = startY + totalBlockHeight;
 
     // Draw Arabic Text (word-by-word with highlight)
     ctx.font = `700 ${arabicFontSize}px ${arabicFontFamily}`;
@@ -826,7 +794,7 @@ export function drawFrame({
       for (const { word, idx } of line) {
         const ww = ctx.measureText(word).width;
         const isHighlighted = highlightedWords.includes(idx);
-        ctx.fillStyle = isHighlighted ? (config.highlightColor || '#fbbf24') : '#ffffff';
+        ctx.fillStyle = isHighlighted ? (config.highlightColor || '#fbbf24') : (config.arabicTextColor || '#ffffff');
         ctx.fillText(word, drawX, currentY);
         positions.push({
           idx, word,
@@ -875,6 +843,314 @@ export function drawFrame({
       );
     }
 
+    if (config.showTimer && currentTime !== undefined) {
+      const t = config.timerDuration ? Math.max(0, config.timerDuration - currentTime) : currentTime;
+      const mins = Math.floor(t / 60);
+      const secs = Math.floor(t % 60);
+      const timeStr = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+      const s = (config.timerSize || 100) / 100;
+      const tc = config.timerColor || '#ffffff';
+      const timerX = ((config.timerX ?? 50) / 100) * width;
+      const timerY = ((config.timerY ?? 70) / 100) * height;
+      const style = config.timerStyle || 'analog';
+      const progress = config.timerDuration ? Math.min(1, Math.max(0, t / config.timerDuration)) : 1;
+
+      ctx.save();
+      ctx.translate(timerX, timerY);
+      ctx.scale(s, s);
+      ctx.translate(-timerX, -timerY);
+
+      if (style === 'digital') {
+        ctx.save();
+        const dW = 110, dH = 44;
+        const dX = timerX - dW / 2, dY = timerY + 2;
+        ctx.shadowColor = 'rgba(0,0,0,0.4)';
+        ctx.shadowBlur = 12;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 4;
+        ctx.fillStyle = 'rgba(10,10,20,0.75)';
+        ctx.beginPath();
+        ctx.roundRect(dX, dY, dW, dH, 10);
+        ctx.fill();
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = tc;
+        ctx.shadowColor = tc + '66';
+        ctx.font = '600 24px Courier New, monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.shadowBlur = 8;
+        ctx.fillText(timeStr, timerX, dY + dH / 2);
+        ctx.restore();
+      } else if (style === 'ring') {
+        ctx.save();
+        const r = 34;
+        const cx = timerX, cy = timerY + r + 6;
+        ctx.shadowColor = 'rgba(0,0,0,0.4)';
+        ctx.shadowBlur = 10;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 3;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(0,0,0,0.45)';
+        ctx.fill();
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r - 2, -Math.PI / 2, -Math.PI / 2 + progress * Math.PI * 2);
+        ctx.strokeStyle = tc;
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(cx, cy, r - 2, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.fillStyle = tc;
+        ctx.font = '500 16px Outfit, Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(timeStr, cx, cy + 1);
+        ctx.restore();
+      } else if (style === 'flip') {
+        ctx.save();
+        const fW = 120, fH = 46;
+        const fX = timerX - fW / 2, fY = timerY;
+        ctx.shadowColor = 'rgba(0,0,0,0.4)';
+        ctx.shadowBlur = 12;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 4;
+        ctx.fillStyle = 'rgba(20,18,28,0.85)';
+        ctx.beginPath();
+        ctx.roundRect(fX, fY, fW, fH, 8);
+        ctx.fill();
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.roundRect(fX, fY, fW, fH, 8);
+        ctx.stroke();
+        const midY = fY + fH / 2;
+        ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(fX + 8, midY);
+        ctx.lineTo(fX + fW - 8, midY);
+        ctx.stroke();
+        ctx.font = '600 22px Courier New, monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(fX, fY, fW, fH / 2);
+        ctx.clip();
+        ctx.fillStyle = tc;
+        ctx.fillText(timeStr, timerX, midY);
+        ctx.restore();
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(fX, midY, fW, fH / 2);
+        ctx.clip();
+        ctx.fillStyle = tc + 'aa';
+        ctx.fillText(timeStr, timerX, midY);
+        ctx.restore();
+        ctx.restore();
+      } else if (style === 'pie') {
+        ctx.save();
+        const r = 34;
+        const cx = timerX, cy = timerY + r + 6;
+        ctx.shadowColor = 'rgba(0,0,0,0.4)';
+        ctx.shadowBlur = 10;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 3;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(0,0,0,0.4)';
+        ctx.fill();
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + progress * Math.PI * 2);
+        ctx.closePath();
+        ctx.fillStyle = tc;
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(cx, cy, r - 5, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+        ctx.fill();
+        ctx.fillStyle = tc;
+        ctx.font = '500 16px Outfit, Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(timeStr, cx, cy + 1);
+        ctx.restore();
+      } else if (style === 'bar') {
+        ctx.save();
+        const barW = 180, barH = 8;
+        const barX = timerX - barW / 2, barY = timerY + 26;
+        ctx.shadowColor = 'rgba(0,0,0,0.3)';
+        ctx.shadowBlur = 6;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 2;
+        ctx.fillStyle = 'rgba(255,255,255,0.12)';
+        ctx.beginPath();
+        ctx.roundRect(barX, barY, barW, barH, 4);
+        ctx.fill();
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+        if (progress > 0) {
+          ctx.fillStyle = tc;
+          ctx.beginPath();
+          ctx.roundRect(barX, barY, Math.max(barH, barW * progress), barH, 4);
+          ctx.fill();
+        }
+        ctx.fillStyle = tc;
+        ctx.font = '500 17px Outfit, Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText(timeStr, timerX, barY - 6);
+        ctx.restore();
+      } else if (style === 'nixie') {
+        ctx.save();
+        const nH = 44;
+        const chars = timeStr.split('');
+        const cW = 22, gap = 4;
+        const totalW = chars.length * cW + (chars.length - 1) * gap;
+        const startX = timerX - totalW / 2;
+        const nY = timerY;
+        ctx.shadowColor = 'rgba(0,0,0,0.4)';
+        ctx.shadowBlur = 10;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 3;
+        chars.forEach((ch, i) => {
+          const cx = startX + i * (cW + gap);
+          ctx.fillStyle = 'rgba(15,10,5,0.8)';
+          ctx.beginPath();
+          ctx.roundRect(cx, nY, cW, nH, ch === ':' ? 2 : 4);
+          ctx.fill();
+          ctx.fillStyle = tc;
+          ctx.shadowColor = tc + '80';
+          ctx.shadowBlur = ch === ':' ? 4 : 10;
+          ctx.font = '600 22px Courier New, monospace';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(ch, cx + cW / 2, nY + nH / 2);
+          ctx.shadowBlur = 0;
+        });
+        ctx.shadowColor = 'transparent';
+        ctx.restore();
+      } else if (style === 'slimline') {
+        ctx.save();
+        const lY = timerY;
+        const maxLW = 200;
+        const lX = timerX - maxLW / 2;
+        ctx.fillStyle = tc + '80';
+        ctx.font = '400 13px Outfit, Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText(timeStr, timerX, lY - 10);
+        ctx.fillStyle = 'rgba(255,255,255,0.08)';
+        ctx.beginPath();
+        ctx.roundRect(lX, lY, maxLW, 2, 1);
+        ctx.fill();
+        if (progress > 0) {
+          ctx.fillStyle = tc;
+          ctx.beginPath();
+          ctx.roundRect(lX, lY, Math.max(2, maxLW * progress), 2, 1);
+          ctx.fill();
+        }
+        ctx.restore();
+      } else if (style === 'segmented') {
+        ctx.save();
+        const sH = 42;
+        const chars = timeStr.split('');
+        const sW = 20, sgGap = 3;
+        const totalW = chars.length * sW + (chars.length - 1) * sgGap;
+        const sX = timerX - totalW / 2;
+        const sY = timerY;
+        ctx.shadowColor = 'rgba(0,0,0,0.3)';
+        ctx.shadowBlur = 8;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 2;
+        chars.forEach((ch, i) => {
+          const cx = sX + i * (sW + sgGap);
+          ctx.fillStyle = 'rgba(0,0,0,0.55)';
+          ctx.beginPath();
+          ctx.roundRect(cx, sY, sW, sH, ch === ':' ? 2 : 3);
+          ctx.fill();
+          ctx.fillStyle = ch === ':' ? (tc + '99') : tc;
+          ctx.shadowColor = tc + '40';
+          ctx.shadowBlur = ch === ':' ? 2 : 6;
+          ctx.font = '600 22px Courier New, monospace';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(ch, cx + sW / 2, sY + sH / 2 + 1);
+          ctx.shadowBlur = 0;
+        });
+        ctx.shadowColor = 'transparent';
+        ctx.restore();
+      } else {
+        ctx.save();
+        const r = 32;
+        const cx = timerX, cy = timerY + r + 6;
+        ctx.shadowColor = 'rgba(0,0,0,0.4)';
+        ctx.shadowBlur = 10;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 3;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(0,0,0,0.45)';
+        ctx.fill();
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+        for (let i = 0; i < 12; i++) {
+          const a = (i / 12) * Math.PI * 2 - Math.PI / 2;
+          ctx.beginPath();
+          ctx.arc(cx + Math.cos(a) * (r - 5), cy + Math.sin(a) * (r - 5), 1.2, 0, Math.PI * 2);
+          ctx.fillStyle = i % 3 === 0 ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.25)';
+          ctx.fill();
+        }
+        const angle = progress * Math.PI * 2 - Math.PI / 2;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx + Math.cos(angle) * (r - 8), cy + Math.sin(angle) * (r - 8));
+        ctx.strokeStyle = tc;
+        ctx.lineWidth = 2.5;
+        ctx.lineCap = 'round';
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(cx, cy, 2.5, 0, Math.PI * 2);
+        ctx.fillStyle = tc;
+        ctx.fill();
+        ctx.restore();
+      }
+      ctx.restore();
+    }
+
+    ctx.restore();
+  }
+
+  // 5b. Draw Hijri Date
+  if (config.showHijriDate) {
+    const hijriDate = new Intl.DateTimeFormat('ar-SA-u-ca-islamic', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date());
+    const ds = (config.hijriDateSize || 100) / 100;
+    const hx = ((config.hijriDateX ?? 50) / 100) * width;
+    const hy = ((config.hijriDateY ?? 92) / 100) * height;
+    const hc = config.hijriDateColor || '#ffffff';
+    const hf = config.hijriDateFont || 'Inter';
+    ctx.save();
+    ctx.font = `400 ${Math.round(13 * ds)}px ${hf}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.shadowColor = 'rgba(0,0,0,0.6)';
+    ctx.shadowBlur = 4;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 1;
+    ctx.fillStyle = hc;
+    ctx.fillText(hijriDate, hx, hy);
     ctx.restore();
   }
 

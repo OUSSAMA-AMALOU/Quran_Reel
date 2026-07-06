@@ -277,7 +277,11 @@ function App() {
   // Styling configuration
   const [fontSize, setFontSize] = useState(48);
   const [translationFontSize, setTranslationFontSize] = useState(26);
+  const [translationX, setTranslationX] = useState(50);
+  const [translationY, setTranslationY] = useState(85);
   const [textPosition, setTextPosition] = useState('center'); // 'top', 'center', 'bottom'
+  const [textX, setTextX] = useState(50);
+  const [textY, setTextY] = useState(50);
   const [vignetteOpacity, setVignetteOpacity] = useState(0.4);
   const [fontFamily, setFontFamily] = useState('amiri');
   const [showTranslation, setShowTranslation] = useState(false);
@@ -291,6 +295,7 @@ function App() {
   const [highlightColor, setHighlightColor] = useState('#fbbf24');
   const [arabicTextColor, setArabicTextColor] = useState('#ffffff');
   const [transitionEffect, setTransitionEffect] = useState('none');
+  const [startEffect, setStartEffect] = useState('none');
   const [canvasResolution, setCanvasResolution] = useState('720p');
   const [visualEffect, setVisualEffect] = useState('none');
   const [showLikeBtn, setShowLikeBtn] = useState(false);
@@ -300,6 +305,11 @@ function App() {
   const [likeBtnX, setLikeBtnX] = useState(95);
   const [likeBtnY, setLikeBtnY] = useState(50);
   const [likeBtnSize, setLikeBtnSize] = useState(100);
+  const [likeTextSize, setLikeTextSize] = useState(11);
+  const [likeColor, setLikeColor] = useState('#ffffff');
+  const [likeEffect, setLikeEffect] = useState('none');
+  const [likeEffectColor, setLikeEffectColor] = useState('#60a5fa');
+  const [likeTextEffect, setLikeTextEffect] = useState('none');
   const [showFollowBtn, setShowFollowBtn] = useState(false);
   const [followText, setFollowText] = useState('');
   const [followIcon, setFollowIcon] = useState('plus');
@@ -307,6 +317,11 @@ function App() {
   const [followBtnX, setFollowBtnX] = useState(95);
   const [followBtnY, setFollowBtnY] = useState(58);
   const [followBtnSize, setFollowBtnSize] = useState(100);
+  const [followTextSize, setFollowTextSize] = useState(11);
+  const [followColor, setFollowColor] = useState('#ffffff');
+  const [followEffect, setFollowEffect] = useState('none');
+  const [followEffectColor, setFollowEffectColor] = useState('#60a5fa');
+  const [followTextEffect, setFollowTextEffect] = useState('none');
 
   // New features
   const [bgColor1, setBgColor1] = useState('');
@@ -381,12 +396,12 @@ function App() {
   const [presetNameInput, setPresetNameInput] = useState('');
 
   const getCurrentSettings = () => ({
-    fontFamily, fontSize, translationFontSize, textPosition,
+    fontFamily, fontSize, translationFontSize, textPosition, textX, textY, translationX, translationY,
     showTranslation, uiLang, watermark, vignetteOpacity,
-    visualizerStyle, visualizerColor, visualEffect,
+    visualizerStyle, visualizerColor, visualEffect, startEffect,
     highlightColor, arabicTextColor, transitionEffect, canvasResolution,
-    showLikeBtn, likeText, likeIcon, likeTextPos, likeBtnX, likeBtnY, likeBtnSize,
-    showFollowBtn, followText, followIcon, followTextPos, followBtnX, followBtnY, followBtnSize,
+    showLikeBtn, likeText, likeIcon, likeTextPos, likeBtnX, likeBtnY, likeBtnSize, likeTextSize, likeColor, likeEffect, likeEffectColor, likeTextEffect,
+    showFollowBtn, followText, followIcon, followTextPos, followBtnX, followBtnY, followBtnSize, followTextSize, followColor, followEffect, followEffectColor, followTextEffect,
     bgColor1, bgColor2, textAnim,
     introEnabled, introDuration, introBgType, introBgColor1, introBgColor2,
     introText, introSubtext, introFontSize, introSubFontSize, introFontFamily, introTextColor,
@@ -409,14 +424,16 @@ function App() {
   };
 
   const loadPreset = (p) => {
-    setFontFamily(p.fontFamily); setFontSize(p.fontSize); setTranslationFontSize(p.translationFontSize); setTextPosition(p.textPosition);
+    setFontFamily(p.fontFamily); setFontSize(p.fontSize); setTranslationFontSize(p.translationFontSize); setTextPosition(p.textPosition); setTextX(p.textX ?? 50); setTextY(p.textY ?? 50); setTranslationX(p.translationX ?? 50); setTranslationY(p.translationY ?? 85);
     setShowTranslation(p.showTranslation); setUiLang(p.uiLang); setWatermark(p.watermark); setVignetteOpacity(p.vignetteOpacity);
     setVisualizerStyle(p.visualizerStyle); setVisualizerColor(p.visualizerColor); setVisualEffect(p.visualEffect);
-    setHighlightColor(p.highlightColor); setArabicTextColor(p.arabicTextColor); setTransitionEffect(p.transitionEffect); setCanvasResolution(p.canvasResolution);
+    setHighlightColor(p.highlightColor); setArabicTextColor(p.arabicTextColor); setTransitionEffect(p.transitionEffect); setStartEffect(p.startEffect ?? 'none'); setCanvasResolution(p.canvasResolution);
     setShowLikeBtn(p.showLikeBtn); setLikeText(p.likeText); setLikeIcon(p.likeIcon); setLikeTextPos(p.likeTextPos);
-    setLikeBtnX(p.likeBtnX); setLikeBtnY(p.likeBtnY); setLikeBtnSize(p.likeBtnSize);
+    setLikeBtnX(p.likeBtnX); setLikeBtnY(p.likeBtnY); setLikeBtnSize(p.likeBtnSize); setLikeTextSize(p.likeTextSize ?? 11);
+    setLikeColor(p.likeColor ?? '#ffffff'); setLikeEffect(p.likeEffect ?? 'none'); setLikeEffectColor(p.likeEffectColor ?? '#60a5fa'); setLikeTextEffect(p.likeTextEffect ?? 'none');
     setShowFollowBtn(p.showFollowBtn); setFollowText(p.followText); setFollowIcon(p.followIcon); setFollowTextPos(p.followTextPos);
-    setFollowBtnX(p.followBtnX); setFollowBtnY(p.followBtnY); setFollowBtnSize(p.followBtnSize);
+    setFollowBtnX(p.followBtnX); setFollowBtnY(p.followBtnY); setFollowBtnSize(p.followBtnSize); setFollowTextSize(p.followTextSize ?? 11);
+    setFollowColor(p.followColor ?? '#ffffff'); setFollowEffect(p.followEffect ?? 'none'); setFollowEffectColor(p.followEffectColor ?? '#60a5fa'); setFollowTextEffect(p.followTextEffect ?? 'none');
     setBgColor1(p.bgColor1); setBgColor2(p.bgColor2); setTextAnim(p.textAnim);
     setIntroEnabled(p.introEnabled); setIntroDuration(p.introDuration); setIntroBgType(p.introBgType);
     setIntroBgColor1(p.introBgColor1); setIntroBgColor2(p.introBgColor2);
@@ -563,6 +580,7 @@ const TRANSITIONS = [
   const recorderRef = useRef(null);
   const prevFrameRef = useRef(null); // cached previous frame for transitions
   const transitionRef = useRef({ active: false, startTime: 0, duration: 0, effect: 'none' });
+  const startEffectRef = useRef(false);
   
   // Track which audio element is currently active for playback
   const activeIsPrimaryRef = useRef(true);
@@ -587,13 +605,13 @@ const TRANSITIONS = [
     const ctx = canvas.getContext('2d');
     // Capture current config values into closure
     const cfg = {
-      fontSize, translationFontSize, showTafsir, textPosition, vignetteOpacity,
+      fontSize, translationFontSize, showTafsir, textPosition, textX, textY, translationX, translationY, vignetteOpacity,
       fontFamily, showTranslation, translationLang, showTransliteration,
       showTimer, showHijriDate, hijriDateX, hijriDateY, hijriDateColor, hijriDateFont, hijriDateSize, timerDuration, timerStyle, timerSize, timerColor, timerX, timerY,
-      watermark, visualizerStyle, visualizerColor, visualEffect,
+      watermark, visualizerStyle, visualizerColor, visualEffect, startEffect,
       bgColor1, bgColor2, textAnim,
       backgroundType: 'upload', bgImage, highlightColor, arabicTextColor, wordCustomColors,
-      showLikeBtn, likeText, likeIcon, likeTextPos, likeBtnX, likeBtnY, likeBtnSize, showFollowBtn, followText, followIcon, followTextPos, followBtnX, followBtnY, followBtnSize,
+      showLikeBtn, likeText, likeIcon, likeTextPos, likeBtnX, likeBtnY, likeBtnSize, likeTextSize, showFollowBtn, followText, followIcon, followTextPos, followBtnX, followBtnY, followBtnSize, followTextSize, likeColor, likeEffect, likeEffectColor, likeTextEffect, followColor, followEffect, followEffectColor, followTextEffect,
       introVideoElement: introVideoRef.current,
       intro: introEnabled ? {
         enabled: true,
@@ -1070,6 +1088,7 @@ const TRANSITIONS = [
       renderStartTimeRef.current = 0;
       audioStartedRef.current = false;
       introTransitionRef.current = false;
+      startEffectRef.current = false;
       setIsPlaying(true);
       if (!introEnabled || mode !== 'quran') {
         a.play().then(() => {
@@ -1341,6 +1360,20 @@ const TRANSITIONS = [
           videoRef.current.play().catch(() => {});
         }
       }
+      // Start effect (transition from black when no intro)
+      if (!introEnabled && startEffect !== 'none' && !startEffectRef.current && ct < 0.2) {
+        startEffectRef.current = true;
+        const w = canvasRef.current.width, h = canvasRef.current.height;
+        if (!prevFrameRef.current || prevFrameRef.current.width !== w || prevFrameRef.current.height !== h) {
+          prevFrameRef.current = document.createElement('canvas');
+          prevFrameRef.current.width = w;
+          prevFrameRef.current.height = h;
+        }
+        const pctx = prevFrameRef.current.getContext('2d');
+        pctx.fillStyle = '#000000';
+        pctx.fillRect(0, 0, w, h);
+        transitionRef.current = { active: true, startTime: performance.now(), duration: 500, effect: startEffect };
+      }
       lastFrameTime = now;
       const rawItem = mode === 'hadith'
         ? hadithData[currentHadithIndex]
@@ -1366,6 +1399,10 @@ const TRANSITIONS = [
           translationFontSize,
           showTafsir,
           textPosition,
+          textX,
+          textY,
+          translationX,
+          translationY,
           vignetteOpacity,
           fontFamily,
           showTranslation,
@@ -1388,6 +1425,7 @@ const TRANSITIONS = [
           visualizerStyle,
           visualizerColor,
           visualEffect,
+          startEffect,
           backgroundType,
           bgImage,
           highlightColor,
@@ -1400,6 +1438,7 @@ const TRANSITIONS = [
           likeBtnX,
           likeBtnY,
           likeBtnSize,
+          likeTextSize,
           showFollowBtn,
           followText,
           followIcon,
@@ -1407,6 +1446,15 @@ const TRANSITIONS = [
           followBtnX,
           followBtnY,
           followBtnSize,
+          followTextSize,
+          likeColor,
+          likeEffect,
+          likeEffectColor,
+          followColor,
+          followEffect,
+          followEffectColor,
+          likeTextEffect,
+          followTextEffect,
           bgColor1,
           bgColor2,
           textAnim,
@@ -1700,6 +1748,7 @@ const TRANSITIONS = [
       renderStartTimeRef.current = 0;
       audioStartedRef.current = false;
       introTransitionRef.current = false;
+      startEffectRef.current = false;
       setIsPlaying(true);
       setRecordingProgress(10);
       setRecordingStatus(T('status.recordingAyah', { n: startAyah, total: endAyah }));
@@ -1973,24 +2022,7 @@ const TRANSITIONS = [
   }, [currentAyahIndex, isRecording, passageAyahs.length, startAyah, endAyah]);
 
   // Visual style JSX (used in right sidebar on desktop, and in left sidebar on mobile)
-  const [openSections, setOpenSections] = useState({
-    text: true, translation: false, overlays: false, buttons: false, effects: false, audiofx: false, background: false, other: false
-  });
-  const toggleSection = (name) => setOpenSections(prev => ({...prev, [name]: !prev[name]}));
-  const Section = ({id, icon, title, children, open}) => (
-    <div className="collapsible-section">
-      <button className={`collapsible-header ${open ? 'open' : ''}`} onClick={() => toggleSection(id)}>
-        <span className="header-left">
-          <span className="header-icon">{icon}</span>
-          <span className="header-title">{title}</span>
-        </span>
-        <svg className={`chevron ${open ? 'open' : ''}`} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M6 9l6 6 6-6"/>
-        </svg>
-      </button>
-      {open && <div className="collapsible-body">{children}</div>}
-    </div>
-  );
+  const [activeTab, setActiveTab] = useState('text');
   const visualStyleContent = useMemo(() => (
     <>
       <h2 className="section-title">
@@ -2001,7 +2033,20 @@ const TRANSITIONS = [
         {T('style.visualStyle')}
       </h2>
 
-      <div className="presets-bar">
+      <div className="tabs-bar">
+        <button className={`tab-btn ${activeTab === 'text' ? 'active' : ''}`} onClick={() => setActiveTab('text')}>🔤 Text</button>
+        <button className={`tab-btn ${activeTab === 'trans' ? 'active' : ''}`} onClick={() => setActiveTab('trans')}>🌐 Trans.</button>
+        <button className={`tab-btn ${activeTab === 'overlays' ? 'active' : ''}`} onClick={() => setActiveTab('overlays')}>⏱ Overlays</button>
+        <button className={`tab-btn ${activeTab === 'buttons' ? 'active' : ''}`} onClick={() => setActiveTab('buttons')}>🔘 Buttons</button>
+        <button className={`tab-btn ${activeTab === 'effects' ? 'active' : ''}`} onClick={() => setActiveTab('effects')}>✨ Effects</button>
+        <button className={`tab-btn ${activeTab === 'audiofx' ? 'active' : ''}`} onClick={() => setActiveTab('audiofx')}>🎛 Audio</button>
+        <button className={`tab-btn ${activeTab === 'bg' ? 'active' : ''}`} onClick={() => setActiveTab('bg')}>🖼 Bg</button>
+        <button className={`tab-btn ${activeTab === 'other' ? 'active' : ''}`} onClick={() => setActiveTab('other')}>⚙ Other</button>
+      </div>
+
+      <div className="tab-content">
+      {activeTab === 'text' && <div className="tab-panel">
+        <div style={{display:'flex',gap:6,marginBottom:12,flexWrap:'wrap'}}>
         <button className="btn-ghost" style={{fontSize:12, padding:'6px 12px', width:'auto'}} onClick={savePreset} disabled={isRecording}>
           💾 Save Preset
         </button>
@@ -2021,9 +2066,7 @@ const TRANSITIONS = [
             ))}
           </select>
         )}
-      </div>
-
-      <Section id="text" icon="🔤" title="Text & Fonts" open={openSections.text}>
+        </div>
         <div className="form-group">
           <label>{T('style.arabicFont')}</label>
           <select value={fontFamily} onChange={(e) => setFontFamily(e.target.value)} disabled={isRecording}>
@@ -2059,6 +2102,20 @@ const TRANSITIONS = [
             <option value="center">{T('style.alignCenter')}</option>
             <option value="bottom">{T('style.alignBottom')}</option>
           </select>
+        </div>
+        <div className="form-group">
+          <label>X: {textX}%</label>
+          <div className="slider-group">
+            <input type="range" min="0" max="100" value={textX} onChange={(e) => setTextX(parseInt(e.target.value))} disabled={isRecording} />
+            <span>{textX}%</span>
+          </div>
+        </div>
+        <div className="form-group">
+          <label>Y: {textY}%</label>
+          <div className="slider-group">
+            <input type="range" min="0" max="100" value={textY} onChange={(e) => setTextY(parseInt(e.target.value))} disabled={isRecording} />
+            <span>{textY}%</span>
+          </div>
         </div>
         <div className="form-group">
           <label>{T('style.arabicTextColor')}</label>
@@ -2129,9 +2186,9 @@ const TRANSITIONS = [
             })()}
           </div>
         </div>
-      </Section>
+      </div>}
 
-      <Section id="translation" icon="🌐" title="Translation" open={openSections.translation}>
+      {activeTab === 'trans' && <div className="tab-panel">
         <div className="form-group">
           <label className="checkbox-group">
             <input type="checkbox" checked={showTafsir} onChange={(e) => setShowTafsir(e.target.checked)} disabled={isRecording} />
@@ -2155,9 +2212,23 @@ const TRANSITIONS = [
             </div>
           </div>
         )}
-      </Section>
+        <div className="form-group">
+          <label>X: {translationX}%</label>
+          <div className="slider-group">
+            <input type="range" min="0" max="100" value={translationX} onChange={(e) => setTranslationX(parseInt(e.target.value))} disabled={isRecording} />
+            <span>{translationX}%</span>
+          </div>
+        </div>
+        <div className="form-group">
+          <label>Y: {translationY}%</label>
+          <div className="slider-group">
+            <input type="range" min="0" max="100" value={translationY} onChange={(e) => setTranslationY(parseInt(e.target.value))} disabled={isRecording} />
+            <span>{translationY}%</span>
+          </div>
+        </div>
+      </div>}
 
-      <Section id="overlays" icon="⏱" title="Overlays" open={openSections.overlays}>
+      {activeTab === 'overlays' && <div className="tab-panel">
         <div className="form-group">
           <label className="checkbox-group">
             <input type="checkbox" checked={showTimer} onChange={(e) => setShowTimer(e.target.checked)} disabled={isRecording} />
@@ -2262,9 +2333,9 @@ const TRANSITIONS = [
           </div>
           </>
         )}
-      </Section>
+      </div>}
 
-      <Section id="buttons" icon="🔘" title="Buttons" open={openSections.buttons}>
+      {activeTab === 'buttons' && <div className="tab-panel">
         <div className="form-group">
           <label className="checkbox-group">
             <input type="checkbox" checked={showLikeBtn} onChange={(e) => setShowLikeBtn(e.target.checked)} disabled={isRecording} />
@@ -2276,7 +2347,7 @@ const TRANSITIONS = [
           <>
           <div className="form-group">
             <label>Like Text</label>
-            <input type="text" value={likeText} onChange={(e) => setLikeText(e.target.value)} placeholder="Like &amp; Share" maxLength={40} disabled={isRecording} />
+            <input type="text" value={likeText} onChange={(e) => setLikeText(e.target.value)} placeholder="Like &amp; Share" disabled={isRecording} />
           </div>
           <div className="form-group">
             <label>Icon</label>
@@ -2319,6 +2390,43 @@ const TRANSITIONS = [
               <span>{likeBtnSize}%</span>
             </div>
           </div>
+          <div className="form-group">
+            <label>Text Size: {likeTextSize}%</label>
+            <div className="slider-group">
+              <input type="range" min="7" max="24" value={likeTextSize} onChange={(e) => setLikeTextSize(parseInt(e.target.value))} disabled={isRecording} />
+              <span>{likeTextSize}%</span>
+            </div>
+          </div>
+          <div className="form-group">
+            <label>Color</label>
+            <input type="color" value={likeColor} onChange={(e) => setLikeColor(e.target.value)} disabled={isRecording} style={{width:'100%',height:36,padding:2,border:'1px solid var(--border-color)',borderRadius:6,background:'none',cursor:'pointer'}} />
+          </div>
+          <div className="form-group">
+            <label>Effect</label>
+            <select value={likeEffect} onChange={(e) => setLikeEffect(e.target.value)} disabled={isRecording}>
+              <option value="none">— None —</option>
+              <option value="glow">Glow</option>
+              <option value="stroke">Stroke</option>
+              <option value="neon">Neon</option>
+            </select>
+          </div>
+          {likeEffect !== 'none' && (
+          <div className="form-group">
+            <label>Effect Color</label>
+            <input type="color" value={likeEffectColor} onChange={(e) => setLikeEffectColor(e.target.value)} disabled={isRecording} style={{width:'100%',height:36,padding:2,border:'1px solid var(--border-color)',borderRadius:6,background:'none',cursor:'pointer'}} />
+          </div>
+          )}
+          <div className="form-group">
+            <label>Text Effect</label>
+            <select value={likeTextEffect} onChange={(e) => setLikeTextEffect(e.target.value)} disabled={isRecording}>
+              <option value="none">— None —</option>
+              <option value="typing">Typing</option>
+              <option value="fade">Fade In</option>
+              <option value="slide-up">Slide Up</option>
+              <option value="slide-down">Slide Down</option>
+              <option value="zoom">Zoom In</option>
+            </select>
+          </div>
           </>
         )}
         <div className="form-group">
@@ -2332,7 +2440,7 @@ const TRANSITIONS = [
           <>
           <div className="form-group">
             <label>Follow Text</label>
-            <input type="text" value={followText} onChange={(e) => setFollowText(e.target.value)} placeholder="Subscribe &amp; Follow" maxLength={40} disabled={isRecording} />
+            <input type="text" value={followText} onChange={(e) => setFollowText(e.target.value)} placeholder="Subscribe &amp; Follow" disabled={isRecording} />
           </div>
           <div className="form-group">
             <label>Icon</label>
@@ -2375,11 +2483,48 @@ const TRANSITIONS = [
               <span>{followBtnSize}%</span>
             </div>
           </div>
+          <div className="form-group">
+            <label>Text Size: {followTextSize}%</label>
+            <div className="slider-group">
+              <input type="range" min="7" max="24" value={followTextSize} onChange={(e) => setFollowTextSize(parseInt(e.target.value))} disabled={isRecording} />
+              <span>{followTextSize}%</span>
+            </div>
+          </div>
+          <div className="form-group">
+            <label>Color</label>
+            <input type="color" value={followColor} onChange={(e) => setFollowColor(e.target.value)} disabled={isRecording} style={{width:'100%',height:36,padding:2,border:'1px solid var(--border-color)',borderRadius:6,background:'none',cursor:'pointer'}} />
+          </div>
+          <div className="form-group">
+            <label>Effect</label>
+            <select value={followEffect} onChange={(e) => setFollowEffect(e.target.value)} disabled={isRecording}>
+              <option value="none">— None —</option>
+              <option value="glow">Glow</option>
+              <option value="stroke">Stroke</option>
+              <option value="neon">Neon</option>
+            </select>
+          </div>
+          {followEffect !== 'none' && (
+          <div className="form-group">
+            <label>Effect Color</label>
+            <input type="color" value={followEffectColor} onChange={(e) => setFollowEffectColor(e.target.value)} disabled={isRecording} style={{width:'100%',height:36,padding:2,border:'1px solid var(--border-color)',borderRadius:6,background:'none',cursor:'pointer'}} />
+          </div>
+          )}
+          <div className="form-group">
+            <label>Text Effect</label>
+            <select value={followTextEffect} onChange={(e) => setFollowTextEffect(e.target.value)} disabled={isRecording}>
+              <option value="none">— None —</option>
+              <option value="typing">Typing</option>
+              <option value="fade">Fade In</option>
+              <option value="slide-up">Slide Up</option>
+              <option value="slide-down">Slide Down</option>
+              <option value="zoom">Zoom In</option>
+            </select>
+          </div>
           </>
         )}
-      </Section>
+      </div>}
 
-      <Section id="effects" icon="✨" title="Effects" open={openSections.effects}>
+      {activeTab === 'effects' && <div className="tab-panel">
         <div className="form-group">
           <label>{T('style.vignette')}</label>
           <div className="slider-group">
@@ -2418,9 +2563,17 @@ const TRANSITIONS = [
             <option value="zoom">Zoom In</option>
           </select>
         </div>
-      </Section>
+        <div className="form-group">
+          <label>🎬 Start Effect</label>
+          <select value={startEffect} onChange={(e) => setStartEffect(e.target.value)} disabled={isRecording}>
+            {TRANSITIONS.map(t => (
+              <option key={t.id} value={t.id}>{t.name}</option>
+            ))}
+          </select>
+        </div>
+      </div>}
 
-      <Section id="audiofx" icon="🎛" title={T('audiofx.title')} open={openSections.audiofx}>
+      {activeTab === 'audiofx' && <div className="tab-panel">
         <div className="form-group">
           <label>Preset</label>
           <select value={audioPreset} onChange={(e) => { const p = AUDIO_PRESETS.find(x => x.id === e.target.value); if (p) { setAudioPreset(p.id); setReverbMix(p.r); setDelayTime(p.d); setDelayFeedback(p.f); } }} disabled={isRecording}>
@@ -2448,9 +2601,9 @@ const TRANSITIONS = [
             <span>{delayFeedback}%</span>
           </div>
         </div>
-      </Section>
+      </div>}
 
-      <Section id="background" icon="🖼" title="Background" open={openSections.background}>
+      {activeTab === 'bg' && <div className="tab-panel">
         <div className="form-group">
           <label>🎨 Custom Gradient</label>
           <div style={{display:'flex', gap:8, alignItems:'center'}}>
@@ -2460,9 +2613,9 @@ const TRANSITIONS = [
             {(bgColor1 || bgColor2) && <button className="btn-ghost" style={{padding:'4px 10px',fontSize:11,width:'auto'}} onClick={() => { setBgColor1(''); setBgColor2(''); }} disabled={isRecording}>×</button>}
           </div>
         </div>
-      </Section>
+      </div>}
 
-      <Section id="other" icon="⚙" title="Other" open={openSections.other}>
+      {activeTab === 'other' && <div className="tab-panel">
         <div className="form-group">
           <label htmlFor="watermark">{T('style.watermark')}</label>
           <input type="text" id="watermark" value={watermark} onChange={(e) => setWatermark(e.target.value.toUpperCase())} placeholder={T('style.watermarkPlaceholder')} maxLength="20" disabled={isRecording} />
@@ -2475,15 +2628,18 @@ const TRANSITIONS = [
             <option value="540p">540p (Light)</option>
           </select>
         </div>
-      </Section>
+      </div>}
+
+      </div>
 
     </>
   ), [
-    fontFamily, fontSize, translationFontSize, textPosition,
+    fontFamily, fontSize, translationFontSize, textPosition, textX, textY, translationX, translationY,
     transitionEffect, visualizerStyle, visualizerColor,
     visualEffect,
+    startEffect,
     isRecording, uiLang, watermark, vignetteOpacity, showTranslation, showTafsir, showTimer, showHijriDate, hijriDateX, hijriDateY, hijriDateColor, hijriDateFont, hijriDateSize, timerDuration, timerStyle, timerSize, timerColor, timerX, timerY, arabicTextColor, canvasResolution, bgImage,
-    showLikeBtn, likeText, likeIcon, likeTextPos, likeBtnX, likeBtnY, likeBtnSize, showFollowBtn, followText, followIcon, followTextPos, followBtnX, followBtnY, followBtnSize,
+    showLikeBtn, likeText, likeIcon, likeTextPos, likeBtnX, likeBtnY, likeBtnSize, likeTextSize, showFollowBtn, followText, followIcon, followTextPos, followBtnX, followBtnY, followBtnSize, followTextSize, likeColor, likeEffect, likeEffectColor, likeTextEffect, followColor, followEffect, followEffectColor, followTextEffect,
     bgColor1, bgColor2, textAnim,
     introEnabled, introDuration, introBgType, introBgColor1, introBgColor2,
     introBgImage, introBgVideo, introText, introSubtext,
@@ -2491,7 +2647,7 @@ const TRANSITIONS = [
     introSubFontFamily, introSubTextColor,
     wordCustomColors, passageAyahs, currentAyahIndex,
     reverbMix, delayTime, delayFeedback, audioPreset, savedPresets,
-    openSections
+    activeTab
   ]);
 
   return (

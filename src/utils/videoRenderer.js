@@ -666,11 +666,13 @@ export function drawFrame({
     const paddingX = 80;
     const maxWidth = width - (paddingX * 2);
 
-    // Calculate Y Position based on setting
-    let centerY = height / 2;
-    if (config.textPosition === 'top') {
+    // Calculate position based on X/Y percentages
+    const centerX = ((config.textX ?? 50) / 100) * width;
+    let centerY = ((config.textY ?? 50) / 100) * height;
+    // Legacy textPosition fallback
+    if (config.textY == null && config.textPosition === 'top') {
       centerY = height * 0.35;
-    } else if (config.textPosition === 'bottom') {
+    } else if (config.textY == null && config.textPosition === 'bottom') {
       centerY = height * 0.65;
     }
 
@@ -1202,27 +1204,85 @@ export function drawFrame({
   };
 
   // Draw icon with text at configurable position
-  function drawIconWithText(cfg, icon, text, x, y, scale, textPos) {
+  function drawIconWithText(cfg, icon, text, x, y, scale, textPos, textSize = 11, color = '#ffffff', effect = 'none', effectColor = '#60a5fa', textEffect = 'none', currentTime = 0) {
     const iconChar = iconChars[icon] || '\u2665';
     const iconSize = Math.round(28 * scale);
-    const textSize = Math.round(11 * scale);
+    let displayText = text;
+    if (textEffect === 'typing' && text) {
+      const charsPerSec = 10;
+      const charsToShow = Math.min(text.length, Math.floor(Math.max(0, currentTime) * charsPerSec));
+      displayText = text.slice(0, charsToShow);
+    }
+    const ts = Math.round(textSize * scale);
     const gap = Math.round(8 * scale);
+    const textProgress = Math.min(1, Math.max(0, currentTime * 2)); // 0.5s duration
+
+    const applyEffect = (str, sx, sy) => {
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 0;
+      ctx.save();
+      // Text animation transform
+      if (textEffect === 'fade') {
+        ctx.globalAlpha = textProgress;
+      } else if (textEffect === 'slide-up') {
+        ctx.translate(0, (1 - textProgress) * 30);
+      } else if (textEffect === 'slide-down') {
+        ctx.translate(0, -(1 - textProgress) * 30);
+      } else if (textEffect === 'zoom') {
+        const s = 0.3 + 0.7 * textProgress;
+        ctx.translate(sx, sy);
+        ctx.scale(s, s);
+        ctx.translate(-sx, -sy);
+      }
+      if (effect === 'glow') {
+        ctx.shadowColor = effectColor;
+        ctx.shadowBlur = 20;
+      } else if (effect === 'stroke' || effect === 'neon') {
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = effectColor;
+        ctx.shadowColor = effect === 'neon' ? effectColor : 'transparent';
+        ctx.shadowBlur = effect === 'neon' ? 15 : 0;
+        if (typeof ctx.strokeText === 'function') ctx.strokeText(str, sx, sy);
+        ctx.lineWidth = 1;
+      }
+      ctx.fillStyle = color;
+      ctx.shadowColor = effect === 'glow' || effect === 'neon' ? effectColor : 'rgba(0,0,0,0.6)';
+      ctx.shadowBlur = effect === 'glow' ? 20 : effect === 'neon' ? 15 : 6;
+      ctx.shadowOffsetY = effect === 'none' ? 2 : 0;
+      ctx.fillText(str, sx, sy);
+      ctx.restore();
+    };
 
     ctx.save();
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.shadowColor = 'rgba(0,0,0,0.6)';
-    ctx.shadowBlur = 6;
-    ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = 2;
-    ctx.fillStyle = '#ffffff';
 
-    if (!text || textPos === 'none') {
+    if (!text || textPos === 'none' || (textEffect === 'typing' && !displayText) || ((textEffect === 'fade' || textEffect === 'slide-up' || textEffect === 'slide-down' || textEffect === 'zoom') && textProgress <= 0)) {
       ctx.font = `700 ${iconSize}px Outfit, Inter, sans-serif`;
-      ctx.fillText(iconChar, x, y);
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = effect === 'none' ? 2 : 0;
+      if (effect === 'glow') {
+        ctx.shadowColor = effectColor;
+        ctx.shadowBlur = 20;
+        ctx.fillStyle = color;
+        ctx.fillText(iconChar, x, y);
+      } else if (effect === 'stroke' || effect === 'neon') {
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = effectColor;
+        ctx.shadowColor = effect === 'neon' ? effectColor : 'transparent';
+        ctx.shadowBlur = effect === 'neon' ? 15 : 0;
+        ctx.strokeText(iconChar, x, y);
+        ctx.fillStyle = color;
+        ctx.fillText(iconChar, x, y);
+      } else {
+        ctx.shadowColor = 'rgba(0,0,0,0.6)';
+        ctx.shadowBlur = 6;
+        ctx.fillStyle = color;
+        ctx.fillText(iconChar, x, y);
+      }
     } else {
-      ctx.font = `400 ${textSize}px Outfit, Inter, sans-serif`;
-      const textW = ctx.measureText(text).width;
+      ctx.font = `400 ${ts}px Outfit, Inter, sans-serif`;
+      const textW = ctx.measureText(displayText).width;
       const halfTotal = (iconSize + gap + textW) / 2;
 
       if (textPos === 'right') {
@@ -1230,33 +1290,33 @@ export function drawFrame({
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
         const startX = x - halfTotal;
-        ctx.fillText(iconChar, startX, y);
-        ctx.font = `400 ${textSize}px Outfit, Inter, sans-serif`;
-        ctx.fillText(text, startX + iconSize + gap, y);
+        applyEffect(iconChar, startX, y);
+        ctx.font = `400 ${ts}px Outfit, Inter, sans-serif`;
+        applyEffect(displayText, startX + iconSize + gap, y);
       } else if (textPos === 'left') {
-        ctx.font = `400 ${textSize}px Outfit, Inter, sans-serif`;
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
         const startX = x - halfTotal;
-        ctx.fillText(text, startX, y);
+        ctx.font = `400 ${ts}px Outfit, Inter, sans-serif`;
+        applyEffect(displayText, startX, y);
         ctx.font = `700 ${iconSize}px Outfit, Inter, sans-serif`;
-        ctx.fillText(iconChar, startX + textW + gap, y);
+        applyEffect(iconChar, startX + textW + gap, y);
       } else if (textPos === 'top') {
-        ctx.font = `400 ${textSize}px Outfit, Inter, sans-serif`;
         ctx.textAlign = 'center';
+        ctx.font = `400 ${ts}px Outfit, Inter, sans-serif`;
         ctx.textBaseline = 'bottom';
-        ctx.fillText(text, x, y - gap);
+        applyEffect(displayText, x, y - gap);
         ctx.font = `700 ${iconSize}px Outfit, Inter, sans-serif`;
         ctx.textBaseline = 'top';
-        ctx.fillText(iconChar, x, y);
+        applyEffect(iconChar, x, y);
       } else { // bottom (default)
         ctx.font = `700 ${iconSize}px Outfit, Inter, sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'bottom';
-        ctx.fillText(iconChar, x, y - gap);
-        ctx.font = `400 ${textSize}px Outfit, Inter, sans-serif`;
+        applyEffect(iconChar, x, y - gap);
+        ctx.font = `400 ${ts}px Outfit, Inter, sans-serif`;
         ctx.textBaseline = 'top';
-        ctx.fillText(text, x, y);
+        applyEffect(displayText, x, y);
       }
     }
     ctx.restore();
@@ -1266,13 +1326,13 @@ export function drawFrame({
   const likeX = ((config.likeBtnX ?? 95) / 100) * width;
   const likeY = ((config.likeBtnY ?? 50) / 100) * height;
   if (config.showLikeBtn) {
-    drawIconWithText(config, config.likeIcon || 'heart', config.likeText || '', likeX, likeY, likeScale, config.likeTextPos || 'bottom');
+    drawIconWithText(config, config.likeIcon || 'heart', config.likeText || '', likeX, likeY, likeScale, config.likeTextPos || 'bottom', config.likeTextSize || 11, config.likeColor || '#ffffff', config.likeEffect || 'none', config.likeEffectColor || '#60a5fa', config.likeTextEffect || 'none', currentTime);
   }
-  const followScale = (config.followBtnSize ?? 100) / 100;
-  const followX = ((config.followBtnX ?? 95) / 100) * width;
-  const followY = ((config.followBtnY ?? 58) / 100) * height;
-  if (config.showFollowBtn) {
-    drawIconWithText(config, config.followIcon || 'plus', config.followText || '', followX, followY, followScale, config.followTextPos || 'bottom');
+  if (config.showFollowBtn && (config.followIcon || config.followText)) {
+    const followScale = (config.followBtnSize ?? 100) / 100;
+    const followX = ((config.followBtnX ?? 95) / 100) * width;
+    const followY = ((config.followBtnY ?? 58) / 100) * height;
+    drawIconWithText(config, config.followIcon || 'plus', config.followText || '', followX, followY, followScale, config.followTextPos || 'bottom', config.followTextSize || 11, config.followColor || '#ffffff', config.followEffect || 'none', config.followEffectColor || '#60a5fa', config.followTextEffect || 'none', currentTime);
   }
 
   // 6. Draw Audio Visualizer at the Bottom

@@ -1414,110 +1414,90 @@ details[open] > summary::before {
   transform: rotate(90deg);
 }
 
-/* ── Collapsible Sections ── */
-.collapsible-section {
-  border: 1.5px solid var(--border-color);
-  border-radius: 12px;
-  margin-bottom: 8px;
-  overflow: hidden;
-  background: var(--bg-surface);
-  transition: box-shadow 0.2s;
-}
-
-.collapsible-section:hover {
-  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-}
-
-.collapsible-header {
-  width: 100%;
+/* ── Tabs Layout ── */
+.tabs-bar {
   display: flex;
+  gap: 3px;
+  margin-bottom: 14px;
+  padding: 4px;
+  background: var(--bg-surface-elevated);
+  border-radius: 10px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.tab-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 11px 15px;
-  background: transparent;
+  gap: 2px;
+  padding: 6px 4px;
   border: none;
-  border-bottom: 1.5px solid transparent;
-  color: var(--text-primary);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.2s;
-  font-family: var(--font-primary);
-  text-align: left;
-}
-
-.collapsible-header:hover {
-  background: var(--bg-card);
-}
-
-.collapsible-header.open {
-  border-bottom-color: var(--border-color);
-  background: var(--bg-card);
-}
-
-.collapsible-header .header-left {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  min-width: 0;
-}
-
-.collapsible-header .header-icon {
-  font-size: 16px;
-  line-height: 1;
-  flex-shrink: 0;
-}
-
-.collapsible-header .header-title {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-size: 12px;
-  letter-spacing: 0.3px;
-}
-
-.collapsible-header .chevron {
-  width: 14px;
-  height: 14px;
-  flex-shrink: 0;
+  border-radius: 8px;
+  background: transparent;
   color: var(--text-muted);
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  font-family: var(--font-primary);
+  white-space: nowrap;
 }
 
-.collapsible-header .chevron.open {
-  transform: rotate(180deg);
+.tab-btn:hover {
+  background: var(--bg-card);
+  color: var(--text-secondary);
 }
 
-.collapsible-body {
-  padding: 15px;
-  animation: slideDown 0.2s ease;
+.tab-btn.active {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
 }
 
-.collapsible-body .form-group {
+.tab-btn .tab-icon {
+  font-size: 15px;
+  line-height: 1;
+}
+
+.tab-btn .tab-label {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  text-transform: uppercase;
+}
+
+.tab-content {
+  min-height: 200px;
+}
+
+.tab-panel {
+  padding: 0;
+  animation: fadeIn 0.15s ease;
+}
+
+.tab-panel .form-group {
   margin-bottom: 12px;
 }
 
-.collapsible-body .form-group:last-child {
+.tab-panel .form-group:last-child {
   margin-bottom: 0;
 }
 
-/* Darker inputs inside sections */
-.collapsible-body select,
-.collapsible-body input[type="text"],
-.collapsible-body input[type="number"],
-.collapsible-body input[type="color"] {
+.tab-panel select,
+.tab-panel input[type="text"],
+.tab-panel input[type="number"],
+.tab-panel input[type="color"] {
   background: var(--bg-base);
 }
 
-/* Slider groups inside sections */
-.collapsible-body .slider-group {
+/* Slider groups inside tab panels */
+.tab-panel .slider-group {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.collapsible-body .slider-group input[type="range"] {
+.tab-panel .slider-group input[type="range"] {
   flex: 1;
   height: 4px;
   -webkit-appearance: none;
@@ -1528,10 +1508,9 @@ details[open] > summary::before {
   border: none;
   padding: 0;
   cursor: pointer;
-  transition: background 0.1s;
 }
 
-.collapsible-body .slider-group input[type="range"]::-webkit-slider-thumb {
+.tab-panel .slider-group input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
   width: 16px;
   height: 16px;
@@ -1543,12 +1522,12 @@ details[open] > summary::before {
   transition: transform 0.15s, box-shadow 0.15s;
 }
 
-.collapsible-body .slider-group input[type="range"]::-webkit-slider-thumb:hover {
+.tab-panel .slider-group input[type="range"]::-webkit-slider-thumb:hover {
   transform: scale(1.15);
   box-shadow: 0 2px 8px rgba(0,0,0,0.25);
 }
 
-.collapsible-body .slider-group input[type="range"]::-moz-range-thumb {
+.tab-panel .slider-group input[type="range"]::-moz-range-thumb {
   width: 16px;
   height: 16px;
   border-radius: 50%;
@@ -1557,65 +1536,13 @@ details[open] > summary::before {
   border: 3px solid var(--bg-base);
 }
 
-.collapsible-body .slider-group span {
+.tab-panel .slider-group span {
   font-size: 12px;
   font-weight: 700;
   color: var(--text-primary);
   min-width: 36px;
   text-align: right;
   font-variant-numeric: tabular-nums;
-}
-
-/* Checkbox group */
-.checkbox-group {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  cursor: pointer;
-  padding: 8px 10px;
-  border-radius: 8px;
-  transition: background 0.15s;
-}
-
-.checkbox-group:hover {
-  background: var(--bg-card);
-}
-
-.checkbox-group input[type="checkbox"] {
-  display: none;
-}
-
-.checkbox-group .checkmark {
-  width: 18px;
-  height: 18px;
-  border: 2px solid var(--border-color);
-  border-radius: 5px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-}
-
-.checkbox-group input:checked + .checkmark {
-  background: var(--primary);
-  border-color: var(--primary);
-}
-
-.checkbox-group input:checked + .checkmark::after {
-  content: '';
-  width: 5px;
-  height: 9px;
-  border: solid #fff;
-  border-width: 0 2px 2px 0;
-  transform: rotate(45deg);
-  margin-top: -1px;
-}
-
-.checkbox-group span {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--text-primary);
 }
 
 /* Color input inside form */
@@ -1655,17 +1582,6 @@ details[open] > summary::before {
   inset: 0;
   opacity: 0;
   cursor: pointer;
-}
-
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 
 /* ── Modal ── */

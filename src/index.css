@@ -534,6 +534,17 @@ body {
   opacity: 0.5;
 }
 
+.presets-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 14px;
+  padding: 8px 10px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+}
+
 /* ── Form Elements ── */
 .form-group {
   margin-bottom: 14px;

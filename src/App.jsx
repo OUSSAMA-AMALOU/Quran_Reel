@@ -371,6 +371,61 @@ function App() {
     setDelayFeedback(p.f);
   };
 
+  // Full video presets (saved to localStorage)
+  const [savedPresets, setSavedPresets] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('quranPresets') || '[]'); } catch { return []; }
+  });
+  useEffect(() => { localStorage.setItem('quranPresets', JSON.stringify(savedPresets)); }, [savedPresets]);
+
+  const getCurrentSettings = () => ({
+    fontFamily, fontSize, translationFontSize, textPosition,
+    showTranslation, uiLang, watermark, vignetteOpacity,
+    visualizerStyle, visualizerColor, visualEffect,
+    highlightColor, arabicTextColor, transitionEffect, canvasResolution,
+    showLikeBtn, likeText, likeIcon, likeTextPos, likeBtnX, likeBtnY, likeBtnSize,
+    showFollowBtn, followText, followIcon, followTextPos, followBtnX, followBtnY, followBtnSize,
+    bgColor1, bgColor2, textAnim,
+    introEnabled, introDuration, introBgType, introBgColor1, introBgColor2,
+    introText, introSubtext, introFontSize, introSubFontSize, introFontFamily, introTextColor,
+    introSubFontFamily, introSubTextColor, introTransitionEffect,
+    showTimer, timerDuration, timerStyle, timerSize, timerColor, timerX, timerY,
+    showHijriDate, hijriDateX, hijriDateY, hijriDateColor, hijriDateFont, hijriDateSize,
+    reverbMix, delayTime, delayFeedback, audioPreset,
+  });
+
+  const savePreset = () => {
+    const name = prompt('Preset name:');
+    if (!name || !name.trim()) return;
+    setSavedPresets(prev => [...prev, { id: Date.now().toString(), name: name.trim(), ...getCurrentSettings() }]);
+  };
+
+  const loadPreset = (p) => {
+    setFontFamily(p.fontFamily); setFontSize(p.fontSize); setTranslationFontSize(p.translationFontSize); setTextPosition(p.textPosition);
+    setShowTranslation(p.showTranslation); setUiLang(p.uiLang); setWatermark(p.watermark); setVignetteOpacity(p.vignetteOpacity);
+    setVisualizerStyle(p.visualizerStyle); setVisualizerColor(p.visualizerColor); setVisualEffect(p.visualEffect);
+    setHighlightColor(p.highlightColor); setArabicTextColor(p.arabicTextColor); setTransitionEffect(p.transitionEffect); setCanvasResolution(p.canvasResolution);
+    setShowLikeBtn(p.showLikeBtn); setLikeText(p.likeText); setLikeIcon(p.likeIcon); setLikeTextPos(p.likeTextPos);
+    setLikeBtnX(p.likeBtnX); setLikeBtnY(p.likeBtnY); setLikeBtnSize(p.likeBtnSize);
+    setShowFollowBtn(p.showFollowBtn); setFollowText(p.followText); setFollowIcon(p.followIcon); setFollowTextPos(p.followTextPos);
+    setFollowBtnX(p.followBtnX); setFollowBtnY(p.followBtnY); setFollowBtnSize(p.followBtnSize);
+    setBgColor1(p.bgColor1); setBgColor2(p.bgColor2); setTextAnim(p.textAnim);
+    setIntroEnabled(p.introEnabled); setIntroDuration(p.introDuration); setIntroBgType(p.introBgType);
+    setIntroBgColor1(p.introBgColor1); setIntroBgColor2(p.introBgColor2);
+    setIntroText(p.introText); setIntroSubtext(p.introSubtext);
+    setIntroFontSize(p.introFontSize); setIntroSubFontSize(p.introSubFontSize);
+    setIntroFontFamily(p.introFontFamily); setIntroTextColor(p.introTextColor);
+    setIntroSubFontFamily(p.introSubFontFamily); setIntroSubTextColor(p.introSubTextColor); setIntroTransitionEffect(p.introTransitionEffect);
+    setShowTimer(p.showTimer); setTimerDuration(p.timerDuration); setTimerStyle(p.timerStyle); setTimerSize(p.timerSize);
+    setTimerColor(p.timerColor); setTimerX(p.timerX); setTimerY(p.timerY);
+    setShowHijriDate(p.showHijriDate); setHijriDateX(p.hijriDateX); setHijriDateY(p.hijriDateY);
+    setHijriDateColor(p.hijriDateColor); setHijriDateFont(p.hijriDateFont); setHijriDateSize(p.hijriDateSize);
+    setReverbMix(p.reverbMix); setDelayTime(p.delayTime); setDelayFeedback(p.delayFeedback); setAudioPreset(p.audioPreset || 'custom');
+  };
+
+  const deletePreset = (id) => {
+    setSavedPresets(prev => prev.filter(x => x.id !== id));
+  };
+
 const DIMS = { '1080p': [1080,1920], '720p': [720,1280], '540p': [540,960] };
 
 const TRANSITIONS = [
@@ -1932,6 +1987,28 @@ const TRANSITIONS = [
         {T('style.visualStyle')}
       </h2>
 
+      <div className="presets-bar">
+        <button className="btn-ghost" style={{fontSize:12, padding:'6px 12px', width:'auto'}} onClick={savePreset} disabled={isRecording}>
+          💾 Save Preset
+        </button>
+        {savedPresets.length > 0 && (
+          <select value="" onChange={(e) => { const p = savedPresets.find(x => x.id === e.target.value); if (p) loadPreset(p); }} style={{flex:1, minWidth:0}} disabled={isRecording}>
+            <option value="">— Load Preset —</option>
+            {savedPresets.map(p => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
+        )}
+        {savedPresets.length > 0 && (
+          <select value="" onChange={(e) => deletePreset(e.target.value)} style={{width:28, padding:4, flex:'none', fontSize:11}}>
+            <option value="">×</option>
+            {savedPresets.map(p => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
+        )}
+      </div>
+
       <Section id="text" icon="🔤" title="Text & Fonts" open={openSections.text}>
         <div className="form-group">
           <label>{T('style.arabicFont')}</label>
@@ -2399,7 +2476,7 @@ const TRANSITIONS = [
     introFontSize, introSubFontSize, introFontFamily, introTextColor,
     introSubFontFamily, introSubTextColor,
     wordCustomColors, passageAyahs, currentAyahIndex,
-    reverbMix, delayTime, delayFeedback, audioPreset,
+    reverbMix, delayTime, delayFeedback, audioPreset, savedPresets,
     openSections
   ]);
 

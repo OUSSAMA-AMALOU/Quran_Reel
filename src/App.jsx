@@ -377,6 +377,9 @@ function App() {
   });
   useEffect(() => { localStorage.setItem('quranPresets', JSON.stringify(savedPresets)); }, [savedPresets]);
 
+  const [presetModal, setPresetModal] = useState({ show: false, mode: 'save', deleteId: null });
+  const [presetNameInput, setPresetNameInput] = useState('');
+
   const getCurrentSettings = () => ({
     fontFamily, fontSize, translationFontSize, textPosition,
     showTranslation, uiLang, watermark, vignetteOpacity,
@@ -394,9 +397,15 @@ function App() {
   });
 
   const savePreset = () => {
-    const name = prompt('Preset name:');
-    if (!name || !name.trim()) return;
-    setSavedPresets(prev => [...prev, { id: Date.now().toString(), name: name.trim(), ...getCurrentSettings() }]);
+    setPresetNameInput('');
+    setPresetModal({ show: true, mode: 'save', deleteId: null });
+  };
+
+  const doSavePreset = () => {
+    const name = presetNameInput.trim();
+    if (!name) return;
+    setSavedPresets(prev => [...prev, { id: Date.now().toString(), name, ...getCurrentSettings() }]);
+    setPresetModal({ show: false, mode: 'save', deleteId: null });
   };
 
   const loadPreset = (p) => {
@@ -422,8 +431,13 @@ function App() {
     setReverbMix(p.reverbMix); setDelayTime(p.delayTime); setDelayFeedback(p.delayFeedback); setAudioPreset(p.audioPreset || 'custom');
   };
 
-  const deletePreset = (id) => {
-    setSavedPresets(prev => prev.filter(x => x.id !== id));
+  const confirmDeletePreset = (id) => {
+    setPresetModal({ show: true, mode: 'delete', deleteId: id });
+  };
+
+  const doDeletePreset = () => {
+    setSavedPresets(prev => prev.filter(x => x.id !== presetModal.deleteId));
+    setPresetModal({ show: false, mode: 'delete', deleteId: null });
   };
 
 const DIMS = { '1080p': [1080,1920], '720p': [720,1280], '540p': [540,960] };
@@ -2000,7 +2014,7 @@ const TRANSITIONS = [
           </select>
         )}
         {savedPresets.length > 0 && (
-          <select value="" onChange={(e) => deletePreset(e.target.value)} style={{width:28, padding:4, flex:'none', fontSize:11}}>
+          <select value="" onChange={(e) => { const v = e.target.value; if (v) confirmDeletePreset(v); }} style={{width:28, padding:4, flex:'none', fontSize:11}}>
             <option value="">×</option>
             {savedPresets.map(p => (
               <option key={p.id} value={p.id}>{p.name}</option>
@@ -3313,6 +3327,34 @@ const TRANSITIONS = [
         </section>
 
       </main>
+
+      {/* Preset Modal */}
+      {presetModal.show && (
+        <div className="modal-overlay" onClick={() => setPresetModal({ show: false, mode: 'save', deleteId: null })}>
+          <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
+            {presetModal.mode === 'save' ? (
+              <>
+                <div className="modal-header">💾 Save Preset</div>
+                <input className="modal-input" type="text" value={presetNameInput} onChange={(e) => setPresetNameInput(e.target.value)} placeholder="Enter preset name..." autoFocus onKeyDown={(e) => { if (e.key === 'Enter') doSavePreset(); if (e.key === 'Escape') setPresetModal({ show: false, mode: 'save', deleteId: null }); }} />
+                <div className="modal-actions">
+                  <button className="btn-ghost" onClick={() => setPresetModal({ show: false, mode: 'save', deleteId: null })}>Cancel</button>
+                  <button className="btn-primary" onClick={doSavePreset} disabled={!presetNameInput.trim()}>Save</button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="modal-header">🗑 Delete Preset</div>
+                <p style={{margin:0, color:'var(--text-secondary)', fontSize:13, lineHeight:1.5}}>Are you sure you want to delete this preset?</p>
+                <div className="modal-actions">
+                  <button className="btn-ghost" onClick={() => setPresetModal({ show: false, mode: 'save', deleteId: null })}>Cancel</button>
+                  <button className="btn-danger" onClick={doDeletePreset}>Delete</button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

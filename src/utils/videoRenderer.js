@@ -754,9 +754,31 @@ export function drawFrame({
       englishHeight = enLayout.height;
     }
 
+    // Measure Tafsir
+    let tafsirHeight = 0;
+    const tafsirFontSize = 18;
+    if (config.showTafsir && currentAyah.tafsir) {
+      ctx.font = `400 ${tafsirFontSize}px Outfit, Inter, sans-serif`;
+      const tWords = currentAyah.tafsir.split(' ');
+      const tLines = [];
+      let tLine = '';
+      for (let i = 0; i < tWords.length; i++) {
+        const testLine = tLine + tWords[i] + ' ';
+        if (ctx.measureText(testLine).width > maxWidth && i > 0) {
+          tLines.push(tLine.trim());
+          tLine = tWords[i] + ' ';
+        } else {
+          tLine = testLine;
+        }
+      }
+      tLines.push(tLine.trim());
+      tafsirHeight = tLines.length * (tafsirFontSize * 1.4);
+    }
+
     const totalBlockHeight = arabicHeight
       + (showTr ? textSpacing + transliterationHeight : 0)
-      + (config.showTranslation ? textSpacing + englishHeight : 0);
+      + (config.showTranslation ? textSpacing + englishHeight : 0)
+      + (config.showTafsir ? textSpacing + tafsirHeight : 0);
     const startY = centerY - (totalBlockHeight / 2);
     textBlockBottom = startY + totalBlockHeight;
 
@@ -794,7 +816,10 @@ export function drawFrame({
       for (const { word, idx } of line) {
         const ww = ctx.measureText(word).width;
         const isHighlighted = highlightedWords.includes(idx);
-        ctx.fillStyle = isHighlighted ? (config.highlightColor || '#fbbf24') : (config.arabicTextColor || '#ffffff');
+        const wordColors = config.wordCustomColors || {};
+        const ayahWordColors = wordColors[ayahKey || ''] || {};
+        const customColor = ayahWordColors[idx];
+        ctx.fillStyle = customColor || (isHighlighted ? (config.highlightColor || '#fbbf24') : (config.arabicTextColor || '#ffffff'));
         ctx.fillText(word, drawX, currentY);
         positions.push({
           idx, word,
@@ -841,6 +866,15 @@ export function drawFrame({
         maxWidth,
         translationFontSize * 1.4
       );
+    }
+
+    // Draw Tafsir
+    if (config.showTafsir && currentAyah.tafsir) {
+      currentY += textSpacing;
+      ctx.font = `400 ${tafsirFontSize}px Outfit, Inter, sans-serif`;
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+      ctx.textAlign = 'center';
+      wrapText(ctx, currentAyah.tafsir, width / 2, currentY + tafsirFontSize, maxWidth, tafsirFontSize * 1.4);
     }
 
     if (config.showTimer && currentTime !== undefined) {
@@ -1152,6 +1186,93 @@ export function drawFrame({
     ctx.fillStyle = hc;
     ctx.fillText(hijriDate, hx, hy);
     ctx.restore();
+  }
+
+  // Icon symbols mapping
+  const iconChars = {
+    heart: '\u2665',
+    heartFilled: '\u2764',
+    star: '\u2605',
+    starOutline: '\u2606',
+    thumbsUp: '\uD83D\uDC4D',
+    fire: '\uD83D\uDD25',
+    plus: '\u271A',
+    bell: '\uD83D\uDD14',
+    play: '\u25B6'
+  };
+
+  // Draw icon with text at configurable position
+  function drawIconWithText(cfg, icon, text, x, y, scale, textPos) {
+    const iconChar = iconChars[icon] || '\u2665';
+    const iconSize = Math.round(28 * scale);
+    const textSize = Math.round(11 * scale);
+    const gap = Math.round(8 * scale);
+
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.shadowColor = 'rgba(0,0,0,0.6)';
+    ctx.shadowBlur = 6;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 2;
+    ctx.fillStyle = '#ffffff';
+
+    if (!text || textPos === 'none') {
+      ctx.font = `700 ${iconSize}px Outfit, Inter, sans-serif`;
+      ctx.fillText(iconChar, x, y);
+    } else {
+      ctx.font = `400 ${textSize}px Outfit, Inter, sans-serif`;
+      const textW = ctx.measureText(text).width;
+      const halfTotal = (iconSize + gap + textW) / 2;
+
+      if (textPos === 'right') {
+        ctx.font = `700 ${iconSize}px Outfit, Inter, sans-serif`;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        const startX = x - halfTotal;
+        ctx.fillText(iconChar, startX, y);
+        ctx.font = `400 ${textSize}px Outfit, Inter, sans-serif`;
+        ctx.fillText(text, startX + iconSize + gap, y);
+      } else if (textPos === 'left') {
+        ctx.font = `400 ${textSize}px Outfit, Inter, sans-serif`;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        const startX = x - halfTotal;
+        ctx.fillText(text, startX, y);
+        ctx.font = `700 ${iconSize}px Outfit, Inter, sans-serif`;
+        ctx.fillText(iconChar, startX + textW + gap, y);
+      } else if (textPos === 'top') {
+        ctx.font = `400 ${textSize}px Outfit, Inter, sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText(text, x, y - gap);
+        ctx.font = `700 ${iconSize}px Outfit, Inter, sans-serif`;
+        ctx.textBaseline = 'top';
+        ctx.fillText(iconChar, x, y);
+      } else { // bottom (default)
+        ctx.font = `700 ${iconSize}px Outfit, Inter, sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText(iconChar, x, y - gap);
+        ctx.font = `400 ${textSize}px Outfit, Inter, sans-serif`;
+        ctx.textBaseline = 'top';
+        ctx.fillText(text, x, y);
+      }
+    }
+    ctx.restore();
+  }
+
+  const likeScale = (config.likeBtnSize ?? 100) / 100;
+  const likeX = ((config.likeBtnX ?? 95) / 100) * width;
+  const likeY = ((config.likeBtnY ?? 50) / 100) * height;
+  if (config.showLikeBtn) {
+    drawIconWithText(config, config.likeIcon || 'heart', config.likeText || '', likeX, likeY, likeScale, config.likeTextPos || 'bottom');
+  }
+  const followScale = (config.followBtnSize ?? 100) / 100;
+  const followX = ((config.followBtnX ?? 95) / 100) * width;
+  const followY = ((config.followBtnY ?? 58) / 100) * height;
+  if (config.showFollowBtn) {
+    drawIconWithText(config, config.followIcon || 'plus', config.followText || '', followX, followY, followScale, config.followTextPos || 'bottom');
   }
 
   // 6. Draw Audio Visualizer at the Bottom

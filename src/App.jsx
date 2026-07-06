@@ -281,6 +281,7 @@ function App() {
   const [vignetteOpacity, setVignetteOpacity] = useState(0.4);
   const [fontFamily, setFontFamily] = useState('amiri');
   const [showTranslation, setShowTranslation] = useState(false);
+  const [showTafsir, setShowTafsir] = useState(false);
   const translationLang = 'en';
   const [uiLang, setUiLang] = useState('en');
   const showTransliteration = false;
@@ -292,6 +293,20 @@ function App() {
   const [transitionEffect, setTransitionEffect] = useState('none');
   const [canvasResolution, setCanvasResolution] = useState('720p');
   const [visualEffect, setVisualEffect] = useState('none');
+  const [showLikeBtn, setShowLikeBtn] = useState(false);
+  const [likeText, setLikeText] = useState('');
+  const [likeIcon, setLikeIcon] = useState('heart');
+  const [likeTextPos, setLikeTextPos] = useState('bottom');
+  const [likeBtnX, setLikeBtnX] = useState(95);
+  const [likeBtnY, setLikeBtnY] = useState(50);
+  const [likeBtnSize, setLikeBtnSize] = useState(100);
+  const [showFollowBtn, setShowFollowBtn] = useState(false);
+  const [followText, setFollowText] = useState('');
+  const [followIcon, setFollowIcon] = useState('plus');
+  const [followTextPos, setFollowTextPos] = useState('bottom');
+  const [followBtnX, setFollowBtnX] = useState(95);
+  const [followBtnY, setFollowBtnY] = useState(58);
+  const [followBtnSize, setFollowBtnSize] = useState(100);
 
   // New features
   const [bgColor1, setBgColor1] = useState('');
@@ -327,6 +342,34 @@ function App() {
   const [timerX, setTimerX] = useState(50);
   const [timerY, setTimerY] = useState(70);
   const introTransitionRef = useRef(false);
+
+  // Audio effects
+  const [reverbMix, setReverbMix] = useState(0);
+  const [delayTime, setDelayTime] = useState(0);
+  const [delayFeedback, setDelayFeedback] = useState(30);
+  const [audioPreset, setAudioPreset] = useState('natural');
+
+  const AUDIO_PRESETS = [
+    { id: 'natural', name: '🌿 Natural', r: 0, d: 0, f: 30 },
+    { id: 'softhall', name: '🏛 Soft Hall', r: 35, d: 0, f: 30 },
+    { id: 'largehall', name: '🏟 Large Hall', r: 65, d: 150, f: 25 },
+    { id: 'echochamber', name: '🌀 Echo Chamber', r: 80, d: 350, f: 40 },
+    { id: 'canyon', name: '⛰ Canyon', r: 25, d: 600, f: 50 },
+    { id: 'cathedral', name: '⛪ Cathedral', r: 85, d: 0, f: 30 },
+    { id: 'tapeecho', name: '📼 Tape Echo', r: 0, d: 200, f: 65 },
+    { id: 'ambient', name: '🌌 Ambient', r: 45, d: 450, f: 35 },
+    { id: 'stadium', name: '🏟 Stadium', r: 75, d: 280, f: 55 },
+    { id: 'dreamy', name: '💫 Dreamy', r: 55, d: 700, f: 30 },
+  ];
+
+  const applyAudioPreset = (id) => {
+    const p = AUDIO_PRESETS.find(x => x.id === id);
+    if (!p) return;
+    setAudioPreset(id);
+    setReverbMix(p.r);
+    setDelayTime(p.d);
+    setDelayFeedback(p.f);
+  };
 
 const DIMS = { '1080p': [1080,1920], '720p': [720,1280], '540p': [540,960] };
 
@@ -421,6 +464,7 @@ const TRANSITIONS = [
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [highlightedWords, setHighlightedWords] = useState({}); // { ayahKey: [wordIdx, ...] }
+  const [wordCustomColors, setWordCustomColors] = useState({}); // { ayahKey: { wordIdx: '#hex' } }
 
   // Recording / Export States
   const [isRecording, setIsRecording] = useState(false);
@@ -446,6 +490,7 @@ const TRANSITIONS = [
   const nextAudioSourceNodeRef = useRef(null);
   const bgAudioSourceNodeRef = useRef(null);
   const bgGainNodeRef = useRef(null);
+  const effectsChainRef = useRef(null);
   const recorderRef = useRef(null);
   const prevFrameRef = useRef(null); // cached previous frame for transitions
   const transitionRef = useRef({ active: false, startTime: 0, duration: 0, effect: 'none' });
@@ -473,12 +518,13 @@ const TRANSITIONS = [
     const ctx = canvas.getContext('2d');
     // Capture current config values into closure
     const cfg = {
-      fontSize, translationFontSize, textPosition, vignetteOpacity,
+      fontSize, translationFontSize, showTafsir, textPosition, vignetteOpacity,
       fontFamily, showTranslation, translationLang, showTransliteration,
       showTimer, showHijriDate, hijriDateX, hijriDateY, hijriDateColor, hijriDateFont, hijriDateSize, timerDuration, timerStyle, timerSize, timerColor, timerX, timerY,
       watermark, visualizerStyle, visualizerColor, visualEffect,
       bgColor1, bgColor2, textAnim,
-      backgroundType: 'upload', bgImage, highlightColor, arabicTextColor,
+      backgroundType: 'upload', bgImage, highlightColor, arabicTextColor, wordCustomColors,
+      showLikeBtn, likeText, likeIcon, likeTextPos, likeBtnX, likeBtnY, likeBtnSize, showFollowBtn, followText, followIcon, followTextPos, followBtnX, followBtnY, followBtnSize,
       introVideoElement: introVideoRef.current,
       intro: introEnabled ? {
         enabled: true,
@@ -523,9 +569,9 @@ const TRANSITIONS = [
         highlightedWords: [],
       });
     };
-  }, [fontSize, translationFontSize, textPosition, vignetteOpacity, fontFamily,
+  }, [fontSize, translationFontSize, showTafsir, textPosition, vignetteOpacity, fontFamily,
       showTranslation, translationLang, showTransliteration, showTimer, showHijriDate, hijriDateX, hijriDateY, hijriDateColor, hijriDateFont, hijriDateSize, timerDuration, timerStyle, timerSize, timerColor, timerX, timerY, arabicTextColor, watermark,
-      visualizerStyle, visualizerColor, visualEffect, bgImage, highlightColor, bgColor1, bgColor2, textAnim,
+      visualizerStyle, visualizerColor, visualEffect, bgImage, highlightColor, wordCustomColors, showLikeBtn, likeText, likeIcon, likeTextPos, likeBtnX, likeBtnY, likeBtnSize, showFollowBtn, followText, followIcon, followTextPos, followBtnX, followBtnY, followBtnSize, bgColor1, bgColor2, textAnim,
       introEnabled, introDuration, introBgType, introBgColor1, introBgColor2, introBgImage, introBgVideo,
       introText, introSubtext, introFontSize, introSubFontSize, introFontFamily, introTextColor,
       introSubFontFamily, introSubTextColor]);
@@ -543,17 +589,19 @@ const TRANSITIONS = [
 
       if (CDN_ONLY_RECITERS.has(reciterId)) {
         // CDN-only reciter: fetch text/translation from API, build audio URL directly
-        const [arRes, enRes, frRes, trRes] = await Promise.all([
+        const [arRes, enRes, frRes, trRes, tafsirRes] = await Promise.all([
           fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/quran-uthmani`),
           fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/en.sahih`),
           fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/fr.hamidullah`),
-          fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/en.transliteration`)
+          fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/en.transliteration`),
+          fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/ar.muyassar`)
         ]);
         if (!arRes.ok || !enRes.ok) throw new Error('Failed to fetch Quran data from API.');
         arData = await arRes.json();
         enData = await enRes.json();
         const frData = await frRes.json();
         const trData = await trRes.json();
+        const tafsirData = tafsirRes.ok ? await tafsirRes.json() : null;
         const folder = EVERYAYAH_FOLDERS[reciterId];
         combined = arData.data.ayahs
           .map((ayah, idx) => ({
@@ -563,16 +611,18 @@ const TRANSITIONS = [
             translationEn: enData.data.ayahs[idx]?.text || '',
             translationFr: frData.data.ayahs[idx]?.text || '',
             transliteration: trData.data.ayahs[idx]?.text || '',
-            audio: `/everyayah/data/${folder}_128kbps/${pad3(surahNum)}${pad3(ayah.numberInSurah)}.mp3`
+            audio: `/everyayah/data/${folder}_128kbps/${pad3(surahNum)}${pad3(ayah.numberInSurah)}.mp3`,
+            tafsir: tafsirData?.data?.ayahs?.[idx]?.text || ''
           }));
       } else {
         // API reciter: fetch everything from Alquran Cloud
-        const [arRes, enRes, frRes, trRes, audioRes] = await Promise.all([
+        const [arRes, enRes, frRes, trRes, audioRes, tafsirRes] = await Promise.all([
           fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/quran-uthmani`),
           fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/en.sahih`),
           fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/fr.hamidullah`),
           fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/en.transliteration`),
-          fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/${reciterId}`)
+          fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/${reciterId}`),
+          fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/ar.muyassar`)
         ]);
         if (!arRes.ok || !enRes.ok || !audioRes.ok) {
           throw new Error('Failed to fetch Quran data from API. Please try again.');
@@ -582,6 +632,7 @@ const TRANSITIONS = [
         const frData = await frRes.json();
         const trData = await trRes.json();
         const audioData = await audioRes.json();
+        const tafsirData = tafsirRes.ok ? await tafsirRes.json() : null;
         combined = arData.data.ayahs
           .map((ayah, idx) => ({
             numberInSurah: ayah.numberInSurah,
@@ -590,7 +641,8 @@ const TRANSITIONS = [
             translationEn: enData.data.ayahs[idx]?.text || '',
             translationFr: frData.data.ayahs[idx]?.text || '',
             transliteration: trData.data.ayahs[idx]?.text || '',
-            audio: getAudioPath(audioData.data.ayahs[idx]?.audio)
+            audio: getAudioPath(audioData.data.ayahs[idx]?.audio),
+            tafsir: tafsirData?.data?.ayahs?.[idx]?.text || ''
           }))
           .filter(a => a.audio);
       }
@@ -604,6 +656,7 @@ const TRANSITIONS = [
       setPassageAyahs(rangeSlice);
       setCurrentAyahIndex(0);
       setHighlightedWords({});
+      setWordCustomColors({});
       
       // Load first audio URL
       if (rangeSlice.length > 0 && audioRef.current) {
@@ -636,17 +689,19 @@ const TRANSITIONS = [
       let arData, enData, combined;
 
       if (CDN_ONLY_RECITERS.has(reciterId)) {
-        const [arRes, enRes, frRes, trRes] = await Promise.all([
+        const [arRes, enRes, frRes, trRes, tafsirRes] = await Promise.all([
           fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/quran-uthmani`),
           fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/en.sahih`),
           fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/fr.hamidullah`),
-          fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/en.transliteration`)
+          fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/en.transliteration`),
+          fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/ar.muyassar`)
         ]);
         if (!arRes.ok || !enRes.ok) throw new Error('Failed to fetch Quran data from API.');
         arData = await arRes.json();
         enData = await enRes.json();
         const frData = await frRes.json();
         const trData = await trRes.json();
+        const tafsirData = tafsirRes.ok ? await tafsirRes.json() : null;
         const folder = EVERYAYAH_FOLDERS[reciterId];
         combined = arData.data.ayahs
           .map((ayah, idx) => ({
@@ -656,15 +711,17 @@ const TRANSITIONS = [
             translationEn: enData.data.ayahs[idx]?.text || '',
             translationFr: frData.data.ayahs[idx]?.text || '',
             transliteration: trData.data.ayahs[idx]?.text || '',
-            audio: `/everyayah/data/${folder}_128kbps/${pad3(surahNum)}${pad3(ayah.numberInSurah)}.mp3`
+            audio: `/everyayah/data/${folder}_128kbps/${pad3(surahNum)}${pad3(ayah.numberInSurah)}.mp3`,
+            tafsir: tafsirData?.data?.ayahs?.[idx]?.text || ''
           }));
       } else {
-        const [arRes, enRes, frRes, trRes, audioRes] = await Promise.all([
+        const [arRes, enRes, frRes, trRes, audioRes, tafsirRes] = await Promise.all([
           fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/quran-uthmani`),
           fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/en.sahih`),
           fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/fr.hamidullah`),
           fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/en.transliteration`),
-          fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/${reciterId}`)
+          fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/${reciterId}`),
+          fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/ar.muyassar`)
         ]);
         if (!arRes.ok || !enRes.ok || !audioRes.ok) {
           throw new Error('Failed to fetch Quran data from API. Try again.');
@@ -674,6 +731,7 @@ const TRANSITIONS = [
         const frData = await frRes.json();
         const trData = await trRes.json();
         const audioData = await audioRes.json();
+        const tafsirData = tafsirRes.ok ? await tafsirRes.json() : null;
         combined = arData.data.ayahs
           .map((ayah, idx) => ({
             numberInSurah: ayah.numberInSurah,
@@ -682,7 +740,8 @@ const TRANSITIONS = [
             translationEn: enData.data.ayahs[idx]?.text || '',
             translationFr: frData.data.ayahs[idx]?.text || '',
             transliteration: trData.data.ayahs[idx]?.text || '',
-            audio: getAudioPath(audioData.data.ayahs[idx]?.audio)
+            audio: getAudioPath(audioData.data.ayahs[idx]?.audio),
+            tafsir: tafsirData?.data?.ayahs?.[idx]?.text || ''
           }))
           .filter(a => a.audio);
       }
@@ -695,6 +754,7 @@ const TRANSITIONS = [
       setPassageAyahs(rangeSlice);
       setCurrentAyahIndex(0);
       setHighlightedWords({});
+      setWordCustomColors({});
 
       if (rangeSlice.length > 0 && audioRef.current) {
         audioRef.current.src = rangeSlice[0].audio;
@@ -797,6 +857,52 @@ const TRANSITIONS = [
     }
   }, [mode]);
 
+  // Build parallel effects chain: dry + reverb + delay → output mixer
+  const createEffectsChain = (audioCtx, reverbVal, delayVal, feedbackVal) => {
+    const inputNode = audioCtx.createGain();
+    const outputNode = audioCtx.createGain();
+
+    // Dry path
+    const dryGain = audioCtx.createGain();
+    dryGain.gain.value = 1;
+    inputNode.connect(dryGain);
+    dryGain.connect(outputNode);
+
+    // Reverb path
+    const reverbGain = audioCtx.createGain();
+    reverbGain.gain.value = reverbVal > 0 ? reverbVal / 100 : 0;
+    const sr = audioCtx.sampleRate;
+    const irLen = Math.floor(sr * 1.2);
+    const irBuffer = audioCtx.createBuffer(2, irLen, sr);
+    for (let ch = 0; ch < 2; ch++) {
+      const data = irBuffer.getChannelData(ch);
+      for (let i = 0; i < irLen; i++) {
+        data[i] = (Math.random() * 2 - 1) * (1 - i / irLen);
+      }
+    }
+    const convolver = audioCtx.createConvolver();
+    convolver.buffer = irBuffer;
+    convolver.normalize = false;
+    inputNode.connect(reverbGain);
+    reverbGain.connect(convolver);
+    convolver.connect(outputNode);
+
+    // Delay path
+    const delayGain = audioCtx.createGain();
+    delayGain.gain.value = delayVal > 0 ? 0.5 : 0;
+    const delayNode = audioCtx.createDelay(5);
+    delayNode.delayTime.value = delayVal / 1000;
+    const feedbackGain = audioCtx.createGain();
+    feedbackGain.gain.value = feedbackVal / 100;
+    inputNode.connect(delayGain);
+    delayGain.connect(delayNode);
+    delayNode.connect(outputNode);
+    delayNode.connect(feedbackGain);
+    feedbackGain.connect(delayNode);
+
+    return { inputNode, outputNode, reverbGain, delayGain, delayNode, feedbackGain };
+  };
+
   // Setup Web Audio API on first play
   const initWebAudio = () => {
     if (audioCtxRef.current) return;
@@ -807,22 +913,27 @@ const TRANSITIONS = [
       const analyser = audioCtx.createAnalyser();
       analyser.fftSize = 256;
       
-      // Connect primary audio element
+      // Create effects chain (dry + reverb + delay in parallel)
+      const effects = createEffectsChain(audioCtx, reverbMix, delayTime, delayFeedback);
+      
+      // Connect primary audio element through effects chain
       const primarySource = audioCtx.createMediaElementSource(audioRef.current);
-      primarySource.connect(audioCtx.destination);
-      primarySource.connect(analyser);
+      primarySource.connect(effects.inputNode);
+      effects.outputNode.connect(audioCtx.destination);
+      effects.outputNode.connect(analyser);
       
       // Connect secondary audio element for seamless ayah transitions
       const secondarySource = audioCtx.createMediaElementSource(nextAudioRef.current);
-      secondarySource.connect(audioCtx.destination);
-      secondarySource.connect(analyser);
+      secondarySource.connect(effects.inputNode);
+      // outputNode already connected to destination + analyser above
       
       audioCtxRef.current = audioCtx;
       analyserRef.current = analyser;
       audioSourceNodeRef.current = primarySource;
       nextAudioSourceNodeRef.current = secondarySource;
+      effectsChainRef.current = effects;
       
-      // Connect background audio element if available
+      // Connect background audio element if available (bypasses effects)
       if (bgAudioRef.current) {
         const bgSource = audioCtx.createMediaElementSource(bgAudioRef.current);
         const bgGain = audioCtx.createGain();
@@ -847,6 +958,16 @@ const TRANSITIONS = [
       }
     }
   };
+
+  // Live-update audio effect parameters
+  useEffect(() => {
+    const fx = effectsChainRef.current;
+    if (!fx) return;
+    fx.reverbGain.gain.value = reverbMix > 0 ? reverbMix / 100 : 0;
+    fx.delayGain.gain.value = delayTime > 0 ? 0.5 : 0;
+    fx.delayNode.delayTime.value = delayTime / 1000;
+    fx.feedbackGain.gain.value = delayFeedback / 100;
+  }, [reverbMix, delayTime, delayFeedback]);
 
   // Playback Control
   const togglePlay = async () => {
@@ -1174,6 +1295,7 @@ const TRANSITIONS = [
         config: {
           fontSize,
           translationFontSize,
+          showTafsir,
           textPosition,
           vignetteOpacity,
           fontFamily,
@@ -1201,6 +1323,21 @@ const TRANSITIONS = [
           bgImage,
           highlightColor,
           arabicTextColor,
+          wordCustomColors,
+          showLikeBtn,
+          likeText,
+          likeIcon,
+          likeTextPos,
+          likeBtnX,
+          likeBtnY,
+          likeBtnSize,
+          showFollowBtn,
+          followText,
+          followIcon,
+          followTextPos,
+          followBtnX,
+          followBtnY,
+          followBtnSize,
           bgColor1,
           bgColor2,
           textAnim,
@@ -1260,6 +1397,7 @@ const TRANSITIONS = [
     isPlaying, 
     fontSize, 
     translationFontSize, 
+    showTafsir,
     textPosition, 
     vignetteOpacity, 
     fontFamily, 
@@ -1276,8 +1414,10 @@ const TRANSITIONS = [
     visualEffect,
     bgImage,
     highlightedWords,
+    wordCustomColors,
     highlightColor,
     arabicTextColor,
+    showLikeBtn, likeText, likeIcon, likeTextPos, likeBtnX, likeBtnY, likeBtnSize, showFollowBtn, followText, followIcon, followTextPos, followBtnX, followBtnY, followBtnSize,
     bgColor1,
     bgColor2,
     textAnim,
@@ -1391,14 +1531,15 @@ const TRANSITIONS = [
         analyserRef.current.fftSize = 256;
       }
 
-      // Route both sources: -> destNode (recording), -> speakers, -> analyser (visualizer)
-      primarySource.connect(destNode);
-      primarySource.connect(audioCtx.destination);
-      primarySource.connect(analyserRef.current);
-      
-      secondarySource.connect(destNode);
-      secondarySource.connect(audioCtx.destination);
-      secondarySource.connect(analyserRef.current);
+      // Route both sources through effects chain: -> destNode (recording), -> speakers, -> analyser
+      if (!effectsChainRef.current) {
+        effectsChainRef.current = createEffectsChain(audioCtx, reverbMix, delayTime, delayFeedback);
+      }
+      primarySource.connect(effectsChainRef.current.inputNode);
+      secondarySource.connect(effectsChainRef.current.inputNode);
+      effectsChainRef.current.outputNode.connect(destNode);
+      effectsChainRef.current.outputNode.connect(audioCtx.destination);
+      effectsChainRef.current.outputNode.connect(analyserRef.current);
 
       // Connect background audio if available
       if (bgAudioFile && bgAudioRef.current) {
@@ -1763,6 +1904,24 @@ const TRANSITIONS = [
   }, [currentAyahIndex, isRecording, passageAyahs.length, startAyah, endAyah]);
 
   // Visual style JSX (used in right sidebar on desktop, and in left sidebar on mobile)
+  const [openSections, setOpenSections] = useState({
+    text: true, translation: false, overlays: false, buttons: false, effects: false, audiofx: false, background: false, other: false
+  });
+  const toggleSection = (name) => setOpenSections(prev => ({...prev, [name]: !prev[name]}));
+  const Section = ({id, icon, title, children, open}) => (
+    <div className="collapsible-section">
+      <button className={`collapsible-header ${open ? 'open' : ''}`} onClick={() => toggleSection(id)}>
+        <span className="header-left">
+          <span className="header-icon">{icon}</span>
+          <span className="header-title">{title}</span>
+        </span>
+        <svg className={`chevron ${open ? 'open' : ''}`} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M6 9l6 6 6-6"/>
+        </svg>
+      </button>
+      {open && <div className="collapsible-body">{children}</div>}
+    </div>
+  );
   const visualStyleContent = useMemo(() => (
     <>
       <h2 className="section-title">
@@ -1773,311 +1932,475 @@ const TRANSITIONS = [
         {T('style.visualStyle')}
       </h2>
 
-      <div className="form-group">
-        <label>{T('style.arabicFont')}</label>
-        <select 
-          value={fontFamily} 
-          onChange={(e) => setFontFamily(e.target.value)}
-          disabled={isRecording}
-        >
-          <option value="amiri">Amiri</option>
-          <option value="amiri-quran">Amiri Quran</option>
-          <option value="scheherazade">Scheherazade New</option>
-          <option value="noto-naskh">Noto Naskh Arabic</option>
-          <option value="lateef">Lateef</option>
-          <option value="aref-ruqaa">Aref Ruqaa</option>
-          <option value="uthmanic-hafs">Uthmanic Hafs</option>
-          <option value="decotype-naskh">DecoType Naskh</option>
-          <option value="cairo">Cairo</option>
-          <option value="tajawal">Tajawal</option>
-          <option value="almarai">Almarai</option>
-          <option value="noto-sans-arabic">Noto Sans Arabic</option>
-          <option value="reem-kufi">Reem Kufi</option>
-          <option value="noto-kufi-arabic">Noto Kufi Arabic</option>
-          <option value="el-messiri">El Messiri</option>
-          <option value="traditional-arabic">Traditional Arabic</option>
-        </select>
-      </div>
-
-      <div className="form-group">
-        <label>{T('style.arabicFontSize')}</label>
-        <div className="slider-group">
-          <input 
-            type="range" 
-            min="30" 
-            max="80" 
-            value={fontSize} 
-            onChange={(e) => setFontSize(parseInt(e.target.value))}
-            disabled={isRecording}
-          />
-          <span>{fontSize}px</span>
-        </div>
-      </div>
-
-      <div className="form-group">
-        <label>🎨 Word Highlight Color</label>
-        <select value={highlightColor} onChange={(e) => setHighlightColor(e.target.value)}>
-          <option value="#fbbf24">Gold</option>
-          <option value="#f472b6">Pink</option>
-          <option value="#60a5fa">Blue</option>
-          <option value="#34d399">Green</option>
-          <option value="#a78bfa">Purple</option>
-          <option value="#fb923c">Orange</option>
-          <option value="#ffffff">White</option>
-        </select>
-      </div>
-
-      <div className="form-group">
-        <label>{T('style.arabicTextColor')}</label>
-        <input type="color" value={arabicTextColor} onChange={(e) => setArabicTextColor(e.target.value)} disabled={isRecording} style={{width:'100%',height:36,padding:2,border:'1px solid var(--border-color)',borderRadius:6,background:'none',cursor:'pointer'}} />
-      </div>
-
-      <div className="form-group">
-        <label className="checkbox-group">
-          <input 
-            type="checkbox" 
-            checked={showTimer} 
-            onChange={(e) => setShowTimer(e.target.checked)}
-            disabled={isRecording}
-          />
-          <div className="checkmark"></div>
-          <span>{T('style.showTimer')}</span>
-        </label>
-      </div>
-
-      {showTimer && (
-        <>
+      <Section id="text" icon="🔤" title="Text & Fonts" open={openSections.text}>
         <div className="form-group">
-          <label>{T('style.timerDuration')}: {timerDuration}s</label>
-          <div className="slider-group">
-            <input type="range" min="5" max="600" step="5" value={timerDuration} onChange={(e) => setTimerDuration(parseInt(e.target.value))} disabled={isRecording} />
-            <span>{timerDuration}s</span>
-          </div>
-        </div>
-        <div className="form-group">
-          <label>{T('style.timerStyle')}</label>
-          <select value={timerStyle} onChange={(e) => setTimerStyle(e.target.value)} disabled={isRecording}>
-            <option value="analog">Analog Clock</option>
-            <option value="digital">Digital LCD</option>
-            <option value="ring">Countdown Ring</option>
-            <option value="flip">Flip Clock</option>
-            <option value="pie">Pie Timer</option>
-            <option value="bar">Progress Bar</option>
-            <option value="nixie">Nixie Tube</option>
-            <option value="slimline">Slim Line</option>
-            <option value="segmented">Segmented LED</option>
+          <label>{T('style.arabicFont')}</label>
+          <select value={fontFamily} onChange={(e) => setFontFamily(e.target.value)} disabled={isRecording}>
+            <option value="amiri">Amiri</option>
+            <option value="amiri-quran">Amiri Quran</option>
+            <option value="scheherazade">Scheherazade New</option>
+            <option value="noto-naskh">Noto Naskh Arabic</option>
+            <option value="lateef">Lateef</option>
+            <option value="aref-ruqaa">Aref Ruqaa</option>
+            <option value="uthmanic-hafs">Uthmanic Hafs</option>
+            <option value="decotype-naskh">DecoType Naskh</option>
+            <option value="cairo">Cairo</option>
+            <option value="tajawal">Tajawal</option>
+            <option value="almarai">Almarai</option>
+            <option value="noto-sans-arabic">Noto Sans Arabic</option>
+            <option value="reem-kufi">Reem Kufi</option>
+            <option value="noto-kufi-arabic">Noto Kufi Arabic</option>
+            <option value="el-messiri">El Messiri</option>
+            <option value="traditional-arabic">Traditional Arabic</option>
           </select>
         </div>
         <div className="form-group">
-          <label>{T('style.timerSize')}: {timerSize}%</label>
+          <label>{T('style.arabicFontSize')}</label>
           <div className="slider-group">
-            <input type="range" min="50" max="200" value={timerSize} onChange={(e) => setTimerSize(parseInt(e.target.value))} disabled={isRecording} />
-            <span>{timerSize}%</span>
+            <input type="range" min="30" max="80" value={fontSize} onChange={(e) => setFontSize(parseInt(e.target.value))} disabled={isRecording} />
+            <span>{fontSize}px</span>
           </div>
         </div>
         <div className="form-group">
-          <label>{T('style.timerColor')}</label>
-          <input type="color" value={timerColor} onChange={(e) => setTimerColor(e.target.value)} disabled={isRecording} style={{width:'100%',height:36,padding:2,border:'1px solid var(--border-color)',borderRadius:6,background:'none',cursor:'pointer'}} />
-        </div>
-        <div className="form-group">
-          <label>{T('style.timerX')}: {timerX}%</label>
-          <div className="slider-group">
-            <input type="range" min="0" max="100" value={timerX} onChange={(e) => setTimerX(parseInt(e.target.value))} disabled={isRecording} />
-            <span>{timerX}%</span>
-          </div>
-        </div>
-        <div className="form-group">
-          <label>{T('style.timerY')}: {timerY}%</label>
-          <div className="slider-group">
-            <input type="range" min="0" max="100" value={timerY} onChange={(e) => setTimerY(parseInt(e.target.value))} disabled={isRecording} />
-            <span>{timerY}%</span>
-          </div>
-        </div>
-        </>
-      )}
-
-      <div className="form-group">
-        <label className="checkbox-group">
-          <input type="checkbox" checked={showHijriDate} onChange={(e) => setShowHijriDate(e.target.checked)} disabled={isRecording} />
-          <div className="checkmark"></div>
-          <span>{T('style.showHijriDate')}</span>
-        </label>
-      </div>
-      {showHijriDate && (
-        <>
-        <div className="form-group">
-          <label>{T('style.hijriDateX')}: {hijriDateX}%</label>
-          <div className="slider-group">
-            <input type="range" min="0" max="100" value={hijriDateX} onChange={(e) => setHijriDateX(parseInt(e.target.value))} disabled={isRecording} />
-            <span>{hijriDateX}%</span>
-          </div>
-        </div>
-        <div className="form-group">
-          <label>{T('style.hijriDateY')}: {hijriDateY}%</label>
-          <div className="slider-group">
-            <input type="range" min="0" max="100" value={hijriDateY} onChange={(e) => setHijriDateY(parseInt(e.target.value))} disabled={isRecording} />
-            <span>{hijriDateY}%</span>
-          </div>
-        </div>
-        <div className="form-group">
-          <label>{T('style.hijriDateColor')}</label>
-          <input type="color" value={hijriDateColor} onChange={(e) => setHijriDateColor(e.target.value)} disabled={isRecording} style={{width:'100%',height:36,padding:2,border:'1px solid var(--border-color)',borderRadius:6,background:'none',cursor:'pointer'}} />
-        </div>
-        <div className="form-group">
-          <label>{T('style.hijriDateFont')}</label>
-          <select value={hijriDateFont} onChange={(e) => setHijriDateFont(e.target.value)} disabled={isRecording}>
-            <option value="Inter">Inter</option>
-            <option value="Outfit">Outfit</option>
-            <option value="Amiri">Amiri</option>
-            <option value="Cairo">Cairo</option>
-            <option value="Tajawal">Tajawal</option>
-            <option value="Noto Sans Arabic">Noto Sans Arabic</option>
+          <label htmlFor="textPosition">{T('style.textAlignment')}</label>
+          <select id="textPosition" value={textPosition} onChange={(e) => setTextPosition(e.target.value)} disabled={isRecording}>
+            <option value="top">{T('style.alignTop')}</option>
+            <option value="center">{T('style.alignCenter')}</option>
+            <option value="bottom">{T('style.alignBottom')}</option>
           </select>
         </div>
         <div className="form-group">
-          <label>{T('style.hijriDateSize')}: {hijriDateSize}%</label>
-          <div className="slider-group">
-            <input type="range" min="50" max="200" value={hijriDateSize} onChange={(e) => setHijriDateSize(parseInt(e.target.value))} disabled={isRecording} />
-            <span>{hijriDateSize}%</span>
-          </div>
+          <label>{T('style.arabicTextColor')}</label>
+          <input type="color" value={arabicTextColor} onChange={(e) => setArabicTextColor(e.target.value)} disabled={isRecording} style={{width:'100%',height:36,padding:2,border:'1px solid var(--border-color)',borderRadius:6,background:'none',cursor:'pointer'}} />
         </div>
-        </>
-      )}
-
-      {showTranslation && (
         <div className="form-group">
-          <label>{T('style.translationFontSize')}</label>
-          <div className="slider-group">
-            <input 
-              type="range" 
-              min="18" 
-              max="40" 
-              value={translationFontSize} 
-              onChange={(e) => setTranslationFontSize(parseInt(e.target.value))}
-              disabled={isRecording}
-            />
-            <span>{translationFontSize}px</span>
-          </div>
-        </div>
-      )}
-
-      <div className="form-group">
-        <label htmlFor="textPosition">{T('style.textAlignment')}</label>
-        <select 
-          id="textPosition" 
-          value={textPosition} 
-          onChange={(e) => setTextPosition(e.target.value)}
-          disabled={isRecording}
-        >
-          <option value="top">{T('style.alignTop')}</option>
-          <option value="center">{T('style.alignCenter')}</option>
-          <option value="bottom">{T('style.alignBottom')}</option>
-        </select>
-      </div>
-
-      <div className="form-group">
-        <label>{T('style.vignette')}</label>
-        <div className="slider-group">
-          <input 
-            type="range" 
-            min="0" 
-            max="0.9" 
-            step="0.05"
-            value={vignetteOpacity} 
-            onChange={(e) => setVignetteOpacity(parseFloat(e.target.value))}
-            disabled={isRecording}
-          />
-          <span>{Math.round(vignetteOpacity * 100)}%</span>
-        </div>
-      </div>
-
-      <div className="form-group">
-        <label htmlFor="watermark">{T('style.watermark')}</label>
-        <input 
-          type="text" 
-          id="watermark" 
-          value={watermark} 
-          onChange={(e) => setWatermark(e.target.value.toUpperCase())}
-          placeholder={T('style.watermarkPlaceholder')}
-          maxLength="20"
-          disabled={isRecording}
-        />
-      </div>
-
-      <div className="form-group">
-        <label htmlFor="visStyle">{T('style.visualizer')}</label>
-        <select 
-          id="visStyle" 
-          value={visualizerStyle} 
-          onChange={(e) => setVisualizerStyle(e.target.value)}
-          disabled={isRecording}
-        >
-          <option value="bars">{T('style.visBars')}</option>
-          <option value="waves">{T('style.visWaves')}</option>
-          <option value="ring">{T('style.visRing')}</option>
-          <option value="none">{T('style.visDisabled')}</option>
-        </select>
-      </div>
-
-      {visualizerStyle !== 'none' && (
-        <div className="form-group">
-          <label htmlFor="visColor">{T('style.visColor')}</label>
-          <select 
-            id="visColor" 
-            value={visualizerColor} 
-            onChange={(e) => setVisualizerColor(e.target.value)}
-            disabled={isRecording}
-          >
-            <option value="#60a5fa">{T('style.colorBlue')}</option>
-            <option value="#34d399">{T('style.colorGreen')}</option>
-            <option value="#fbbf24">{T('style.colorGold')}</option>
-            <option value="#f472b6">{T('style.colorPink')}</option>
-            <option value="#ffffff">{T('style.colorWhite')}</option>
+          <label>🎨 Word Highlight Color</label>
+          <select value={highlightColor} onChange={(e) => setHighlightColor(e.target.value)}>
+            <option value="#fbbf24">Gold</option>
+            <option value="#f472b6">Pink</option>
+            <option value="#60a5fa">Blue</option>
+            <option value="#34d399">Green</option>
+            <option value="#a78bfa">Purple</option>
+            <option value="#fb923c">Orange</option>
+            <option value="#ef4444">Red</option>
+            <option value="#06b6d4">Cyan</option>
+            <option value="#8b5cf6">Violet</option>
+            <option value="#ec4899">Rose</option>
+            <option value="#14b8a6">Teal</option>
+            <option value="#f97316">Amber</option>
+            <option value="#84cc16">Lime</option>
+            <option value="#eab308">Yellow</option>
+            <option value="#a855f7">Magenta</option>
+            <option value="#64748b">Slate</option>
+            <option value="#dc2626">Crimson</option>
+            <option value="#0ea5e9">Sky</option>
+            <option value="#d946ef">Fuchsia</option>
+            <option value="#22c55e">Emerald</option>
+            <option value="#ffffff">White</option>
           </select>
         </div>
-      )}
-
-      <div className="form-group">
-        <label>📝 Text Animation</label>
-        <select value={textAnim} onChange={(e) => setTextAnim(e.target.value)} disabled={isRecording}>
-          <option value="none">— None —</option>
-          <option value="fade">Fade In</option>
-          <option value="slide-up">Slide Up</option>
-          <option value="slide-down">Slide Down</option>
-          <option value="zoom">Zoom In</option>
-        </select>
-      </div>
-
-      <div className="form-group">
-        <label>🎨 Custom Gradient</label>
-        <div style={{display:'flex', gap:8, alignItems:'center'}}>
-          <input type="color" value={bgColor1 || '#080a14'} onChange={(e) => setBgColor1(e.target.value)} disabled={isRecording} style={{width:40,height:32,padding:0,border:'1px solid var(--border-color)',borderRadius:6,background:'none',cursor:'pointer'}} />
-          <span style={{color:'var(--text-muted)',fontSize:12}}>→</span>
-          <input type="color" value={bgColor2 || '#020306'} onChange={(e) => setBgColor2(e.target.value)} disabled={isRecording} style={{width:40,height:32,padding:0,border:'1px solid var(--border-color)',borderRadius:6,background:'none',cursor:'pointer'}} />
-          {(bgColor1 || bgColor2) && <button className="btn-ghost" style={{padding:'4px 10px',fontSize:11,width:'auto'}} onClick={() => { setBgColor1(''); setBgColor2(''); }} disabled={isRecording}>×</button>}
+        <div className="form-group">
+          <label>🎨 Per-Word Colors</label>
+          <div style={{display:'flex',flexWrap:'wrap',gap:6,marginTop:4}}>
+            {(() => {
+              const a = passageAyahs[currentAyahIndex];
+              if (!a || !a.text) return null;
+              const ayahKey = `a${a.number || a.numberInSurah || 0}`;
+              const words = a.text.split(' ');
+              const ayahColors = wordCustomColors[ayahKey] || {};
+              const colors = [
+                ['#fbbf24','Gold'],['#f472b6','Pink'],['#60a5fa','Blue'],['#34d399','Green'],
+                ['#a78bfa','Purple'],['#fb923c','Orange'],['#ef4444','Red'],['#06b6d4','Cyan'],
+                ['#8b5cf6','Violet'],['#ec4899','Rose'],['#14b8a6','Teal'],['#f97316','Amber'],
+                ['#84cc16','Lime'],['#eab308','Yellow'],['#a855f7','Magenta'],['#64748b','Slate'],
+                ['#dc2626','Crimson'],['#0ea5e9','Sky'],['#d946ef','Fuchsia'],['#22c55e','Emerald'],
+              ];
+              return words.map((word, i) => {
+                const c = ayahColors[i];
+                return (
+                  <div key={i} style={{display:'inline-flex',alignItems:'center',gap:3,background:'var(--bg-secondary)',padding:'2px 6px 2px 3px',borderRadius:6,border:'1px solid var(--border-color)'}}>
+                    {c && <span style={{width:10,height:10,borderRadius:2,background:c,display:'inline-block',flexShrink:0}} />}
+                    <span style={{fontSize:12,color:'var(--text-primary)',whiteSpace:'nowrap'}}>{word}</span>
+                    <select value={c || ''} onChange={(e) => {
+                      const v = e.target.value;
+                      if (!v) {
+                        setWordCustomColors(prev => { const ayah = {...(prev[ayahKey] || {})}; delete ayah[i]; if (Object.keys(ayah).length === 0) { const n = {...prev}; delete n[ayahKey]; return n; } return {...prev, [ayahKey]: ayah}; });
+                      } else {
+                        setWordCustomColors(prev => ({...prev, [ayahKey]: {...(prev[ayahKey] || {}), [i]: v}}));
+                      }
+                    }} style={{fontSize:10,padding:'1px 2px',border:'1px solid var(--border-color)',borderRadius:3,background:'var(--bg-primary)',color:'var(--text-primary)',cursor:'pointer',maxWidth:70}} disabled={isRecording}>
+                      <option value="">—</option>
+                      {colors.map(([hex, name]) => (<option key={hex} value={hex} style={{background:hex,color:hex==='#ffffff'?'#000':'#fff'}}>{name}</option>))}
+                    </select>
+                  </div>
+                );
+              });
+            })()}
+          </div>
         </div>
-      </div>
+      </Section>
 
-      <div className="form-group">
-        <label>Export Resolution</label>
-        <select value={canvasResolution} onChange={(e) => setCanvasResolution(e.target.value)} disabled={isRecording}>
-          <option value="1080p">1080p (Full HD)</option>
-          <option value="720p">720p (HD) — Recommended</option>
-          <option value="540p">540p (Light)</option>
-        </select>
-      </div>
+      <Section id="translation" icon="🌐" title="Translation" open={openSections.translation}>
+        <div className="form-group">
+          <label className="checkbox-group">
+            <input type="checkbox" checked={showTafsir} onChange={(e) => setShowTafsir(e.target.checked)} disabled={isRecording} />
+            <div className="checkmark"></div>
+            <span>Tafsir (Al-Muyassar)</span>
+          </label>
+        </div>
+        <div className="form-group">
+          <label className="checkbox-group">
+            <input type="checkbox" checked={showTranslation} onChange={(e) => setShowTranslation(e.target.checked)} disabled={isRecording} />
+            <div className="checkmark"></div>
+            <span>{T('style.showTranslation')}</span>
+          </label>
+        </div>
+        {showTranslation && (
+          <div className="form-group">
+            <label>{T('style.translationFontSize')}</label>
+            <div className="slider-group">
+              <input type="range" min="18" max="40" value={translationFontSize} onChange={(e) => setTranslationFontSize(parseInt(e.target.value))} disabled={isRecording} />
+              <span>{translationFontSize}px</span>
+            </div>
+          </div>
+        )}
+      </Section>
+
+      <Section id="overlays" icon="⏱" title="Overlays" open={openSections.overlays}>
+        <div className="form-group">
+          <label className="checkbox-group">
+            <input type="checkbox" checked={showTimer} onChange={(e) => setShowTimer(e.target.checked)} disabled={isRecording} />
+            <div className="checkmark"></div>
+            <span>{T('style.showTimer')}</span>
+          </label>
+        </div>
+        {showTimer && (
+          <>
+          <div className="form-group">
+            <label>{T('style.timerDuration')}: {timerDuration}s</label>
+            <div className="slider-group">
+              <input type="range" min="5" max="600" step="5" value={timerDuration} onChange={(e) => setTimerDuration(parseInt(e.target.value))} disabled={isRecording} />
+              <span>{timerDuration}s</span>
+            </div>
+          </div>
+          <div className="form-group">
+            <label>{T('style.timerStyle')}</label>
+            <select value={timerStyle} onChange={(e) => setTimerStyle(e.target.value)} disabled={isRecording}>
+              <option value="analog">Analog Clock</option>
+              <option value="digital">Digital LCD</option>
+              <option value="ring">Countdown Ring</option>
+              <option value="flip">Flip Clock</option>
+              <option value="pie">Pie Timer</option>
+              <option value="bar">Progress Bar</option>
+              <option value="nixie">Nixie Tube</option>
+              <option value="slimline">Slim Line</option>
+              <option value="segmented">Segmented LED</option>
+            </select>
+          </div>
+          <div className="form-group">
+            <label>{T('style.timerSize')}: {timerSize}%</label>
+            <div className="slider-group">
+              <input type="range" min="50" max="200" value={timerSize} onChange={(e) => setTimerSize(parseInt(e.target.value))} disabled={isRecording} />
+              <span>{timerSize}%</span>
+            </div>
+          </div>
+          <div className="form-group">
+            <label>{T('style.timerColor')}</label>
+            <input type="color" value={timerColor} onChange={(e) => setTimerColor(e.target.value)} disabled={isRecording} style={{width:'100%',height:36,padding:2,border:'1px solid var(--border-color)',borderRadius:6,background:'none',cursor:'pointer'}} />
+          </div>
+          <div className="form-group">
+            <label>{T('style.timerX')}: {timerX}%</label>
+            <div className="slider-group">
+              <input type="range" min="0" max="100" value={timerX} onChange={(e) => setTimerX(parseInt(e.target.value))} disabled={isRecording} />
+              <span>{timerX}%</span>
+            </div>
+          </div>
+          <div className="form-group">
+            <label>{T('style.timerY')}: {timerY}%</label>
+            <div className="slider-group">
+              <input type="range" min="0" max="100" value={timerY} onChange={(e) => setTimerY(parseInt(e.target.value))} disabled={isRecording} />
+              <span>{timerY}%</span>
+            </div>
+          </div>
+          </>
+        )}
+        <div className="form-group">
+          <label className="checkbox-group">
+            <input type="checkbox" checked={showHijriDate} onChange={(e) => setShowHijriDate(e.target.checked)} disabled={isRecording} />
+            <div className="checkmark"></div>
+            <span>{T('style.showHijriDate')}</span>
+          </label>
+        </div>
+        {showHijriDate && (
+          <>
+          <div className="form-group">
+            <label>{T('style.hijriDateX')}: {hijriDateX}%</label>
+            <div className="slider-group">
+              <input type="range" min="0" max="100" value={hijriDateX} onChange={(e) => setHijriDateX(parseInt(e.target.value))} disabled={isRecording} />
+              <span>{hijriDateX}%</span>
+            </div>
+          </div>
+          <div className="form-group">
+            <label>{T('style.hijriDateY')}: {hijriDateY}%</label>
+            <div className="slider-group">
+              <input type="range" min="0" max="100" value={hijriDateY} onChange={(e) => setHijriDateY(parseInt(e.target.value))} disabled={isRecording} />
+              <span>{hijriDateY}%</span>
+            </div>
+          </div>
+          <div className="form-group">
+            <label>{T('style.hijriDateColor')}</label>
+            <input type="color" value={hijriDateColor} onChange={(e) => setHijriDateColor(e.target.value)} disabled={isRecording} style={{width:'100%',height:36,padding:2,border:'1px solid var(--border-color)',borderRadius:6,background:'none',cursor:'pointer'}} />
+          </div>
+          <div className="form-group">
+            <label>{T('style.hijriDateFont')}</label>
+            <select value={hijriDateFont} onChange={(e) => setHijriDateFont(e.target.value)} disabled={isRecording}>
+              <option value="Inter">Inter</option>
+              <option value="Outfit">Outfit</option>
+              <option value="Amiri">Amiri</option>
+              <option value="Cairo">Cairo</option>
+              <option value="Tajawal">Tajawal</option>
+              <option value="Noto Sans Arabic">Noto Sans Arabic</option>
+            </select>
+          </div>
+          <div className="form-group">
+            <label>{T('style.hijriDateSize')}: {hijriDateSize}%</label>
+            <div className="slider-group">
+              <input type="range" min="50" max="200" value={hijriDateSize} onChange={(e) => setHijriDateSize(parseInt(e.target.value))} disabled={isRecording} />
+              <span>{hijriDateSize}%</span>
+            </div>
+          </div>
+          </>
+        )}
+      </Section>
+
+      <Section id="buttons" icon="🔘" title="Buttons" open={openSections.buttons}>
+        <div className="form-group">
+          <label className="checkbox-group">
+            <input type="checkbox" checked={showLikeBtn} onChange={(e) => setShowLikeBtn(e.target.checked)} disabled={isRecording} />
+            <div className="checkmark"></div>
+            <span>👍 Like Button</span>
+          </label>
+        </div>
+        {showLikeBtn && (
+          <>
+          <div className="form-group">
+            <label>Like Text</label>
+            <input type="text" value={likeText} onChange={(e) => setLikeText(e.target.value)} placeholder="Like &amp; Share" maxLength={40} disabled={isRecording} />
+          </div>
+          <div className="form-group">
+            <label>Icon</label>
+            <select value={likeIcon} onChange={(e) => setLikeIcon(e.target.value)} disabled={isRecording}>
+              <option value="heart">♥ Heart</option>
+              <option value="star">★ Star</option>
+              <option value="heartFilled">❤ Filled Heart</option>
+              <option value="thumbsUp">👍 Thumbs Up</option>
+              <option value="fire">🔥 Fire</option>
+            </select>
+          </div>
+          <div className="form-group">
+            <label>Text Position</label>
+            <select value={likeTextPos} onChange={(e) => setLikeTextPos(e.target.value)} disabled={isRecording}>
+              <option value="bottom">Below Icon</option>
+              <option value="right">Right of Icon</option>
+              <option value="left">Left of Icon</option>
+              <option value="top">Above Icon</option>
+              <option value="none">No Text</option>
+            </select>
+          </div>
+          <div className="form-group">
+            <label>X: {likeBtnX}%</label>
+            <div className="slider-group">
+              <input type="range" min="0" max="100" value={likeBtnX} onChange={(e) => setLikeBtnX(parseInt(e.target.value))} disabled={isRecording} />
+              <span>{likeBtnX}%</span>
+            </div>
+          </div>
+          <div className="form-group">
+            <label>Y: {likeBtnY}%</label>
+            <div className="slider-group">
+              <input type="range" min="0" max="100" value={likeBtnY} onChange={(e) => setLikeBtnY(parseInt(e.target.value))} disabled={isRecording} />
+              <span>{likeBtnY}%</span>
+            </div>
+          </div>
+          <div className="form-group">
+            <label>Size: {likeBtnSize}%</label>
+            <div className="slider-group">
+              <input type="range" min="50" max="200" value={likeBtnSize} onChange={(e) => setLikeBtnSize(parseInt(e.target.value))} disabled={isRecording} />
+              <span>{likeBtnSize}%</span>
+            </div>
+          </div>
+          </>
+        )}
+        <div className="form-group">
+          <label className="checkbox-group">
+            <input type="checkbox" checked={showFollowBtn} onChange={(e) => setShowFollowBtn(e.target.checked)} disabled={isRecording} />
+            <div className="checkmark"></div>
+            <span>➕ Follow Button</span>
+          </label>
+        </div>
+        {showFollowBtn && (
+          <>
+          <div className="form-group">
+            <label>Follow Text</label>
+            <input type="text" value={followText} onChange={(e) => setFollowText(e.target.value)} placeholder="Subscribe &amp; Follow" maxLength={40} disabled={isRecording} />
+          </div>
+          <div className="form-group">
+            <label>Icon</label>
+            <select value={followIcon} onChange={(e) => setFollowIcon(e.target.value)} disabled={isRecording}>
+              <option value="plus">✚ Plus</option>
+              <option value="bell">🔔 Bell</option>
+              <option value="starOutline">☆ Star</option>
+              <option value="heart">♥ Heart</option>
+              <option value="play">▶ Play</option>
+            </select>
+          </div>
+          <div className="form-group">
+            <label>Text Position</label>
+            <select value={followTextPos} onChange={(e) => setFollowTextPos(e.target.value)} disabled={isRecording}>
+              <option value="bottom">Below Icon</option>
+              <option value="right">Right of Icon</option>
+              <option value="left">Left of Icon</option>
+              <option value="top">Above Icon</option>
+              <option value="none">No Text</option>
+            </select>
+          </div>
+          <div className="form-group">
+            <label>X: {followBtnX}%</label>
+            <div className="slider-group">
+              <input type="range" min="0" max="100" value={followBtnX} onChange={(e) => setFollowBtnX(parseInt(e.target.value))} disabled={isRecording} />
+              <span>{followBtnX}%</span>
+            </div>
+          </div>
+          <div className="form-group">
+            <label>Y: {followBtnY}%</label>
+            <div className="slider-group">
+              <input type="range" min="0" max="100" value={followBtnY} onChange={(e) => setFollowBtnY(parseInt(e.target.value))} disabled={isRecording} />
+              <span>{followBtnY}%</span>
+            </div>
+          </div>
+          <div className="form-group">
+            <label>Size: {followBtnSize}%</label>
+            <div className="slider-group">
+              <input type="range" min="50" max="200" value={followBtnSize} onChange={(e) => setFollowBtnSize(parseInt(e.target.value))} disabled={isRecording} />
+              <span>{followBtnSize}%</span>
+            </div>
+          </div>
+          </>
+        )}
+      </Section>
+
+      <Section id="effects" icon="✨" title="Effects" open={openSections.effects}>
+        <div className="form-group">
+          <label>{T('style.vignette')}</label>
+          <div className="slider-group">
+            <input type="range" min="0" max="0.9" step="0.05" value={vignetteOpacity} onChange={(e) => setVignetteOpacity(parseFloat(e.target.value))} disabled={isRecording} />
+            <span>{Math.round(vignetteOpacity * 100)}%</span>
+          </div>
+        </div>
+        <div className="form-group">
+          <label htmlFor="visStyle">{T('style.visualizer')}</label>
+          <select id="visStyle" value={visualizerStyle} onChange={(e) => setVisualizerStyle(e.target.value)} disabled={isRecording}>
+            <option value="bars">{T('style.visBars')}</option>
+            <option value="waves">{T('style.visWaves')}</option>
+            <option value="ring">{T('style.visRing')}</option>
+            <option value="none">{T('style.visDisabled')}</option>
+          </select>
+        </div>
+        {visualizerStyle !== 'none' && (
+          <div className="form-group">
+            <label htmlFor="visColor">{T('style.visColor')}</label>
+            <select id="visColor" value={visualizerColor} onChange={(e) => setVisualizerColor(e.target.value)} disabled={isRecording}>
+              <option value="#60a5fa">{T('style.colorBlue')}</option>
+              <option value="#34d399">{T('style.colorGreen')}</option>
+              <option value="#fbbf24">{T('style.colorGold')}</option>
+              <option value="#f472b6">{T('style.colorPink')}</option>
+              <option value="#ffffff">{T('style.colorWhite')}</option>
+            </select>
+          </div>
+        )}
+        <div className="form-group">
+          <label>📝 Text Animation</label>
+          <select value={textAnim} onChange={(e) => setTextAnim(e.target.value)} disabled={isRecording}>
+            <option value="none">— None —</option>
+            <option value="fade">Fade In</option>
+            <option value="slide-up">Slide Up</option>
+            <option value="slide-down">Slide Down</option>
+            <option value="zoom">Zoom In</option>
+          </select>
+        </div>
+      </Section>
+
+      <Section id="audiofx" icon="🎛" title={T('audiofx.title')} open={openSections.audiofx}>
+        <div className="form-group">
+          <label>Preset</label>
+          <select value={audioPreset} onChange={(e) => { const p = AUDIO_PRESETS.find(x => x.id === e.target.value); if (p) { setAudioPreset(p.id); setReverbMix(p.r); setDelayTime(p.d); setDelayFeedback(p.f); } }} disabled={isRecording}>
+            {AUDIO_PRESETS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+        </div>
+        <div className="form-group">
+          <label>{T('audiofx.reverb')}: {reverbMix}%</label>
+          <div className="slider-group">
+            <input type="range" min="0" max="100" value={reverbMix} onChange={(e) => { setReverbMix(parseInt(e.target.value)); setAudioPreset('custom'); }} disabled={isRecording} />
+            <span>{reverbMix}%</span>
+          </div>
+        </div>
+        <div className="form-group">
+          <label>{T('audiofx.delayTime')}: {delayTime}ms</label>
+          <div className="slider-group">
+            <input type="range" min="0" max="1000" step="10" value={delayTime} onChange={(e) => { setDelayTime(parseInt(e.target.value)); setAudioPreset('custom'); }} disabled={isRecording} />
+            <span>{delayTime}ms</span>
+          </div>
+        </div>
+        <div className="form-group">
+          <label>{T('audiofx.delayFeedback')}: {delayFeedback}%</label>
+          <div className="slider-group">
+            <input type="range" min="0" max="95" value={delayFeedback} onChange={(e) => { setDelayFeedback(parseInt(e.target.value)); setAudioPreset('custom'); }} disabled={isRecording} />
+            <span>{delayFeedback}%</span>
+          </div>
+        </div>
+      </Section>
+
+      <Section id="background" icon="🖼" title="Background" open={openSections.background}>
+        <div className="form-group">
+          <label>🎨 Custom Gradient</label>
+          <div style={{display:'flex', gap:8, alignItems:'center'}}>
+            <input type="color" value={bgColor1 || '#080a14'} onChange={(e) => setBgColor1(e.target.value)} disabled={isRecording} style={{width:40,height:32,padding:0,border:'1px solid var(--border-color)',borderRadius:6,background:'none',cursor:'pointer'}} />
+            <span style={{color:'var(--text-muted)',fontSize:12}}>→</span>
+            <input type="color" value={bgColor2 || '#020306'} onChange={(e) => setBgColor2(e.target.value)} disabled={isRecording} style={{width:40,height:32,padding:0,border:'1px solid var(--border-color)',borderRadius:6,background:'none',cursor:'pointer'}} />
+            {(bgColor1 || bgColor2) && <button className="btn-ghost" style={{padding:'4px 10px',fontSize:11,width:'auto'}} onClick={() => { setBgColor1(''); setBgColor2(''); }} disabled={isRecording}>×</button>}
+          </div>
+        </div>
+      </Section>
+
+      <Section id="other" icon="⚙" title="Other" open={openSections.other}>
+        <div className="form-group">
+          <label htmlFor="watermark">{T('style.watermark')}</label>
+          <input type="text" id="watermark" value={watermark} onChange={(e) => setWatermark(e.target.value.toUpperCase())} placeholder={T('style.watermarkPlaceholder')} maxLength="20" disabled={isRecording} />
+        </div>
+        <div className="form-group">
+          <label>Export Resolution</label>
+          <select value={canvasResolution} onChange={(e) => setCanvasResolution(e.target.value)} disabled={isRecording}>
+            <option value="1080p">1080p (Full HD)</option>
+            <option value="720p">720p (HD) — Recommended</option>
+            <option value="540p">540p (Light)</option>
+          </select>
+        </div>
+      </Section>
 
     </>
   ), [
     fontFamily, fontSize, translationFontSize, textPosition,
     transitionEffect, visualizerStyle, visualizerColor,
     visualEffect,
-    isRecording, uiLang, watermark, vignetteOpacity, showTranslation, showTimer, showHijriDate, hijriDateX, hijriDateY, hijriDateColor, hijriDateFont, hijriDateSize, timerDuration, timerStyle, timerSize, timerColor, timerX, timerY, arabicTextColor, canvasResolution, bgImage,
+    isRecording, uiLang, watermark, vignetteOpacity, showTranslation, showTafsir, showTimer, showHijriDate, hijriDateX, hijriDateY, hijriDateColor, hijriDateFont, hijriDateSize, timerDuration, timerStyle, timerSize, timerColor, timerX, timerY, arabicTextColor, canvasResolution, bgImage,
+    showLikeBtn, likeText, likeIcon, likeTextPos, likeBtnX, likeBtnY, likeBtnSize, showFollowBtn, followText, followIcon, followTextPos, followBtnX, followBtnY, followBtnSize,
     bgColor1, bgColor2, textAnim,
     introEnabled, introDuration, introBgType, introBgColor1, introBgColor2,
     introBgImage, introBgVideo, introText, introSubtext,
     introFontSize, introSubFontSize, introFontFamily, introTextColor,
-    introSubFontFamily, introSubTextColor
+    introSubFontFamily, introSubTextColor,
+    wordCustomColors, passageAyahs, currentAyahIndex,
+    reverbMix, delayTime, delayFeedback, audioPreset,
+    openSections
   ]);
 
   return (
@@ -2377,7 +2700,7 @@ const TRANSITIONS = [
         </div>
       )}
 
-            <div className="form-group">
+      <div className="form-group">
               <label>{T('export.duration')}: {itemDuration}s</label>
               <div className="slider-group">
                 <input 

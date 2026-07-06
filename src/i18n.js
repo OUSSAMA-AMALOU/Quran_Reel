@@ -112,6 +112,10 @@ export const translations = {
     'intro.subTextColor': 'Subtitle Color',
     'intro.transition': 'Intro Transition',
     'intro.seconds': 's',
+    'audiofx.title': 'Audio Effects',
+    'audiofx.reverb': 'Reverb Mix',
+    'audiofx.delayTime': 'Delay Time',
+    'audiofx.delayFeedback': 'Delay Feedback',
   },
 
   ar: {
@@ -227,6 +231,10 @@ export const translations = {
     'intro.subTextColor': 'لون النص الفرعي',
     'intro.transition': 'انتقال المقدمة',
     'intro.seconds': 'ث',
+    'audiofx.title': 'مؤثرات الصوت',
+    'audiofx.reverb': 'الصدى',
+    'audiofx.delayTime': 'وقت التأخير',
+    'audiofx.delayFeedback': 'تغذية التأخير',
   },
 
   fr: {
@@ -342,6 +350,10 @@ export const translations = {
     'intro.subTextColor': 'Couleur sous-titre',
     'intro.transition': 'Transition intro',
     'intro.seconds': 's',
+    'audiofx.title': 'Effets audio',
+    'audiofx.reverb': 'Réverbération',
+    'audiofx.delayTime': 'Temps de délai',
+    'audiofx.delayFeedback': 'Feedback du délai',
   },
 };
 

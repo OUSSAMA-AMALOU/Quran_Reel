@@ -1628,8 +1628,9 @@ function _drawPlayerDesign(ctx, width, height, config, currentTime, isPlaying, a
 
   // Artwork circle
   ctx.save();
+  ctx.translate(artCX, artCY);
   ctx.beginPath();
-  ctx.arc(artCX, artCY, artR, 0, Math.PI * 2);
+  ctx.arc(0, 0, artR, 0, Math.PI * 2);
   ctx.clip();
 
   const artSrc = config.playerArtwork;
@@ -1654,10 +1655,11 @@ function _drawPlayerDesign(ctx, width, height, config, currentTime, isPlaying, a
 
   // Thin black ring
   ctx.save();
+  ctx.translate(artCX, artCY);
   ctx.strokeStyle = 'rgba(0,0,0,0.08)';
   ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.arc(artCX, artCY, artR + 1, 0, Math.PI * 2);
+  ctx.arc(0, 0, artR + 1, 0, Math.PI * 2);
   ctx.stroke();
   ctx.restore();
 

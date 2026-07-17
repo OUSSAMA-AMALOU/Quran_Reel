@@ -301,6 +301,8 @@ function App() {
   const [videoStyle, setVideoStyle] = useState('text'); // 'text' | 'player'
   const [playerArtwork, setPlayerArtwork] = useState(null);
   const [playerBgImage, setPlayerBgImage] = useState(null);
+  const [ayahTimestamps, setAyahTimestamps] = useState(null);
+  const [timestampsLoading, setTimestampsLoading] = useState(false);
   const [showPlayerLyrics, setShowPlayerLyrics] = useState(true);
   const [visualEffect, setVisualEffect] = useState('none');
   const [showLikeBtn, setShowLikeBtn] = useState(false);
@@ -774,11 +776,44 @@ const TRANSITIONS = [
     }
   }, [surahNum, reciterId, startAyah, endAyah]);
 
+  const getAudioDuration = useCallback((url) => new Promise((resolve, reject) => {
+    const audio = new Audio();
+    audio.preload = 'metadata';
+    audio.addEventListener('loadedmetadata', () => resolve(audio.duration), { once: true });
+    audio.addEventListener('error', () => reject(new Error('Load failed')), { once: true });
+    audio.src = url;
+  }), []);
+
   // Fetch passage initially on mount and configuration changes
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchPassage();
   }, [fetchPassage]);
+
+  // Auto-detect ayah timings when passageAyahs changes
+  useEffect(() => {
+    if (passageAyahs.length === 0) { setAyahTimestamps(null); return; }
+    let cancelled = false;
+    setTimestampsLoading(true);
+    const timestamps = [];
+    let currentTime = 0;
+    (async () => {
+      for (const ayah of passageAyahs) {
+        if (cancelled) return;
+        try {
+          const dur = await getAudioDuration(ayah.audio);
+          if (cancelled) return;
+          timestamps.push({ numberInSurah: ayah.numberInSurah, start: currentTime, end: currentTime + dur, duration: dur });
+          currentTime += dur;
+        } catch {
+          timestamps.push({ numberInSurah: ayah.numberInSurah, start: currentTime, end: currentTime, duration: 0 });
+        }
+        setAyahTimestamps([...timestamps]);
+      }
+      if (!cancelled) { setAyahTimestamps(timestamps); setTimestampsLoading(false); }
+    })();
+    return () => { cancelled = true; };
+  }, [passageAyahs, getAudioDuration]);
 
   // Sync range settings locally (slice existing dataset without fetching)
   const applyLocalRangeChange = async () => {
@@ -2200,96 +2235,44 @@ const TRANSITIONS = [
             <span>{fontSize}px</span>
           </div>
         </div>
-        <div className="form-group">
-          <label htmlFor="textPosition">{T('style.textAlignment')}</label>
-          <select id="textPosition" value={textPosition} onChange={(e) => setTextPosition(e.target.value)} disabled={isRecording}>
-            <option value="top">{T('style.alignTop')}</option>
-            <option value="center">{T('style.alignCenter')}</option>
-            <option value="bottom">{T('style.alignBottom')}</option>
-          </select>
-        </div>
-        <div className="form-group">
-          <label>X: {textX}%</label>
-          <div className="slider-group">
-            <input type="range" min="0" max="100" value={textX} onChange={(e) => setTextX(parseInt(e.target.value))} disabled={isRecording} />
-            <span>{textX}%</span>
-          </div>
-        </div>
-        <div className="form-group">
-          <label>Y: {textY}%</label>
-          <div className="slider-group">
-            <input type="range" min="0" max="100" value={textY} onChange={(e) => setTextY(parseInt(e.target.value))} disabled={isRecording} />
-            <span>{textY}%</span>
-          </div>
-        </div>
-        <div className="form-group">
-          <label>{T('style.arabicTextColor')}</label>
-          <input type="color" value={arabicTextColor} onChange={(e) => setArabicTextColor(e.target.value)} disabled={isRecording} style={{width:'100%',height:36,padding:2,border:'1px solid var(--border-color)',borderRadius:6,background:'none',cursor:'pointer'}} />
-        </div>
-        <div className="form-group">
-          <label>🎨 Word Highlight Color</label>
-          <select value={highlightColor} onChange={(e) => setHighlightColor(e.target.value)}>
-            <option value="#fbbf24">Gold</option>
-            <option value="#f472b6">Pink</option>
-            <option value="#60a5fa">Blue</option>
-            <option value="#34d399">Green</option>
-            <option value="#a78bfa">Purple</option>
-            <option value="#fb923c">Orange</option>
-            <option value="#ef4444">Red</option>
-            <option value="#06b6d4">Cyan</option>
-            <option value="#8b5cf6">Violet</option>
-            <option value="#ec4899">Rose</option>
-            <option value="#14b8a6">Teal</option>
-            <option value="#f97316">Amber</option>
-            <option value="#84cc16">Lime</option>
-            <option value="#eab308">Yellow</option>
-            <option value="#a855f7">Magenta</option>
-            <option value="#64748b">Slate</option>
-            <option value="#dc2626">Crimson</option>
-            <option value="#0ea5e9">Sky</option>
-            <option value="#d946ef">Fuchsia</option>
-            <option value="#22c55e">Emerald</option>
-            <option value="#ffffff">White</option>
-          </select>
-        </div>
-        <div className="form-group">
-          <label>🎨 Per-Word Colors</label>
-          <div style={{display:'flex',flexWrap:'wrap',gap:6,marginTop:4}}>
-            {(() => {
-              const a = passageAyahs[currentAyahIndex];
-              if (!a || !a.text) return null;
-              const ayahKey = `a${a.number || a.numberInSurah || 0}`;
-              const words = a.text.split(' ');
-              const ayahColors = wordCustomColors[ayahKey] || {};
-              const colors = [
-                ['#fbbf24','Gold'],['#f472b6','Pink'],['#60a5fa','Blue'],['#34d399','Green'],
-                ['#a78bfa','Purple'],['#fb923c','Orange'],['#ef4444','Red'],['#06b6d4','Cyan'],
-                ['#8b5cf6','Violet'],['#ec4899','Rose'],['#14b8a6','Teal'],['#f97316','Amber'],
-                ['#84cc16','Lime'],['#eab308','Yellow'],['#a855f7','Magenta'],['#64748b','Slate'],
-                ['#dc2626','Crimson'],['#0ea5e9','Sky'],['#d946ef','Fuchsia'],['#22c55e','Emerald'],
-              ];
-              return words.map((word, i) => {
-                const c = ayahColors[i];
-                return (
-                  <div key={i} style={{display:'inline-flex',alignItems:'center',gap:3,background:'var(--bg-secondary)',padding:'2px 6px 2px 3px',borderRadius:6,border:'1px solid var(--border-color)'}}>
-                    {c && <span style={{width:10,height:10,borderRadius:2,background:c,display:'inline-block',flexShrink:0}} />}
-                    <span style={{fontSize:12,color:'var(--text-primary)',whiteSpace:'nowrap'}}>{word}</span>
-                    <select value={c || ''} onChange={(e) => {
-                      const v = e.target.value;
-                      if (!v) {
-                        setWordCustomColors(prev => { const ayah = {...(prev[ayahKey] || {})}; delete ayah[i]; if (Object.keys(ayah).length === 0) { const n = {...prev}; delete n[ayahKey]; return n; } return {...prev, [ayahKey]: ayah}; });
-                      } else {
-                        setWordCustomColors(prev => ({...prev, [ayahKey]: {...(prev[ayahKey] || {}), [i]: v}}));
-                      }
-                    }} style={{fontSize:10,padding:'1px 2px',border:'1px solid var(--border-color)',borderRadius:3,background:'var(--bg-primary)',color:'var(--text-primary)',cursor:'pointer',maxWidth:70}} disabled={isRecording}>
-                      <option value="">—</option>
-                      {colors.map(([hex, name]) => (<option key={hex} value={hex} style={{background:hex,color:hex==='#ffffff'?'#000':'#fff'}}>{name}</option>))}
-                    </select>
-                  </div>
-                );
-              });
-            })()}
-          </div>
+
+        {/* Ayah Timestamps */}
+        <div className="form-group" style={{marginTop:16}}>
+          <label style={{display:'flex',alignItems:'center',gap:8}}>
+            ⏱️ Ayah Timestamps
+            {timestampsLoading && <span style={{fontSize:11,color:'var(--text-muted)'}}>detecting...</span>}
+            {!timestampsLoading && ayahTimestamps && <span style={{fontSize:11,color:'var(--text-muted)'}}>Total: {(() => { const t = ayahTimestamps[ayahTimestamps.length-1]; if (!t) return '0:00'; const m = Math.floor(t.end/60); const s = Math.floor(t.end%60); return `${m}:${s.toString().padStart(2,'0')}`; })()}</span>}
+          </label>
+          {ayahTimestamps && ayahTimestamps.length > 0 && (
+            <div style={{maxHeight:200,overflowY:'auto',border:'1px solid var(--border-color)',borderRadius:8,marginTop:4}}>
+              <table style={{width:'100%',fontSize:11,borderCollapse:'collapse'}}>
+                <thead>
+                  <tr style={{background:'var(--bg-secondary)'}}>
+                    <th style={{padding:'4px 8px',textAlign:'left',borderBottom:'1px solid var(--border-color)'}}>Ayah</th>
+                    <th style={{padding:'4px 8px',textAlign:'right',borderBottom:'1px solid var(--border-color)'}}>Start</th>
+                    <th style={{padding:'4px 8px',textAlign:'right',borderBottom:'1px solid var(--border-color)'}}>End</th>
+                    <th style={{padding:'4px 8px',textAlign:'right',borderBottom:'1px solid var(--border-color)'}}>Duration</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ayahTimestamps.map((ts,i) => {
+                    const fmt = (sec) => { const m = Math.floor(sec/60); const s = Math.floor(sec%60); return `${m}:${s.toString().padStart(2,'0')}`; };
+                    return (
+                      <tr key={i} style={{background:i===currentAyahIndex ? 'rgba(99,102,241,0.1)' : 'transparent'}}>
+                        <td style={{padding:'3px 8px',borderBottom:'1px solid var(--border-color)'}}>{ts.numberInSurah}</td>
+                        <td style={{padding:'3px 8px',borderBottom:'1px solid var(--border-color)',textAlign:'right',fontFamily:'monospace'}}>{fmt(ts.start)}</td>
+                        <td style={{padding:'3px 8px',borderBottom:'1px solid var(--border-color)',textAlign:'right',fontFamily:'monospace'}}>{fmt(ts.end)}</td>
+                        <td style={{padding:'3px 8px',borderBottom:'1px solid var(--border-color)',textAlign:'right',fontFamily:'monospace'}}>{fmt(ts.duration)}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+          {!ayahTimestamps && !timestampsLoading && passageAyahs.length > 0 && (
+            <p style={{fontSize:11,color:'var(--text-muted)',marginTop:4}}>Click refresh to detect timings.</p>
+          )}
         </div>
       </div>}
 

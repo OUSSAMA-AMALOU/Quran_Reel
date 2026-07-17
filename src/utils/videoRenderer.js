@@ -1641,10 +1641,10 @@ function _drawPlayerDesign(ctx, width, height, config, currentTime, isPlaying, a
     }
     const img = _bgImageCache.img;
     if (img.complete && img.naturalWidth > 0) {
-      const s = Math.max(img.naturalWidth, img.naturalHeight);
-      const sx2 = (img.naturalWidth - s) / 2;
-      const sy2 = (img.naturalHeight - s) / 2;
-      ctx.drawImage(img, sx2, sy2, s, s, -artR, -artR, artR * 2, artR * 2);
+      const scale = Math.min((artR * 2) / img.naturalWidth, (artR * 2) / img.naturalHeight);
+      const dw = img.naturalWidth * scale;
+      const dh = img.naturalHeight * scale;
+      ctx.drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight, -dw / 2, -dh / 2, dw, dh);
     } else {
       _drawMonogram(ctx, artR);
     }

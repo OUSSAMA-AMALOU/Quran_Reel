@@ -2750,7 +2750,7 @@ const TRANSITIONS = [
               </label>
             </div>
             <p style={{fontSize:11,color:'var(--text-muted)',marginTop:6,lineHeight:1.4}}>
-              Renders a full-screen audio player aesthetic with artwork, waveform, and surah info. Background/video settings are ignored in this mode.
+              Modern black & white player design with custom artwork, waveform, and ayah lyrics. Background/video settings are ignored in this mode.
             </p>
             </>
           )}

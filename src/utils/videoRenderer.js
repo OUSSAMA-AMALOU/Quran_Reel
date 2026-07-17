@@ -1553,27 +1553,44 @@ function _drawPlayerDesign(ctx, width, height, config, currentTime, isPlaying, a
   const t = currentTime || 0;
   const duration = config.duration || 30;
 
-  // 1. Background - richer gradient
+  // --- MODERN BLACK & WHITE DESIGN ---
+  // Clean, minimal, high-end music player aesthetic
+  // Inspired by Apple Music / modern minimalist design
+
+  const isLight = false; // could be toggled by config in future
+  const bg = '#0a0a0a';
+  const bg2 = '#111111';
+  const surface = '#1a1a1a';
+  const surfaceLight = '#222222';
+  const textPrimary = '#ffffff';
+  const textSecondary = 'rgba(255,255,255,0.6)';
+  const textMuted = 'rgba(255,255,255,0.25)';
+  const accent = '#ffffff';
+  const accentDim = 'rgba(255,255,255,0.08)';
+
+  // 1. Background - clean dark gradient
   const bgGrad = ctx.createLinearGradient(0, 0, 0, height);
-  bgGrad.addColorStop(0, '#07140e');
-  bgGrad.addColorStop(0.2, '#0a2a1e');
-  bgGrad.addColorStop(0.45, '#0B3D2E');
-  bgGrad.addColorStop(0.7, '#082418');
-  bgGrad.addColorStop(1, '#020a06');
+  bgGrad.addColorStop(0, '#050505');
+  bgGrad.addColorStop(0.3, bg);
+  bgGrad.addColorStop(0.7, bg2);
+  bgGrad.addColorStop(1, '#080808');
   ctx.fillStyle = bgGrad;
   ctx.fillRect(0, 0, width, height);
 
-  // 2. Floating orbs - more prominent
-  const orbColors = [
-    { c: 'rgba(212,175,55,0.05)', s: 0.04 }, { c: 'rgba(11,61,46,0.08)', s: 0.05 }, { c: 'rgba(245,215,110,0.04)', s: 0.03 },
-    { c: 'rgba(255,255,255,0.02)', s: 0.02 }
-  ];
-  for (let i = 0; i < orbColors.length; i++) {
-    const ox = width * (0.1 + 0.8 * Math.sin(t * orbColors[i].s + i * 1.8));
-    const oy = height * (0.1 + 0.8 * Math.cos(t * orbColors[i].s * 0.8 + i * 1.4));
-    const r = 200 + 80 * Math.sin(t * 0.02 + i * 1.3);
+  // 2. Soft radial light (from top-center)
+  const lightGrad = ctx.createRadialGradient(width / 2, height * 0.15, 0, width / 2, height * 0.15, height * 0.6);
+  lightGrad.addColorStop(0, 'rgba(255,255,255,0.04)');
+  lightGrad.addColorStop(1, 'transparent');
+  ctx.fillStyle = lightGrad;
+  ctx.fillRect(0, 0, width, height);
+
+  // 3. Subtle ambient orbs (white/gray, very faint)
+  for (let i = 0; i < 3; i++) {
+    const ox = width * (0.15 + 0.7 * Math.sin(t * 0.03 + i * 2.0));
+    const oy = height * (0.2 + 0.6 * Math.cos(t * 0.025 + i * 1.5));
+    const r = 250 + 100 * Math.sin(t * 0.015 + i * 1.1);
     const grd = ctx.createRadialGradient(ox, oy, 0, ox, oy, r);
-    grd.addColorStop(0, orbColors[i].c);
+    grd.addColorStop(0, `rgba(255,255,255,${0.015 + i * 0.005})`);
     grd.addColorStop(1, 'transparent');
     ctx.fillStyle = grd;
     ctx.beginPath();
@@ -1581,43 +1598,32 @@ function _drawPlayerDesign(ctx, width, height, config, currentTime, isPlaying, a
     ctx.fill();
   }
 
-  // 3. Premium gold vignette overlay
-  const vigGrad = ctx.createRadialGradient(width / 2, height * 0.3, height * 0.05, width / 2, height * 0.35, height * 0.9);
-  vigGrad.addColorStop(0, 'rgba(212,175,55,0.03)');
-  vigGrad.addColorStop(0.3, 'rgba(212,175,55,0.01)');
-  vigGrad.addColorStop(1, 'rgba(0,0,0,0.45)');
-  ctx.fillStyle = vigGrad;
-  ctx.fillRect(0, 0, width, height);
-
-  // 4. Artwork - with optional uploaded image
+  // 4. Artwork
   const artCX = width / 2;
-  const artCY = height * 0.26;
-  const artR = Math.min(width, height) * 0.15;
+  const artCY = height * 0.24;
+  const artR = Math.min(width, height) * 0.16;
 
-  // Outer glow
+  // Subtle shadow under artwork
   ctx.save();
-  const glowGrad = ctx.createRadialGradient(artCX, artCY, artR * 0.8, artCX, artCY, artR * 1.8);
-  glowGrad.addColorStop(0, 'rgba(212,175,55,0.12)');
-  glowGrad.addColorStop(0.5, 'rgba(212,175,55,0.04)');
-  glowGrad.addColorStop(1, 'transparent');
-  ctx.fillStyle = glowGrad;
+  const shadowGrad = ctx.createRadialGradient(artCX, artCY + artR * 0.8, artR * 0.3, artCX, artCY + artR * 0.8, artR * 1.2);
+  shadowGrad.addColorStop(0, 'rgba(0,0,0,0.4)');
+  shadowGrad.addColorStop(1, 'transparent');
+  ctx.fillStyle = shadowGrad;
   ctx.beginPath();
-  ctx.arc(artCX, artCY, artR * 1.8, 0, Math.PI * 2);
+  ctx.arc(artCX, artCY + artR * 0.8, artR * 1.2, 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
 
-  // Artwork circle
+  // Artwork circle with rotation
   ctx.save();
-  const rotation = t * 0.015;
+  const rotation = t * 0.01;
   ctx.translate(artCX, artCY);
   ctx.rotate(rotation);
 
-  // Clip to circle
   ctx.beginPath();
   ctx.arc(0, 0, artR, 0, Math.PI * 2);
   ctx.clip();
 
-  // Draw uploaded artwork or fallback to gradient
   const artSrc = config.playerArtwork;
   if (artSrc) {
     if (!_bgImageCache || _bgImageCache.url !== artSrc) {
@@ -1631,165 +1637,121 @@ function _drawPlayerDesign(ctx, width, height, config, currentTime, isPlaying, a
       const sy2 = (img.naturalHeight - s) / 2;
       ctx.drawImage(img, sx2, sy2, s, s, -artR, -artR, artR * 2, artR * 2);
     } else {
-      fallbackArtGradient(ctx, artR);
+      _drawFallbackArt(ctx, artR);
     }
   } else {
-    fallbackArtGradient(ctx, artR);
+    _drawFallbackArt(ctx, artR);
   }
-
   ctx.restore();
 
-  // Gold border rings (drawn after clip restore)
+  // Thin white border ring
   ctx.save();
   ctx.translate(artCX, artCY);
   ctx.rotate(rotation);
-  ctx.strokeStyle = 'rgba(212,175,55,0.35)';
-  ctx.lineWidth = 2.5;
+  ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+  ctx.lineWidth = 1.5;
   ctx.beginPath();
-  ctx.arc(0, 0, artR - 3, 0, Math.PI * 2);
+  ctx.arc(0, 0, artR - 2, 0, Math.PI * 2);
   ctx.stroke();
-
-  ctx.strokeStyle = 'rgba(212,175,55,0.1)';
-  ctx.lineWidth = 1;
-  ctx.setLineDash([4, 6]);
-  ctx.beginPath();
-  ctx.arc(0, 0, artR + 10, 0, Math.PI * 2);
-  ctx.stroke();
-  ctx.setLineDash([]);
   ctx.restore();
 
-  function fallbackArtGradient(ctx, r) {
+  function _drawFallbackArt(ctx, r) {
     const g = ctx.createRadialGradient(0, 0, 0, 0, 0, r);
-    g.addColorStop(0, '#0d4a36');
-    g.addColorStop(0.4, '#0B3D2E');
-    g.addColorStop(1, '#062418');
+    g.addColorStop(0, '#2a2a2a');
+    g.addColorStop(0.5, '#1a1a1a');
+    g.addColorStop(1, '#0a0a0a');
     ctx.fillStyle = g;
     ctx.fillRect(-r, -r, r * 2, r * 2);
 
-    // Calligraphy
     ctx.save();
-    ctx.shadowColor = 'rgba(0,0,0,0.5)';
-    ctx.shadowBlur = 6;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillStyle = '#D4AF37';
-    ctx.font = `700 ${r * 0.5}px 'Amiri', serif`;
-    ctx.fillText('ٱلْقُرْآن', 0, -r * 0.06);
-    ctx.fillStyle = '#F5D76E';
-    ctx.font = `400 ${r * 0.28}px 'Amiri', serif`;
-    ctx.fillText('ٱلْكَرِيم', 0, r * 0.32);
-    ctx.shadowBlur = 0;
+    ctx.fillStyle = 'rgba(255,255,255,0.15)';
+    ctx.font = `${r * 0.5}px Outfit, Inter, sans-serif`;
+    ctx.fillText('♪', 0, 2);
     ctx.restore();
   }
 
-  // 5. Surah name
+  // 5. Track info
   ctx.save();
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
-  ctx.shadowColor = 'rgba(0,0,0,0.4)';
-  ctx.shadowBlur = 4;
-  const surahSize = Math.min(width, height) * 0.032;
   const surahNameAr = config.surahNameAr || '';
-  let surahInfoY = artCY + artR + 22;
+  let infoY = artCY + artR + 24;
   if (surahNameAr) {
-    ctx.fillStyle = '#D4AF37';
-    ctx.font = `700 ${surahSize}px 'Amiri', serif`;
-    ctx.fillText(surahNameAr, width / 2, surahInfoY);
-    surahInfoY += surahSize * 1.15;
+    ctx.fillStyle = textSecondary;
+    ctx.font = `500 ${Math.min(width, height) * 0.028}px 'Amiri', serif`;
+    ctx.fillText(surahNameAr, width / 2, infoY);
+    infoY += Math.min(width, height) * 0.032;
   }
-  ctx.fillStyle = '#ffffff';
-  ctx.font = `600 ${surahSize * 0.6}px Outfit, Inter, sans-serif`;
-  ctx.fillText(config.surahName || 'Surah', width / 2, surahInfoY);
-  surahInfoY += surahSize * 0.7;
-  ctx.fillStyle = 'rgba(255,255,255,0.3)';
-  ctx.font = `400 ${surahSize * 0.38}px Outfit, Inter, sans-serif`;
-  ctx.fillText(config.ayahRange || '', width / 2, surahInfoY);
+  ctx.fillStyle = textPrimary;
+  ctx.font = `600 ${Math.min(width, height) * 0.028}px Outfit, Inter, sans-serif`;
+  ctx.fillText(config.surahName || 'Surah', width / 2, infoY);
+  infoY += Math.min(width, height) * 0.032;
+  ctx.fillStyle = textMuted;
+  ctx.font = `400 ${Math.min(width, height) * 0.016}px Outfit, Inter, sans-serif`;
+  ctx.fillText(config.ayahRange || '', width / 2, infoY);
   ctx.restore();
 
-  // 6. Lyrics area (ayah text + translation)
+  // 6. Lyrics area
   const showLyrics = config.showPlayerLyrics !== false && currentAyah;
-  let lyricsBottomY = height * 0.55;
   if (showLyrics && currentAyah) {
-    const lyricsBoxW = width * 0.78;
-    const lyricsBoxX = (width - lyricsBoxW) / 2;
-    const lyricsBoxMaxH = height * 0.18;
-    const lyricsPad = 20;
-
-    // Arabic ayah text
     const ayahText = currentAyah.text || '';
     const ayahTrans = currentAyah.translation || '';
+    const lyrW = width * 0.8;
+    const lyrX = (width - lyrW) / 2;
+    const ayahFs = Math.min(width * 0.038, 46);
+    const transFs = Math.min(width * 0.022, 24);
 
-    // Calculate text sizes
-    const ayahFontSize = Math.min(width * 0.042, 54);
-    const transFontSize = Math.min(width * 0.025, 28);
-
-    // Measure text to determine box height
+    // Measure
     ctx.save();
-    ctx.font = `700 ${ayahFontSize}px 'Amiri', serif`;
-    const aMetrics = ctx.measureText(ayahText);
-    const aLines = aMetrics.width > lyricsBoxW - lyricsPad * 2
-      ? Math.ceil(aMetrics.width / (lyricsBoxW - lyricsPad * 2)) + 1
-      : 1;
-    const aH = aLines * ayahFontSize * 1.4;
+    ctx.font = `700 ${ayahFs}px 'Amiri', serif`;
+    const aW = ctx.measureText(ayahText).width;
+    const aLines = Math.max(1, Math.ceil(aW / (lyrW - 32)));
+    const aH = aLines * ayahFs * 1.4;
 
-    ctx.font = `400 ${transFontSize}px Outfit, Inter, sans-serif`;
-    const tMetrics = ctx.measureText(ayahTrans);
-    const tLines = ayahTrans && tMetrics.width > lyricsBoxW - lyricsPad * 2
-      ? Math.ceil(tMetrics.width / (lyricsBoxW - lyricsPad * 2)) + 1
-      : ayahTrans ? 1 : 0;
-    const tH = tLines * transFontSize * 1.4;
-
-    const totalH = aH + (tLines > 0 ? 12 + tH : 0);
-    const boxH = Math.min(totalH + lyricsPad * 2, lyricsBoxMaxH);
-    const boxY = lyricsBottomY - boxH;
-
-    // Glass background
-    ctx.save();
-    ctx.shadowColor = 'rgba(0,0,0,0.3)';
-    ctx.shadowBlur = 20;
-    ctx.shadowOffsetY = 4;
-    ctx.fillStyle = 'rgba(0,0,0,0.35)';
-    ctx.beginPath();
-    ctx.roundRect(lyricsBoxX, boxY, lyricsBoxW, boxH, 16);
-    ctx.fill();
-
-    // Border
-    ctx.shadowBlur = 0;
-    ctx.strokeStyle = 'rgba(212,175,55,0.08)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.roundRect(lyricsBoxX, boxY, lyricsBoxW, boxH, 16);
-    ctx.stroke();
+    ctx.font = `400 ${transFs}px Outfit, Inter, sans-serif`;
+    const tW = ctx.measureText(ayahTrans).width;
+    const tLines = ayahTrans ? Math.max(1, Math.ceil(tW / (lyrW - 32))) : 0;
+    const tH = tLines * transFs * 1.4;
     ctx.restore();
 
-    // Arabic text - centered, gold
+    const totalH = aH + (tLines > 0 ? 10 + tH : 0) + 24;
+    const lyrY = height * 0.52 - totalH / 2;
+    const lyrMaxH = height * 0.18;
+    const boxH = Math.min(totalH, lyrMaxH);
+
+    // Clean transparent background
+    ctx.save();
+    ctx.fillStyle = 'rgba(255,255,255,0.03)';
+    ctx.beginPath();
+    ctx.roundRect(lyrX, lyrY, lyrW, boxH, 14);
+    ctx.fill();
+    ctx.restore();
+
+    // Arabic text
     ctx.save();
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
-    ctx.shadowColor = 'rgba(0,0,0,0.6)';
-    ctx.shadowBlur = 8;
-    ctx.fillStyle = '#D4AF37';
-    ctx.font = `700 ${ayahFontSize}px 'Amiri', serif`;
-    _drawWrappedText(ctx, ayahText, width / 2, boxY + lyricsPad, lyricsBoxW - lyricsPad * 2, ayahFontSize * 1.4, 'center');
+    ctx.fillStyle = textPrimary;
+    ctx.font = `700 ${ayahFs}px 'Amiri', serif`;
+    _drawWrappedText(ctx, ayahText, width / 2, lyrY + 12, lyrW - 32, ayahFs * 1.4, 'center');
 
-    // Translation - smaller, white
     if (ayahTrans) {
-      ctx.shadowColor = 'rgba(0,0,0,0.5)';
-      ctx.shadowBlur = 6;
-      ctx.fillStyle = 'rgba(255,255,255,0.7)';
-      ctx.font = `400 ${transFontSize}px Outfit, Inter, sans-serif`;
-      _drawWrappedText(ctx, ayahTrans, width / 2, boxY + lyricsPad + aH + 12, lyricsBoxW - lyricsPad * 2, transFontSize * 1.4, 'center');
+      ctx.fillStyle = textSecondary;
+      ctx.font = `400 ${transFs}px Outfit, Inter, sans-serif`;
+      _drawWrappedText(ctx, ayahTrans, width / 2, lyrY + 12 + aH + 10, lyrW - 32, transFs * 1.4, 'center');
     }
     ctx.restore();
   }
 
-  // 7. Waveform bars
+  // 7. Waveform
   const waveTop = height * 0.62;
-  const waveH = height * 0.07;
-  const waveW = width * 0.72;
+  const waveH = height * 0.06;
+  const waveW = width * 0.74;
   const waveX = (width - waveW) / 2;
   const barCount = 48;
-  const barGap = 2.5;
+  const barGap = 2;
   const barW = (waveW - barGap * (barCount - 1)) / barCount;
 
   let dataArray = null;
@@ -1803,84 +1765,67 @@ function _drawPlayerDesign(ctx, width, height, config, currentTime, isPlaying, a
   for (let i = 0; i < barCount; i++) {
     let value;
     if (dataArray) {
-      const binIdx = Math.floor((i / barCount) * dataArray.length * 0.5);
+      const binIdx = Math.floor((i / barCount) * dataArray.length * 0.4);
       value = dataArray[binIdx] || 0;
     } else {
-      value = Math.abs(Math.sin(t * 2.5 + i * 0.25) * 120 + Math.sin(t * 4.0 + i * 0.12) * 70) * (0.5 + 0.3 * Math.sin(t * 0.5));
-      value = Math.min(255, Math.max(10, value));
+      value = Math.abs(Math.sin(t * 2.8 + i * 0.22) * 110 + Math.sin(t * 3.6 + i * 0.14) * 60 + Math.sin(t * 5.2 + i * 0.3) * 30);
+      value = Math.min(255, Math.max(8, value));
     }
-    const barH = (value / 255) * waveH * 0.9;
+    const barH = (value / 255) * waveH * 0.85;
     const bx = waveX + i * (barW + barGap);
     const by = waveTop + (waveH - barH) / 2;
 
-    const barGrad = ctx.createLinearGradient(bx, by, bx, by + barH);
-    barGrad.addColorStop(0, '#D4AF37');
-    barGrad.addColorStop(0.4, '#F5D76E');
-    barGrad.addColorStop(0.7, '#B8860B');
-    barGrad.addColorStop(1, '#0B3D2E');
-    ctx.fillStyle = barGrad;
+    // White bars with opacity based on height
+    const alpha = 0.1 + (value / 255) * 0.7;
+    ctx.fillStyle = `rgba(255,255,255,${alpha})`;
     ctx.beginPath();
     ctx.roundRect(bx, by, barW, barH, [barW / 2, barW / 2, barW / 2, barW / 2]);
     ctx.fill();
-
-    if (value > 130) {
-      ctx.shadowColor = 'rgba(212,175,55,0.25)';
-      ctx.shadowBlur = 6;
-      ctx.fillStyle = 'rgba(212,175,55,0.1)';
-      ctx.beginPath();
-      ctx.roundRect(bx - 1, by - 1, barW + 2, barH + 2, [barW / 2 + 1, barW / 2 + 1, barW / 2 + 1, barW / 2 + 1]);
-      ctx.fill();
-      ctx.shadowBlur = 0;
-    }
   }
   ctx.restore();
 
   // 8. Progress bar
-  const progY = height * 0.75;
-  const progH = 5;
-  const progW = width * 0.72;
+  const progY = height * 0.74;
+  const progH = 3;
+  const progW = width * 0.74;
   const progX = (width - progW) / 2;
   const progress = duration > 0 ? Math.min(t / duration, 1) : 0;
 
   ctx.save();
-  ctx.shadowColor = 'rgba(0,0,0,0.2)';
-  ctx.shadowBlur = 4;
-  ctx.fillStyle = 'rgba(255,255,255,0.06)';
+  // Track
+  ctx.fillStyle = 'rgba(255,255,255,0.08)';
   ctx.beginPath();
-  ctx.roundRect(progX, progY, progW, progH, 3);
+  ctx.roundRect(progX, progY, progW, progH, 2);
   ctx.fill();
 
+  // Fill
   const fillW = progress * progW;
-  ctx.shadowColor = 'rgba(212,175,55,0.3)';
-  ctx.shadowBlur = 8;
-  const fillGrad = ctx.createLinearGradient(progX, 0, progX + progW, 0);
-  fillGrad.addColorStop(0, '#D4AF37');
-  fillGrad.addColorStop(0.5, '#F5D76E');
-  fillGrad.addColorStop(1, '#D4AF37');
-  ctx.fillStyle = fillGrad;
+  ctx.fillStyle = '#ffffff';
   ctx.beginPath();
-  ctx.roundRect(progX, progY, fillW, progH, 3);
+  ctx.roundRect(progX, progY, fillW, progH, 2);
   ctx.fill();
 
-  ctx.shadowColor = 'rgba(212,175,55,0.4)';
-  ctx.shadowBlur = 14;
-  ctx.fillStyle = '#fff';
-  ctx.beginPath();
-  ctx.arc(progX + fillW, progY + progH / 2, 8, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.shadowBlur = 0;
-  ctx.fillStyle = '#D4AF37';
-  ctx.beginPath();
-  ctx.arc(progX + fillW, progY + progH / 2, 5, 0, Math.PI * 2);
-  ctx.fill();
+  // Thumb
+  if (fillW > 0) {
+    ctx.fillStyle = '#ffffff';
+    ctx.shadowColor = 'rgba(255,255,255,0.3)';
+    ctx.shadowBlur = 10;
+    ctx.beginPath();
+    ctx.arc(progX + fillW, progY + progH / 2, 6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(progX + fillW, progY + progH / 2, 3, 0, Math.PI * 2);
+    ctx.fill();
+  }
   ctx.restore();
 
-  // 9. Time display
+  // 9. Time
   ctx.save();
-  const timeFontSize = Math.min(width * 0.018, 16);
-  ctx.font = `500 ${timeFontSize}px Outfit, Inter, sans-serif`;
-  ctx.fillStyle = 'rgba(255,255,255,0.3)';
+  const timeFs = Math.min(width * 0.016, 14);
+  ctx.font = `500 ${timeFs}px Outfit, Inter, sans-serif`;
+  ctx.fillStyle = textMuted;
   const fmtTime = (s) => {
     if (!s || !isFinite(s)) return '0:00';
     const m = Math.floor(s / 60);
@@ -1888,56 +1833,20 @@ function _drawPlayerDesign(ctx, width, height, config, currentTime, isPlaying, a
     return `${m}:${sec.toString().padStart(2, '0')}`;
   };
   ctx.textAlign = 'left';
-  ctx.fillText(fmtTime(t), progX, progY + progH + 12);
+  ctx.fillText(fmtTime(t), progX, progY + progH + 10);
   ctx.textAlign = 'right';
-  ctx.fillText(fmtTime(duration), progX + progW, progY + progH + 12);
+  ctx.fillText(fmtTime(duration), progX + progW, progY + progH + 10);
   ctx.restore();
 
-  // 10. Decorative bottom elements
+  // 10. Minimal bottom bar
   ctx.save();
-  ctx.strokeStyle = 'rgba(212,175,55,0.06)';
+  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
   ctx.lineWidth = 0.5;
   ctx.beginPath();
-  ctx.moveTo(width * 0.12, height * 0.88);
-  ctx.lineTo(width * 0.88, height * 0.88);
+  ctx.moveTo(width * 0.1, height * 0.86);
+  ctx.lineTo(width * 0.9, height * 0.86);
   ctx.stroke();
-
-  // Ornament
-  ctx.fillStyle = 'rgba(212,175,55,0.1)';
-  const dS = 5;
-  ctx.beginPath();
-  ctx.moveTo(width / 2 - dS, height * 0.88 + dS);
-  ctx.lineTo(width / 2, height * 0.88);
-  ctx.lineTo(width / 2 + dS, height * 0.88 + dS);
-  ctx.lineTo(width / 2, height * 0.88 + dS * 2);
-  ctx.closePath();
-  ctx.fill();
-
-  // Small side diamonds
-  for (let side of [-1, 1]) {
-    ctx.fillStyle = 'rgba(212,175,55,0.05)';
-    const sx = width / 2 + side * width * 0.3;
-    ctx.beginPath();
-    ctx.moveTo(sx - 3, height * 0.88 + 3);
-    ctx.lineTo(sx, height * 0.88);
-    ctx.lineTo(sx + 3, height * 0.88 + 3);
-    ctx.lineTo(sx, height * 0.88 + 6);
-    ctx.closePath();
-    ctx.fill();
-  }
   ctx.restore();
-
-  // 11. Floating particles - more elegant
-  for (let i = 0; i < 8; i++) {
-    const px = width * (0.05 + 0.9 * Math.sin(t * 0.015 + i * 1.2 + 0.4));
-    const py = height * (0.05 + 0.9 * Math.cos(t * 0.02 + i * 1.6 + 0.2));
-    const pr = 1.2 + Math.sin(t * 0.4 + i * 0.7) * 0.6;
-    const alpha = 0.06 + 0.04 * Math.sin(t * 0.25 + i * 0.9);
-    ctx.fillStyle = `rgba(212,175,55,${alpha})`;
-    ctx.beginPath();
-    ctx.arc(px, py, pr, 0, Math.PI * 2);
-    ctx.fill();
-  }
 }
 
 function _drawWrappedText(ctx, text, x, y, maxWidth, lineHeight, align) {

@@ -1583,7 +1583,9 @@ function _drawIntro(ctx, width, height, intro, currentTime) {
 
 function _drawPlayerDesign(ctx, width, height, config, currentTime, isPlaying, audioAnalyser, currentAyah) {
   const t = currentTime || 0;
-  const duration = config.duration || 30;
+  const totalDuration = config.ayahTimestamps && config.ayahTimestamps.length > 0
+    ? config.ayahTimestamps[config.ayahTimestamps.length - 1].end
+    : (config.duration || 30);
 
   const c = {
     bg: '#f5f3ed',
@@ -1933,7 +1935,7 @@ function _drawPlayerDesign(ctx, width, height, config, currentTime, isPlaying, a
   const progH = 2;
   const progW = width * 0.55;
   const progX = (width - progW) / 2 + width * 0.04;
-  const progress = duration > 0 ? Math.min(t / duration, 1) : 0;
+  const progress = totalDuration > 0 ? Math.min(t / totalDuration, 1) : 0;
 
   ctx.save();
   ctx.fillStyle = 'rgba(0,0,0,0.06)';
@@ -1969,7 +1971,7 @@ function _drawPlayerDesign(ctx, width, height, config, currentTime, isPlaying, a
   ctx.textAlign = 'left';
   ctx.fillText(fmtTime(t), progX, progY + progH + 9);
   ctx.textAlign = 'right';
-  ctx.fillText(fmtTime(duration), progX + progW, progY + progH + 9);
+  ctx.fillText(fmtTime(totalDuration), progX + progW, progY + progH + 9);
   ctx.restore();
 
   // --- BOTTOM ROW: branding + decorative elements ---

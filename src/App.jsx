@@ -601,6 +601,7 @@ const TRANSITIONS = [
 
   // Cache for WebCodecs support
   const webCodecsSupportedRef = useRef(null);
+  const displayAyahIdxRef = useRef(0);
   const getWebCodecsSupported = async () => {
     if (webCodecsSupportedRef.current === null) {
       webCodecsSupportedRef.current = await isWebCodecsSupported();
@@ -1503,11 +1504,24 @@ const TRANSITIONS = [
         transitionRef.current = { active: true, startTime: performance.now(), duration: 500, effect: startEffect };
       }
       lastFrameTime = now;
+      // Compute ayah index from timestamps for real-time sync
+      if (ayahTimestamps && mode === 'quran') {
+        const offset = introEnabled ? introDuration : 0;
+        const audioTime = Math.max(0, ct - offset);
+        let idx = 0;
+        for (let i = ayahTimestamps.length - 1; i >= 0; i--) {
+          if (audioTime >= ayahTimestamps[i].start) { idx = i; break; }
+        }
+        displayAyahIdxRef.current = idx;
+      } else {
+        displayAyahIdxRef.current = currentAyahIndex;
+      }
+      const displayIdx = displayAyahIdxRef.current;
       const rawItem = mode === 'hadith'
         ? hadithData[currentHadithIndex]
         : mode === 'dua'
           ? duaData[currentDuaIndex]
-          : passageAyahs[currentAyahIndex];
+          : passageAyahs[displayIdx];
       const currentItem = rawItem ? {
         ...rawItem,
         translation: translationLang === 'fr'
@@ -1694,7 +1708,7 @@ const TRANSITIONS = [
     introEnabled, introDuration, introBgType, introBgColor1, introBgColor2,
     introBgImage, introBgVideo, introText, introSubtext,
     introFontSize, introSubFontSize, introFontFamily, introTextColor,
-    introSubFontFamily, introSubTextColor,
+    introSubFontFamily, introSubTextColor, ayahTimestamps,
   ]);
 
   // Export / Record video logic

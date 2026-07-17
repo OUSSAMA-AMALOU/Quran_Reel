@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { surahs } from './data/surahData';
+import { surahs, getRevelationType } from './data/surahData';
 import { drawFrame, getWordPositions } from './utils/videoRenderer';
 import { t } from './i18n';
 import AudioPlayer from './AudioPlayer';
@@ -619,6 +619,9 @@ const TRANSITIONS = [
       bgColor1, bgColor2, textAnim, videoStyle,
       surahName: selectedSurahDetails?.englishName || 'Surah',
       surahNameAr: selectedSurahDetails?.name || '',
+      surahNumber: selectedSurahDetails?.number || 1,
+      numberOfAyahs: selectedSurahDetails?.numberOfAyahs || 0,
+      revelationType: getRevelationType(selectedSurahDetails?.number || 1),
       ayahRange: items.length > 0 ? `Ayah ${items[0]?.numberInSurah}${items.length > 1 ? `–${items[items.length - 1]?.numberInSurah}` : ''}` : '',
       duration: durPerItem || 30,
       playerArtwork, showPlayerLyrics,
@@ -1550,6 +1553,9 @@ const TRANSITIONS = [
           videoStyle,
           surahName: selectedSurahDetails?.englishName || 'Surah',
           surahNameAr: selectedSurahDetails?.name || '',
+          surahNumber: selectedSurahDetails?.number || 1,
+          numberOfAyahs: selectedSurahDetails?.numberOfAyahs || 0,
+          revelationType: getRevelationType(selectedSurahDetails?.number || 1),
           ayahRange: passageAyahs.length > 0 ? `Ayah ${passageAyahs[0]?.numberInSurah}${passageAyahs.length > 1 ? `–${passageAyahs[passageAyahs.length - 1]?.numberInSurah}` : ''}` : '',
           duration: duration || 30,
           playerArtwork, showPlayerLyrics,

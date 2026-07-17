@@ -1553,75 +1553,122 @@ function _drawPlayerDesign(ctx, width, height, config, currentTime, isPlaying, a
   const t = currentTime || 0;
   const duration = config.duration || 30;
 
-  // Colors — warm white/cream palette with bold black accents
   const c = {
-    bg: '#f8f6f0',
+    bg: '#f5f3ed',
     bgCard: '#ffffff',
     textPrimary: '#1a1a1a',
-    textSecondary: '#666666',
+    textSecondary: '#555555',
     textMuted: '#999999',
     accent: '#000000',
     line: 'rgba(0,0,0,0.06)',
+    lineMed: 'rgba(0,0,0,0.12)',
     surface: 'rgba(0,0,0,0.02)',
     shadow: 'rgba(0,0,0,0.06)',
-    shadowStrong: 'rgba(0,0,0,0.1)',
+    shadowStrong: 'rgba(0,0,0,0.12)',
   };
 
-  // 1. Background — warm off-white
+  // --- BACKGROUND ---
   ctx.fillStyle = c.bg;
   ctx.fillRect(0, 0, width, height);
 
-  // 2. Large geometric frame — signature editorial element
   const margin = width * 0.04;
+
+  // --- DECORATIVE GEOMETRIC BACKGROUND PATTERN ---
+  ctx.save();
+  const patternSize = Math.min(width, height) * 0.12;
+  ctx.strokeStyle = 'rgba(0,0,0,0.03)';
+  ctx.lineWidth = 0.5;
+  for (let row = -1; row < Math.ceil(height / patternSize) + 1; row++) {
+    for (let col = -1; col < Math.ceil(width / patternSize) + 1; col++) {
+      const px = col * patternSize + (row % 2) * patternSize * 0.5;
+      const py = row * patternSize * 0.86;
+      ctx.beginPath();
+      ctx.moveTo(px + patternSize * 0.5, py);
+      ctx.lineTo(px + patternSize, py + patternSize * 0.33);
+      ctx.lineTo(px + patternSize * 0.5, py + patternSize * 0.66);
+      ctx.lineTo(px, py + patternSize * 0.33);
+      ctx.closePath();
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+
+  // --- LARGE GEOMETRIC FRAME with double border ---
+  const m2 = margin;
   ctx.save();
   ctx.strokeStyle = c.line;
   ctx.lineWidth = 1;
-  ctx.strokeRect(margin, margin, width - margin * 2, height - margin * 2);
+  ctx.strokeRect(m2, m2, width - m2 * 2, height - m2 * 2);
 
-  // Corner accents
-  const cl = 24;
-  ctx.lineWidth = 2;
-  ctx.strokeStyle = c.accent;
-  // Top-left
-  ctx.beginPath(); ctx.moveTo(margin - 4, margin + cl); ctx.lineTo(margin - 4, margin - 4); ctx.lineTo(margin + cl, margin - 4); ctx.stroke();
-  // Top-right
-  ctx.beginPath(); ctx.moveTo(width - margin + 4, margin + cl); ctx.lineTo(width - margin + 4, margin - 4); ctx.lineTo(width - margin - cl, margin - 4); ctx.stroke();
-  // Bottom-left
-  ctx.beginPath(); ctx.moveTo(margin - 4, height - margin - cl); ctx.lineTo(margin - 4, height - margin + 4); ctx.lineTo(margin + cl, height - margin + 4); ctx.stroke();
-  // Bottom-right
-  ctx.beginPath(); ctx.moveTo(width - margin + 4, height - margin - cl); ctx.lineTo(width - margin + 4, height - margin + 4); ctx.lineTo(width - margin - cl, height - margin + 4); ctx.stroke();
+  ctx.strokeStyle = 'rgba(0,0,0,0.03)';
+  ctx.lineWidth = 0.5;
+  ctx.strokeRect(m2 + 8, m2 + 8, width - m2 * 2 - 16, height - m2 * 2 - 16);
   ctx.restore();
 
-  // 3. Top horizontal rule with label
-  const topY = margin + 40;
+  // --- CORNER ORNAMENTS (geometric diamond accents) ---
+  const ornamentSize = 32;
+  const corners = [
+    [margin - 4, margin - 4],
+    [width - margin + 4, margin - 4],
+    [margin - 4, height - margin + 4],
+    [width - margin + 4, height - margin + 4],
+  ];
   ctx.save();
-  ctx.strokeStyle = c.accent;
-  ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.moveTo(margin + 20, topY); ctx.lineTo(width * 0.35, topY); ctx.stroke();
-
-  ctx.fillStyle = c.textMuted;
-  ctx.font = `400 ${Math.min(width * 0.014, 14)}px Outfit, Inter, sans-serif`;
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('NOW PLAYING', margin + 20, topY - 28);
-
   ctx.fillStyle = c.accent;
-  ctx.font = `600 ${Math.min(width * 0.018, 18)}px Outfit, Inter, sans-serif`;
-  ctx.fillText(config.surahName || 'Surah', margin + 20, topY - 8);
+  corners.forEach(([cx, cy]) => {
+    ctx.beginPath();
+    ctx.moveTo(cx - ornamentSize * 0.3, cy);
+    ctx.lineTo(cx, cy - ornamentSize * 0.3);
+    ctx.lineTo(cx + ornamentSize * 0.3, cy);
+    ctx.lineTo(cx, cy + ornamentSize * 0.3);
+    ctx.closePath();
+    ctx.fill();
+  });
   ctx.restore();
 
-  // 4. Artwork — placed left-of-center for editorial layout
-  const artCX = width * 0.34;
-  const artCY = height * 0.42;
-  const artR = Math.min(width, height) * 0.13;
+  // --- TOP BAND with surah number prominence ---
+  const surahNum = config.surahNumber || 1;
+  ctx.save();
+  ctx.fillStyle = c.accent;
+  ctx.globalAlpha = 0.04;
+  ctx.fillRect(margin + 20, margin + 20, width - margin * 2 - 40, 2);
+  ctx.globalAlpha = 1;
+
+  // Large surah number on the left
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillStyle = c.accent;
+  ctx.globalAlpha = 0.06;
+  ctx.font = `800 ${Math.min(width, height) * 0.1}px Outfit, Inter, sans-serif`;
+  ctx.fillText(`#${surahNum}`, margin + 20, margin + 20);
+  ctx.globalAlpha = 1;
+
+  // Decorative line from number
+  ctx.strokeStyle = c.accent;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(margin + 20, margin + 42 + Math.min(width, height) * 0.1);
+  ctx.lineTo(margin + 80, margin + 42 + Math.min(width, height) * 0.1);
+  ctx.stroke();
+
+  // Small label above
+  ctx.fillStyle = c.textMuted;
+  ctx.font = `400 ${Math.min(width * 0.012, 12)}px Outfit, Inter, sans-serif`;
+  ctx.fillText('SŪRAH', margin + 20, margin + 20 + Math.min(width, height) * 0.1 + 6);
+  ctx.restore();
+
+  // --- ARTWORK (larger, centered vertically in upper half) ---
+  const artR = Math.min(width, height) * 0.17;
+  const artCX = width / 2;
+  const artCY = height * 0.28;
 
   // Artwork shadow
   ctx.save();
   ctx.shadowColor = c.shadowStrong;
-  ctx.shadowBlur = 30;
-  ctx.shadowOffsetY = 8;
+  ctx.shadowBlur = 40;
+  ctx.shadowOffsetY = 10;
   ctx.beginPath();
-  ctx.arc(artCX, artCY, artR + 2, 0, Math.PI * 2);
+  ctx.arc(artCX, artCY, artR + 3, 0, Math.PI * 2);
   ctx.fillStyle = c.bgCard;
   ctx.fill();
   ctx.restore();
@@ -1653,67 +1700,102 @@ function _drawPlayerDesign(ctx, width, height, config, currentTime, isPlaying, a
   }
   ctx.restore();
 
-  // Thin black ring
+  // Decorative rings around artwork
   ctx.save();
   ctx.translate(artCX, artCY);
-  ctx.strokeStyle = 'rgba(0,0,0,0.08)';
+  // Outer thin ring
+  ctx.strokeStyle = 'rgba(0,0,0,0.06)';
+  ctx.lineWidth = 0.5;
+  ctx.beginPath();
+  ctx.arc(0, 0, artR + 6, 0, Math.PI * 2);
+  ctx.stroke();
+  // Inner ring
+  ctx.strokeStyle = 'rgba(0,0,0,0.1)';
   ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.arc(0, 0, artR + 1, 0, Math.PI * 2);
+  ctx.arc(0, 0, artR + 2, 0, Math.PI * 2);
   ctx.stroke();
+  // Tiny dot ornaments at cardinal points
+  ctx.fillStyle = c.accent;
+  ctx.globalAlpha = 0.15;
+  for (let i = 0; i < 8; i++) {
+    const angle = (i / 8) * Math.PI * 2;
+    const dx = Math.cos(angle) * (artR + 14);
+    const dy = Math.sin(angle) * (artR + 14);
+    ctx.beginPath();
+    ctx.arc(dx, dy, 2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
   ctx.restore();
 
   function _drawMonogram(ctx, r) {
-    ctx.fillStyle = '#f0ece0';
+    ctx.fillStyle = '#ece8de';
     ctx.fillRect(-r, -r, r * 2, r * 2);
-    ctx.save();
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = '#1a1a1a';
     ctx.font = `300 ${r * 1.1}px Outfit, Inter, sans-serif`;
     ctx.fillText('Q', 0, 2);
-    ctx.restore();
   }
 
-  // 5. Track info — beside artwork
+  // --- SURAH INFO PANEL (below artwork, centered) ---
+  const infoY = artCY + artR + 28;
   ctx.save();
-  ctx.textAlign = 'left';
+  ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
-  const infoX = width * 0.52;
-  let infoY = artCY - artR + 4;
 
+  // Arabic name
   if (config.surahNameAr) {
-    ctx.fillStyle = c.textSecondary;
-    ctx.font = `500 ${Math.min(width * 0.024, 28)}px 'Amiri', serif`;
-    ctx.fillText(config.surahNameAr, infoX, infoY);
-    infoY += Math.min(width * 0.03, 32);
+    ctx.fillStyle = c.textPrimary;
+    ctx.font = `600 ${Math.min(width * 0.03, 34)}px 'Amiri', serif`;
+    ctx.fillText(config.surahNameAr, width / 2, infoY);
   }
 
-  ctx.fillStyle = c.accent;
-  ctx.font = `700 ${Math.min(width * 0.032, 38)}px Outfit, Inter, sans-serif`;
-  ctx.fillText(config.surahName || 'Surah', infoX, infoY);
-  infoY += Math.min(width * 0.04, 42);
+  let infoY2 = infoY + (config.surahNameAr ? Math.min(width * 0.038, 40) : 0);
 
+  // English name
+  ctx.fillStyle = c.accent;
+  ctx.font = `800 ${Math.min(width * 0.032, 38)}px Outfit, Inter, sans-serif`;
+  ctx.fillText(config.surahName || 'Surah', width / 2, infoY2);
+  infoY2 += Math.min(width * 0.04, 44);
+
+  // Revelation type + Ayahs + Number
+  const revType = config.revelationType || 'Meccan';
+  const ayahCount = config.numberOfAyahs || 0;
+  const metaText = `${revType} · ${ayahCount} verses · № ${surahNum}`;
   ctx.fillStyle = c.textMuted;
   ctx.font = `400 ${Math.min(width * 0.016, 16)}px Outfit, Inter, sans-serif`;
-  ctx.fillText(config.ayahRange || '', infoX, infoY);
-  infoY += Math.min(width * 0.028, 28);
+  ctx.fillText(metaText, width / 2, infoY2);
+  infoY2 += Math.min(width * 0.028, 30);
 
-  // Small divider
-  ctx.strokeStyle = c.line;
+  // Decorative divider
+  ctx.strokeStyle = c.lineMed;
   ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(infoX, infoY); ctx.lineTo(infoX + 60, infoY); ctx.stroke();
+  const divW = Math.min(width * 0.12, 60);
+  ctx.beginPath();
+  ctx.moveTo(width / 2 - divW, infoY2);
+  ctx.lineTo(width / 2 + divW, infoY2);
+  ctx.stroke();
+
+  // Ayah range
+  if (config.ayahRange) {
+    infoY2 += 14;
+    ctx.fillStyle = c.textSecondary;
+    ctx.font = `400 ${Math.min(width * 0.014, 14)}px Outfit, Inter, sans-serif`;
+    ctx.fillText(config.ayahRange, width / 2, infoY2);
+  }
   ctx.restore();
 
-  // 6. Lyrics area — clean card below
+  // --- LYRICS AREA (below surah info) ---
   const showLyrics = config.showPlayerLyrics !== false && currentAyah;
   if (showLyrics && currentAyah) {
     const ayahText = currentAyah.text || '';
     const ayahTrans = currentAyah.translation || '';
-    const lyrW = width * 0.82;
+    const lyrW = width * 0.72;
     const lyrX = (width - lyrW) / 2;
-    const ayahFs = Math.min(width * 0.034, 40);
-    const transFs = Math.min(width * 0.02, 22);
+    const ayahFs = Math.min(width * 0.03, 36);
+    const transFs = Math.min(width * 0.018, 20);
 
     ctx.save();
     ctx.font = `700 ${ayahFs}px 'Amiri', serif`;
@@ -1727,24 +1809,24 @@ function _drawPlayerDesign(ctx, width, height, config, currentTime, isPlaying, a
     ctx.restore();
 
     const totalH = aH + (tLines > 0 ? 10 + tH : 0);
-    const lyrY = height * 0.68 - totalH / 2;
-    const lyrMaxH = height * 0.16;
+    const lyrY = height * 0.65 - totalH / 2;
+    const lyrMaxH = height * 0.12;
 
-    // White card
     ctx.save();
     ctx.shadowColor = c.shadow;
-    ctx.shadowBlur = 20;
-    ctx.shadowOffsetY = 4;
+    ctx.shadowBlur = 16;
+    ctx.shadowOffsetY = 3;
     ctx.fillStyle = c.bgCard;
     ctx.beginPath();
-    ctx.roundRect(lyrX, lyrY, lyrW, Math.min(totalH + 28, lyrMaxH), 12);
+    ctx.roundRect(lyrX, lyrY, lyrW, Math.min(totalH + 24, lyrMaxH), 10);
     ctx.fill();
     ctx.restore();
 
-    // Left accent bar
     ctx.save();
     ctx.fillStyle = c.accent;
-    ctx.fillRect(lyrX + 2, lyrY + 14, 3, Math.min(totalH + 28, lyrMaxH) - 28);
+    ctx.globalAlpha = 0.04;
+    ctx.fillRect(lyrX, lyrY, Math.min(totalH + 24, lyrMaxH), 2);
+    ctx.globalAlpha = 1;
     ctx.restore();
 
     ctx.save();
@@ -1752,21 +1834,21 @@ function _drawPlayerDesign(ctx, width, height, config, currentTime, isPlaying, a
     ctx.textBaseline = 'top';
     ctx.fillStyle = c.textPrimary;
     ctx.font = `700 ${ayahFs}px 'Amiri', serif`;
-    _drawWrappedText(ctx, ayahText, width / 2, lyrY + 14, lyrW - 48, ayahFs * 1.4, 'center');
+    _drawWrappedText(ctx, ayahText, width / 2, lyrY + 12, lyrW - 44, ayahFs * 1.4, 'center');
 
     if (ayahTrans) {
       ctx.fillStyle = c.textSecondary;
       ctx.font = `400 ${transFs}px Outfit, Inter, sans-serif`;
-      _drawWrappedText(ctx, ayahTrans, width / 2, lyrY + 14 + aH + 10, lyrW - 48, transFs * 1.4, 'center');
+      _drawWrappedText(ctx, ayahTrans, width / 2, lyrY + 12 + aH + 8, lyrW - 44, transFs * 1.4, 'center');
     }
     ctx.restore();
   }
 
-  // 7. Waveform — thin elegant bars
-  const waveTop = height * 0.82;
-  const waveH = height * 0.04;
-  const waveW = width * 0.7;
-  const waveX = (width - waveW) / 2 + width * 0.05;
+  // --- WAVEFORM (positioned based on lyrics presence) ---
+  const waveTop = showLyrics && currentAyah ? height * 0.80 : height * 0.78;
+  const waveH = height * 0.035;
+  const waveW = width * 0.65;
+  const waveX = (width - waveW) / 2 + width * 0.04;
   const barCount = 48;
   const barGap = 2;
   const barW = (waveW - barGap * (barCount - 1)) / barCount;
@@ -1791,7 +1873,7 @@ function _drawPlayerDesign(ctx, width, height, config, currentTime, isPlaying, a
     const barH = (value / 255) * waveH * 0.8;
     const bx = waveX + i * (barW + barGap);
     const by = waveTop + (waveH - barH) / 2;
-    const alpha = 0.12 + (value / 255) * 0.6;
+    const alpha = 0.08 + (value / 255) * 0.55;
     ctx.fillStyle = `rgba(0,0,0,${alpha})`;
     ctx.beginPath();
     ctx.roundRect(bx, by, barW, barH, [barW / 2, barW / 2, barW / 2, barW / 2]);
@@ -1799,11 +1881,11 @@ function _drawPlayerDesign(ctx, width, height, config, currentTime, isPlaying, a
   }
   ctx.restore();
 
-  // 8. Progress bar
-  const progY = height * 0.885;
+  // --- PROGRESS BAR ---
+  const progY = height * 0.87;
   const progH = 2;
-  const progW = width * 0.6;
-  const progX = (width - progW) / 2 + width * 0.05;
+  const progW = width * 0.55;
+  const progX = (width - progW) / 2 + width * 0.04;
   const progress = duration > 0 ? Math.min(t / duration, 1) : 0;
 
   ctx.save();
@@ -1826,9 +1908,9 @@ function _drawPlayerDesign(ctx, width, height, config, currentTime, isPlaying, a
   }
   ctx.restore();
 
-  // 9. Time
+  // --- TIME ---
   ctx.save();
-  const timeFs = Math.min(width * 0.014, 13);
+  const timeFs = Math.min(width * 0.013, 12);
   ctx.font = `500 ${timeFs}px Outfit, Inter, sans-serif`;
   ctx.fillStyle = c.textMuted;
   const fmtTime = (s) => {
@@ -1838,18 +1920,43 @@ function _drawPlayerDesign(ctx, width, height, config, currentTime, isPlaying, a
     return `${m}:${sec.toString().padStart(2, '0')}`;
   };
   ctx.textAlign = 'left';
-  ctx.fillText(fmtTime(t), progX, progY + progH + 10);
+  ctx.fillText(fmtTime(t), progX, progY + progH + 9);
   ctx.textAlign = 'right';
-  ctx.fillText(fmtTime(duration), progX + progW, progY + progH + 10);
+  ctx.fillText(fmtTime(duration), progX + progW, progY + progH + 9);
   ctx.restore();
 
-  // 10. Bottom right — small branding
+  // --- BOTTOM ROW: branding + decorative elements ---
+  const botY = height - margin - 16;
   ctx.save();
+
+  // Left decorative line
+  ctx.strokeStyle = 'rgba(0,0,0,0.04)';
+  ctx.lineWidth = 0.5;
+  ctx.beginPath();
+  ctx.moveTo(margin + 20, botY);
+  ctx.lineTo(width * 0.3, botY);
+  ctx.stroke();
+
+  // Right decorative line
+  ctx.beginPath();
+  ctx.moveTo(width * 0.7, botY);
+  ctx.lineTo(width - margin - 20, botY);
+  ctx.stroke();
+
+  // Center dot
+  ctx.fillStyle = c.accent;
+  ctx.globalAlpha = 0.1;
+  ctx.beginPath();
+  ctx.arc(width / 2, botY, 3, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalAlpha = 1;
+
+  // Branding
   ctx.fillStyle = c.textMuted;
-  ctx.font = `300 ${Math.min(width * 0.012, 11)}px Outfit, Inter, sans-serif`;
-  ctx.textAlign = 'right';
-  ctx.textBaseline = 'bottom';
-  ctx.fillText('QuranReel', width - margin - 20, height - margin - 20);
+  ctx.font = `300 ${Math.min(width * 0.011, 10)}px Outfit, Inter, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.fillText('QuranReel', width / 2, botY + 8);
   ctx.restore();
 }
 

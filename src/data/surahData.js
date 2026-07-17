@@ -114,3 +114,11 @@ export const surahs = [
   { number: 113, name: "الفلق", englishName: "Al-Falaq", englishNameTranslation: "The Daybreak", numberOfAyahs: 5 },
   { number: 114, name: "الناس", englishName: "An-Nas", englishNameTranslation: "Mankind", numberOfAyahs: 6 }
 ];
+
+const medinanSet = new Set([
+  2,3,4,5,8,9,22,24,33,47,48,49,55,57,58,59,60,61,62,63,64,65,66,76,98,110
+]);
+
+export function getRevelationType(surahNumber) {
+  return medinanSet.has(surahNumber) ? 'Medinan' : 'Meccan';
+}

@@ -1553,75 +1553,83 @@ function _drawPlayerDesign(ctx, width, height, config, currentTime, isPlaying, a
   const t = currentTime || 0;
   const duration = config.duration || 30;
 
-  // --- MODERN BLACK & WHITE DESIGN ---
-  // Clean, minimal, high-end music player aesthetic
-  // Inspired by Apple Music / modern minimalist design
+  // Colors — warm white/cream palette with bold black accents
+  const c = {
+    bg: '#f8f6f0',
+    bgCard: '#ffffff',
+    textPrimary: '#1a1a1a',
+    textSecondary: '#666666',
+    textMuted: '#999999',
+    accent: '#000000',
+    line: 'rgba(0,0,0,0.06)',
+    surface: 'rgba(0,0,0,0.02)',
+    shadow: 'rgba(0,0,0,0.06)',
+    shadowStrong: 'rgba(0,0,0,0.1)',
+  };
 
-  const isLight = false; // could be toggled by config in future
-  const bg = '#0a0a0a';
-  const bg2 = '#111111';
-  const surface = '#1a1a1a';
-  const surfaceLight = '#222222';
-  const textPrimary = '#ffffff';
-  const textSecondary = 'rgba(255,255,255,0.6)';
-  const textMuted = 'rgba(255,255,255,0.25)';
-  const accent = '#ffffff';
-  const accentDim = 'rgba(255,255,255,0.08)';
-
-  // 1. Background - clean dark gradient
-  const bgGrad = ctx.createLinearGradient(0, 0, 0, height);
-  bgGrad.addColorStop(0, '#050505');
-  bgGrad.addColorStop(0.3, bg);
-  bgGrad.addColorStop(0.7, bg2);
-  bgGrad.addColorStop(1, '#080808');
-  ctx.fillStyle = bgGrad;
+  // 1. Background — warm off-white
+  ctx.fillStyle = c.bg;
   ctx.fillRect(0, 0, width, height);
 
-  // 2. Soft radial light (from top-center)
-  const lightGrad = ctx.createRadialGradient(width / 2, height * 0.15, 0, width / 2, height * 0.15, height * 0.6);
-  lightGrad.addColorStop(0, 'rgba(255,255,255,0.04)');
-  lightGrad.addColorStop(1, 'transparent');
-  ctx.fillStyle = lightGrad;
-  ctx.fillRect(0, 0, width, height);
-
-  // 3. Subtle ambient orbs (white/gray, very faint)
-  for (let i = 0; i < 3; i++) {
-    const ox = width * (0.15 + 0.7 * Math.sin(t * 0.03 + i * 2.0));
-    const oy = height * (0.2 + 0.6 * Math.cos(t * 0.025 + i * 1.5));
-    const r = 250 + 100 * Math.sin(t * 0.015 + i * 1.1);
-    const grd = ctx.createRadialGradient(ox, oy, 0, ox, oy, r);
-    grd.addColorStop(0, `rgba(255,255,255,${0.015 + i * 0.005})`);
-    grd.addColorStop(1, 'transparent');
-    ctx.fillStyle = grd;
-    ctx.beginPath();
-    ctx.arc(ox, oy, r, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  // 4. Artwork
-  const artCX = width / 2;
-  const artCY = height * 0.24;
-  const artR = Math.min(width, height) * 0.16;
-
-  // Subtle shadow under artwork
+  // 2. Large geometric frame — signature editorial element
+  const margin = width * 0.04;
   ctx.save();
-  const shadowGrad = ctx.createRadialGradient(artCX, artCY + artR * 0.8, artR * 0.3, artCX, artCY + artR * 0.8, artR * 1.2);
-  shadowGrad.addColorStop(0, 'rgba(0,0,0,0.4)');
-  shadowGrad.addColorStop(1, 'transparent');
-  ctx.fillStyle = shadowGrad;
+  ctx.strokeStyle = c.line;
+  ctx.lineWidth = 1;
+  ctx.strokeRect(margin, margin, width - margin * 2, height - margin * 2);
+
+  // Corner accents
+  const cl = 24;
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = c.accent;
+  // Top-left
+  ctx.beginPath(); ctx.moveTo(margin - 4, margin + cl); ctx.lineTo(margin - 4, margin - 4); ctx.lineTo(margin + cl, margin - 4); ctx.stroke();
+  // Top-right
+  ctx.beginPath(); ctx.moveTo(width - margin + 4, margin + cl); ctx.lineTo(width - margin + 4, margin - 4); ctx.lineTo(width - margin - cl, margin - 4); ctx.stroke();
+  // Bottom-left
+  ctx.beginPath(); ctx.moveTo(margin - 4, height - margin - cl); ctx.lineTo(margin - 4, height - margin + 4); ctx.lineTo(margin + cl, height - margin + 4); ctx.stroke();
+  // Bottom-right
+  ctx.beginPath(); ctx.moveTo(width - margin + 4, height - margin - cl); ctx.lineTo(width - margin + 4, height - margin + 4); ctx.lineTo(width - margin - cl, height - margin + 4); ctx.stroke();
+  ctx.restore();
+
+  // 3. Top horizontal rule with label
+  const topY = margin + 40;
+  ctx.save();
+  ctx.strokeStyle = c.accent;
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(margin + 20, topY); ctx.lineTo(width * 0.35, topY); ctx.stroke();
+
+  ctx.fillStyle = c.textMuted;
+  ctx.font = `400 ${Math.min(width * 0.014, 14)}px Outfit, Inter, sans-serif`;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('NOW PLAYING', margin + 20, topY - 28);
+
+  ctx.fillStyle = c.accent;
+  ctx.font = `600 ${Math.min(width * 0.018, 18)}px Outfit, Inter, sans-serif`;
+  ctx.fillText(config.surahName || 'Surah', margin + 20, topY - 8);
+  ctx.restore();
+
+  // 4. Artwork — placed left-of-center for editorial layout
+  const artCX = width * 0.34;
+  const artCY = height * 0.42;
+  const artR = Math.min(width, height) * 0.13;
+
+  // Artwork shadow
+  ctx.save();
+  ctx.shadowColor = c.shadowStrong;
+  ctx.shadowBlur = 30;
+  ctx.shadowOffsetY = 8;
   ctx.beginPath();
-  ctx.arc(artCX, artCY + artR * 0.8, artR * 1.2, 0, Math.PI * 2);
+  ctx.arc(artCX, artCY, artR + 2, 0, Math.PI * 2);
+  ctx.fillStyle = c.bgCard;
   ctx.fill();
   ctx.restore();
 
-  // Artwork circle with rotation
+  // Artwork circle
   ctx.save();
-  const rotation = t * 0.01;
-  ctx.translate(artCX, artCY);
-  ctx.rotate(rotation);
-
   ctx.beginPath();
-  ctx.arc(0, 0, artR, 0, Math.PI * 2);
+  ctx.arc(artCX, artCY, artR, 0, Math.PI * 2);
   ctx.clip();
 
   const artSrc = config.playerArtwork;
@@ -1637,119 +1645,126 @@ function _drawPlayerDesign(ctx, width, height, config, currentTime, isPlaying, a
       const sy2 = (img.naturalHeight - s) / 2;
       ctx.drawImage(img, sx2, sy2, s, s, -artR, -artR, artR * 2, artR * 2);
     } else {
-      _drawFallbackArt(ctx, artR);
+      _drawMonogram(ctx, artR);
     }
   } else {
-    _drawFallbackArt(ctx, artR);
+    _drawMonogram(ctx, artR);
   }
   ctx.restore();
 
-  // Thin white border ring
+  // Thin black ring
   ctx.save();
-  ctx.translate(artCX, artCY);
-  ctx.rotate(rotation);
-  ctx.strokeStyle = 'rgba(255,255,255,0.12)';
-  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = 'rgba(0,0,0,0.08)';
+  ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.arc(0, 0, artR - 2, 0, Math.PI * 2);
+  ctx.arc(artCX, artCY, artR + 1, 0, Math.PI * 2);
   ctx.stroke();
   ctx.restore();
 
-  function _drawFallbackArt(ctx, r) {
-    const g = ctx.createRadialGradient(0, 0, 0, 0, 0, r);
-    g.addColorStop(0, '#2a2a2a');
-    g.addColorStop(0.5, '#1a1a1a');
-    g.addColorStop(1, '#0a0a0a');
-    ctx.fillStyle = g;
+  function _drawMonogram(ctx, r) {
+    ctx.fillStyle = '#f0ece0';
     ctx.fillRect(-r, -r, r * 2, r * 2);
-
     ctx.save();
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillStyle = 'rgba(255,255,255,0.15)';
-    ctx.font = `${r * 0.5}px Outfit, Inter, sans-serif`;
-    ctx.fillText('♪', 0, 2);
+    ctx.fillStyle = '#1a1a1a';
+    ctx.font = `300 ${r * 1.1}px Outfit, Inter, sans-serif`;
+    ctx.fillText('Q', 0, 2);
     ctx.restore();
   }
 
-  // 5. Track info
+  // 5. Track info — beside artwork
   ctx.save();
-  ctx.textAlign = 'center';
+  ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
-  const surahNameAr = config.surahNameAr || '';
-  let infoY = artCY + artR + 24;
-  if (surahNameAr) {
-    ctx.fillStyle = textSecondary;
-    ctx.font = `500 ${Math.min(width, height) * 0.028}px 'Amiri', serif`;
-    ctx.fillText(surahNameAr, width / 2, infoY);
-    infoY += Math.min(width, height) * 0.032;
+  const infoX = width * 0.52;
+  let infoY = artCY - artR + 4;
+
+  if (config.surahNameAr) {
+    ctx.fillStyle = c.textSecondary;
+    ctx.font = `500 ${Math.min(width * 0.024, 28)}px 'Amiri', serif`;
+    ctx.fillText(config.surahNameAr, infoX, infoY);
+    infoY += Math.min(width * 0.03, 32);
   }
-  ctx.fillStyle = textPrimary;
-  ctx.font = `600 ${Math.min(width, height) * 0.028}px Outfit, Inter, sans-serif`;
-  ctx.fillText(config.surahName || 'Surah', width / 2, infoY);
-  infoY += Math.min(width, height) * 0.032;
-  ctx.fillStyle = textMuted;
-  ctx.font = `400 ${Math.min(width, height) * 0.016}px Outfit, Inter, sans-serif`;
-  ctx.fillText(config.ayahRange || '', width / 2, infoY);
+
+  ctx.fillStyle = c.accent;
+  ctx.font = `700 ${Math.min(width * 0.032, 38)}px Outfit, Inter, sans-serif`;
+  ctx.fillText(config.surahName || 'Surah', infoX, infoY);
+  infoY += Math.min(width * 0.04, 42);
+
+  ctx.fillStyle = c.textMuted;
+  ctx.font = `400 ${Math.min(width * 0.016, 16)}px Outfit, Inter, sans-serif`;
+  ctx.fillText(config.ayahRange || '', infoX, infoY);
+  infoY += Math.min(width * 0.028, 28);
+
+  // Small divider
+  ctx.strokeStyle = c.line;
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(infoX, infoY); ctx.lineTo(infoX + 60, infoY); ctx.stroke();
   ctx.restore();
 
-  // 6. Lyrics area
+  // 6. Lyrics area — clean card below
   const showLyrics = config.showPlayerLyrics !== false && currentAyah;
   if (showLyrics && currentAyah) {
     const ayahText = currentAyah.text || '';
     const ayahTrans = currentAyah.translation || '';
-    const lyrW = width * 0.8;
+    const lyrW = width * 0.82;
     const lyrX = (width - lyrW) / 2;
-    const ayahFs = Math.min(width * 0.038, 46);
-    const transFs = Math.min(width * 0.022, 24);
+    const ayahFs = Math.min(width * 0.034, 40);
+    const transFs = Math.min(width * 0.02, 22);
 
-    // Measure
     ctx.save();
     ctx.font = `700 ${ayahFs}px 'Amiri', serif`;
     const aW = ctx.measureText(ayahText).width;
-    const aLines = Math.max(1, Math.ceil(aW / (lyrW - 32)));
+    const aLines = Math.max(1, Math.ceil(aW / (lyrW - 40)));
     const aH = aLines * ayahFs * 1.4;
-
     ctx.font = `400 ${transFs}px Outfit, Inter, sans-serif`;
     const tW = ctx.measureText(ayahTrans).width;
-    const tLines = ayahTrans ? Math.max(1, Math.ceil(tW / (lyrW - 32))) : 0;
+    const tLines = ayahTrans ? Math.max(1, Math.ceil(tW / (lyrW - 40))) : 0;
     const tH = tLines * transFs * 1.4;
     ctx.restore();
 
-    const totalH = aH + (tLines > 0 ? 10 + tH : 0) + 24;
-    const lyrY = height * 0.52 - totalH / 2;
-    const lyrMaxH = height * 0.18;
-    const boxH = Math.min(totalH, lyrMaxH);
+    const totalH = aH + (tLines > 0 ? 10 + tH : 0);
+    const lyrY = height * 0.68 - totalH / 2;
+    const lyrMaxH = height * 0.16;
 
-    // Clean transparent background
+    // White card
     ctx.save();
-    ctx.fillStyle = 'rgba(255,255,255,0.03)';
+    ctx.shadowColor = c.shadow;
+    ctx.shadowBlur = 20;
+    ctx.shadowOffsetY = 4;
+    ctx.fillStyle = c.bgCard;
     ctx.beginPath();
-    ctx.roundRect(lyrX, lyrY, lyrW, boxH, 14);
+    ctx.roundRect(lyrX, lyrY, lyrW, Math.min(totalH + 28, lyrMaxH), 12);
     ctx.fill();
     ctx.restore();
 
-    // Arabic text
+    // Left accent bar
+    ctx.save();
+    ctx.fillStyle = c.accent;
+    ctx.fillRect(lyrX + 2, lyrY + 14, 3, Math.min(totalH + 28, lyrMaxH) - 28);
+    ctx.restore();
+
     ctx.save();
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
-    ctx.fillStyle = textPrimary;
+    ctx.fillStyle = c.textPrimary;
     ctx.font = `700 ${ayahFs}px 'Amiri', serif`;
-    _drawWrappedText(ctx, ayahText, width / 2, lyrY + 12, lyrW - 32, ayahFs * 1.4, 'center');
+    _drawWrappedText(ctx, ayahText, width / 2, lyrY + 14, lyrW - 48, ayahFs * 1.4, 'center');
 
     if (ayahTrans) {
-      ctx.fillStyle = textSecondary;
+      ctx.fillStyle = c.textSecondary;
       ctx.font = `400 ${transFs}px Outfit, Inter, sans-serif`;
-      _drawWrappedText(ctx, ayahTrans, width / 2, lyrY + 12 + aH + 10, lyrW - 32, transFs * 1.4, 'center');
+      _drawWrappedText(ctx, ayahTrans, width / 2, lyrY + 14 + aH + 10, lyrW - 48, transFs * 1.4, 'center');
     }
     ctx.restore();
   }
 
-  // 7. Waveform
-  const waveTop = height * 0.62;
-  const waveH = height * 0.06;
-  const waveW = width * 0.74;
-  const waveX = (width - waveW) / 2;
+  // 7. Waveform — thin elegant bars
+  const waveTop = height * 0.82;
+  const waveH = height * 0.04;
+  const waveW = width * 0.7;
+  const waveX = (width - waveW) / 2 + width * 0.05;
   const barCount = 48;
   const barGap = 2;
   const barW = (waveW - barGap * (barCount - 1)) / barCount;
@@ -1771,13 +1786,11 @@ function _drawPlayerDesign(ctx, width, height, config, currentTime, isPlaying, a
       value = Math.abs(Math.sin(t * 2.8 + i * 0.22) * 110 + Math.sin(t * 3.6 + i * 0.14) * 60 + Math.sin(t * 5.2 + i * 0.3) * 30);
       value = Math.min(255, Math.max(8, value));
     }
-    const barH = (value / 255) * waveH * 0.85;
+    const barH = (value / 255) * waveH * 0.8;
     const bx = waveX + i * (barW + barGap);
     const by = waveTop + (waveH - barH) / 2;
-
-    // White bars with opacity based on height
-    const alpha = 0.1 + (value / 255) * 0.7;
-    ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+    const alpha = 0.12 + (value / 255) * 0.6;
+    ctx.fillStyle = `rgba(0,0,0,${alpha})`;
     ctx.beginPath();
     ctx.roundRect(bx, by, barW, barH, [barW / 2, barW / 2, barW / 2, barW / 2]);
     ctx.fill();
@@ -1785,47 +1798,37 @@ function _drawPlayerDesign(ctx, width, height, config, currentTime, isPlaying, a
   ctx.restore();
 
   // 8. Progress bar
-  const progY = height * 0.74;
-  const progH = 3;
-  const progW = width * 0.74;
-  const progX = (width - progW) / 2;
+  const progY = height * 0.885;
+  const progH = 2;
+  const progW = width * 0.6;
+  const progX = (width - progW) / 2 + width * 0.05;
   const progress = duration > 0 ? Math.min(t / duration, 1) : 0;
 
   ctx.save();
-  // Track
-  ctx.fillStyle = 'rgba(255,255,255,0.08)';
+  ctx.fillStyle = 'rgba(0,0,0,0.06)';
   ctx.beginPath();
-  ctx.roundRect(progX, progY, progW, progH, 2);
+  ctx.roundRect(progX, progY, progW, progH, 1);
   ctx.fill();
 
-  // Fill
   const fillW = progress * progW;
-  ctx.fillStyle = '#ffffff';
+  ctx.fillStyle = '#000000';
   ctx.beginPath();
-  ctx.roundRect(progX, progY, fillW, progH, 2);
+  ctx.roundRect(progX, progY, fillW, progH, 1);
   ctx.fill();
 
-  // Thumb
   if (fillW > 0) {
-    ctx.fillStyle = '#ffffff';
-    ctx.shadowColor = 'rgba(255,255,255,0.3)';
-    ctx.shadowBlur = 10;
+    ctx.fillStyle = '#000000';
     ctx.beginPath();
-    ctx.arc(progX + fillW, progY + progH / 2, 6, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.shadowBlur = 0;
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.arc(progX + fillW, progY + progH / 2, 3, 0, Math.PI * 2);
+    ctx.arc(progX + fillW, progY + progH / 2, 4, 0, Math.PI * 2);
     ctx.fill();
   }
   ctx.restore();
 
   // 9. Time
   ctx.save();
-  const timeFs = Math.min(width * 0.016, 14);
+  const timeFs = Math.min(width * 0.014, 13);
   ctx.font = `500 ${timeFs}px Outfit, Inter, sans-serif`;
-  ctx.fillStyle = textMuted;
+  ctx.fillStyle = c.textMuted;
   const fmtTime = (s) => {
     if (!s || !isFinite(s)) return '0:00';
     const m = Math.floor(s / 60);
@@ -1838,14 +1841,13 @@ function _drawPlayerDesign(ctx, width, height, config, currentTime, isPlaying, a
   ctx.fillText(fmtTime(duration), progX + progW, progY + progH + 10);
   ctx.restore();
 
-  // 10. Minimal bottom bar
+  // 10. Bottom right — small branding
   ctx.save();
-  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
-  ctx.lineWidth = 0.5;
-  ctx.beginPath();
-  ctx.moveTo(width * 0.1, height * 0.86);
-  ctx.lineTo(width * 0.9, height * 0.86);
-  ctx.stroke();
+  ctx.fillStyle = c.textMuted;
+  ctx.font = `300 ${Math.min(width * 0.012, 11)}px Outfit, Inter, sans-serif`;
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'bottom';
+  ctx.fillText('QuranReel', width - margin - 20, height - margin - 20);
   ctx.restore();
 }
 

@@ -1704,7 +1704,7 @@ function _drawPlayerDesign(ctx, width, height, config, currentTime, isPlaying, a
     }
     const img = _bgImageCache.img;
     if (img.complete && img.naturalWidth > 0) {
-      const scale = Math.min((artR * 2) / img.naturalWidth, (artR * 2) / img.naturalHeight);
+      const scale = Math.max((artR * 2) / img.naturalWidth, (artR * 2) / img.naturalHeight);
       const dw = img.naturalWidth * scale;
       const dh = img.naturalHeight * scale;
       ctx.drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight, -dw / 2, -dh / 2, dw, dh);

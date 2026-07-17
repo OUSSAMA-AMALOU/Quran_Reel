@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { surahs } from './data/surahData';
 import { drawFrame, getWordPositions } from './utils/videoRenderer';
 import { t } from './i18n';
+import AudioPlayer from './AudioPlayer';
 import {
   exportVideo, exportWithMediaRecorder, isWebCodecsSupported,
   encodeVideoFrames, encodeAudioFromBuffer, decodeAudioFile, loopAudioBuffer, muxToWebM,
@@ -297,6 +298,7 @@ function App() {
   const [transitionEffect, setTransitionEffect] = useState('none');
   const [startEffect, setStartEffect] = useState('none');
   const [canvasResolution, setCanvasResolution] = useState('720p');
+  const [videoStyle, setVideoStyle] = useState('text'); // 'text' | 'player'
   const [visualEffect, setVisualEffect] = useState('none');
   const [showLikeBtn, setShowLikeBtn] = useState(false);
   const [likeText, setLikeText] = useState('');
@@ -408,7 +410,7 @@ function App() {
     introSubFontFamily, introSubTextColor, introTransitionEffect,
     showTimer, timerDuration, timerStyle, timerSize, timerColor, timerX, timerY,
     showHijriDate, hijriDateX, hijriDateY, hijriDateColor, hijriDateFont, hijriDateSize,
-    reverbMix, delayTime, delayFeedback, audioPreset,
+    reverbMix, delayTime, delayFeedback, audioPreset, videoStyle,
   });
 
   const savePreset = () => {
@@ -434,7 +436,7 @@ function App() {
     setShowFollowBtn(p.showFollowBtn); setFollowText(p.followText); setFollowIcon(p.followIcon); setFollowTextPos(p.followTextPos);
     setFollowBtnX(p.followBtnX); setFollowBtnY(p.followBtnY); setFollowBtnSize(p.followBtnSize); setFollowTextSize(p.followTextSize ?? 11);
     setFollowColor(p.followColor ?? '#ffffff'); setFollowEffect(p.followEffect ?? 'none'); setFollowEffectColor(p.followEffectColor ?? '#60a5fa'); setFollowTextEffect(p.followTextEffect ?? 'none');
-    setBgColor1(p.bgColor1); setBgColor2(p.bgColor2); setTextAnim(p.textAnim);
+    setBgColor1(p.bgColor1); setBgColor2(p.bgColor2); setTextAnim(p.textAnim); setVideoStyle(p.videoStyle || 'text');
     setIntroEnabled(p.introEnabled); setIntroDuration(p.introDuration); setIntroBgType(p.introBgType);
     setIntroBgColor1(p.introBgColor1); setIntroBgColor2(p.introBgColor2);
     setIntroText(p.introText); setIntroSubtext(p.introSubtext);
@@ -535,6 +537,9 @@ const TRANSITIONS = [
   const [selectedBgSound, setSelectedBgSound] = useState('none');
   const [bgAudioEnabled, setBgAudioEnabled] = useState(false);
   const [bgAudioVolume, setBgAudioVolume] = useState(50);
+  const [volume, setVolume] = useState(80);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1);
+  const [duration, setDuration] = useState(0);
   
   // Data States
   const [passageAyahs, setPassageAyahs] = useState([]);
@@ -609,7 +614,11 @@ const TRANSITIONS = [
       fontFamily, showTranslation, translationLang, showTransliteration,
       showTimer, showHijriDate, hijriDateX, hijriDateY, hijriDateColor, hijriDateFont, hijriDateSize, timerDuration, timerStyle, timerSize, timerColor, timerX, timerY,
       watermark, visualizerStyle, visualizerColor, visualEffect, startEffect,
-      bgColor1, bgColor2, textAnim,
+      bgColor1, bgColor2, textAnim, videoStyle,
+      surahName: selectedSurahDetails?.englishName || 'Surah',
+      surahNameAr: selectedSurahDetails?.name || '',
+      ayahRange: items.length > 0 ? `Ayah ${items[0]?.numberInSurah}${items.length > 1 ? `–${items[items.length - 1]?.numberInSurah}` : ''}` : '',
+      duration: durPerItem || 30,
       backgroundType: 'upload', bgImage, highlightColor, arabicTextColor, wordCustomColors,
       showLikeBtn, likeText, likeIcon, likeTextPos, likeBtnX, likeBtnY, likeBtnSize, likeTextSize, showFollowBtn, followText, followIcon, followTextPos, followBtnX, followBtnY, followBtnSize, followTextSize, likeColor, likeEffect, likeEffectColor, likeTextEffect, followColor, followEffect, followEffectColor, followTextEffect,
       introVideoElement: introVideoRef.current,
@@ -656,9 +665,9 @@ const TRANSITIONS = [
         highlightedWords: [],
       });
     };
-  }, [fontSize, translationFontSize, showTafsir, textPosition, vignetteOpacity, fontFamily,
+  }, [fontSize, translationFontSize, showTafsir, textPosition, textX, textY, translationX, translationY, vignetteOpacity, fontFamily,
       showTranslation, translationLang, showTransliteration, showTimer, showHijriDate, hijriDateX, hijriDateY, hijriDateColor, hijriDateFont, hijriDateSize, timerDuration, timerStyle, timerSize, timerColor, timerX, timerY, arabicTextColor, watermark,
-      visualizerStyle, visualizerColor, visualEffect, bgImage, highlightColor, wordCustomColors, showLikeBtn, likeText, likeIcon, likeTextPos, likeBtnX, likeBtnY, likeBtnSize, showFollowBtn, followText, followIcon, followTextPos, followBtnX, followBtnY, followBtnSize, bgColor1, bgColor2, textAnim,
+      visualizerStyle, visualizerColor, visualEffect, bgImage, highlightColor, wordCustomColors, showLikeBtn, likeText, likeIcon, likeTextPos, likeBtnX, likeBtnY, likeBtnSize, likeTextSize, showFollowBtn, followText, followIcon, followTextPos, followBtnX, followBtnY, followBtnSize, followTextSize, likeColor, likeEffect, likeEffectColor, likeTextEffect, followColor, followEffect, followEffectColor, followTextEffect, bgColor1, bgColor2, textAnim, videoStyle, surahNum, duration,
       introEnabled, introDuration, introBgType, introBgColor1, introBgColor2, introBgImage, introBgVideo,
       introText, introSubtext, introFontSize, introSubFontSize, introFontFamily, introTextColor,
       introSubFontFamily, introSubTextColor]);
@@ -1107,7 +1116,13 @@ const TRANSITIONS = [
     const a = getAudio();
     if (a) {
       setCurrentTime(a.currentTime);
+      if (a.duration && isFinite(a.duration)) setDuration(a.duration);
     }
+  };
+
+  const handleLoadedMetadata = () => {
+    const a = getAudio();
+    if (a && a.duration && isFinite(a.duration)) setDuration(a.duration);
   };
 
   const handleAudioEnded = () => {
@@ -1197,6 +1212,77 @@ const TRANSITIONS = [
       setBgAudioFile(URL.createObjectURL(file));
       setSelectedBgSound('__custom__');
     }
+  };
+
+  // Audio Player Controls
+  const [isFavorite, setIsFavorite] = useState(false);
+
+  const handlePrev = () => {
+    if (currentAyahIndex > 0) {
+      if (transitionEffect !== 'none' && canvasRef.current) {
+        const w = canvasRef.current.width, h = canvasRef.current.height;
+        if (!prevFrameRef.current || prevFrameRef.current.width !== w || prevFrameRef.current.height !== h) {
+          prevFrameRef.current = document.createElement('canvas');
+          prevFrameRef.current.width = w;
+          prevFrameRef.current.height = h;
+        }
+        prevFrameRef.current.getContext('2d').drawImage(canvasRef.current, 0, 0);
+        transitionRef.current = { active: true, startTime: performance.now(), duration: 500, effect: transitionEffect };
+      }
+      const prevIdx = currentAyahIndex - 1;
+      setCurrentAyahIndex(prevIdx);
+      activeIsPrimaryRef.current = !activeIsPrimaryRef.current;
+      const a = getAudio();
+      if (a && passageAyahs[prevIdx]?.audio) {
+        a.src = passageAyahs[prevIdx].audio;
+        a.load();
+        a.play().catch(console.error);
+      }
+    }
+  };
+
+  const handleNext = () => {
+    if (currentAyahIndex < passageAyahs.length - 1) {
+      if (transitionEffect !== 'none' && canvasRef.current) {
+        const w = canvasRef.current.width, h = canvasRef.current.height;
+        if (!prevFrameRef.current || prevFrameRef.current.width !== w || prevFrameRef.current.height !== h) {
+          prevFrameRef.current = document.createElement('canvas');
+          prevFrameRef.current.width = w;
+          prevFrameRef.current.height = h;
+        }
+        prevFrameRef.current.getContext('2d').drawImage(canvasRef.current, 0, 0);
+        transitionRef.current = { active: true, startTime: performance.now(), duration: 500, effect: transitionEffect };
+      }
+      const nextIdx = currentAyahIndex + 1;
+      setCurrentAyahIndex(nextIdx);
+      activeIsPrimaryRef.current = !activeIsPrimaryRef.current;
+      const a = getAudio();
+      if (a && passageAyahs[nextIdx]?.audio) {
+        a.src = passageAyahs[nextIdx].audio;
+        a.load();
+        a.play().catch(console.error);
+      }
+    }
+  };
+
+  const handleSeek = (time) => {
+    const a = getAudio();
+    if (a) {
+      a.currentTime = time;
+      setCurrentTime(time);
+    }
+  };
+
+  const handleVolumeChange = (val) => {
+    setVolume(val);
+    const a = getAudio();
+    if (a) a.volume = val / 100;
+  };
+
+  const handleSpeedChange = (speed) => {
+    setPlaybackSpeed(speed);
+    const a = getAudio();
+    if (a) a.playbackRate = speed;
   };
 
   // Shared helper to find clicked/hovered word
@@ -1458,6 +1544,11 @@ const TRANSITIONS = [
           bgColor1,
           bgColor2,
           textAnim,
+          videoStyle,
+          surahName: selectedSurahDetails?.englishName || 'Surah',
+          surahNameAr: selectedSurahDetails?.name || '',
+          ayahRange: passageAyahs.length > 0 ? `Ayah ${passageAyahs[0]?.numberInSurah}${passageAyahs.length > 1 ? `–${passageAyahs[passageAyahs.length - 1]?.numberInSurah}` : ''}` : '',
+          duration: duration || 30,
           introVideoElement: introVideoRef.current,
           intro: introEnabled ? {
             enabled: true,
@@ -1534,10 +1625,11 @@ const TRANSITIONS = [
     wordCustomColors,
     highlightColor,
     arabicTextColor,
-    showLikeBtn, likeText, likeIcon, likeTextPos, likeBtnX, likeBtnY, likeBtnSize, showFollowBtn, followText, followIcon, followTextPos, followBtnX, followBtnY, followBtnSize,
+    showLikeBtn, likeText, likeIcon, likeTextPos, likeBtnX, likeBtnY, likeBtnSize, likeTextSize, showFollowBtn, followText, followIcon, followTextPos, followBtnX, followBtnY, followBtnSize, followTextSize, likeColor, likeEffect, likeEffectColor, likeTextEffect, followColor, followEffect, followEffectColor, followTextEffect,
     bgColor1,
     bgColor2,
     textAnim,
+    videoStyle,
     showTimer,
     showHijriDate,
     hijriDateX,
@@ -2617,6 +2709,30 @@ const TRANSITIONS = [
 
       {activeTab === 'other' && <div className="tab-panel">
         <div className="form-group">
+          <label>Video Style</label>
+          <div className="btn-group" style={{display:'flex',gap:4}}>
+            <button
+              className={`btn-sm ${videoStyle === 'text' ? 'btn-active' : ''}`}
+              onClick={() => setVideoStyle('text')}
+              disabled={isRecording}
+            >
+              📄 Ayah Text
+            </button>
+            <button
+              className={`btn-sm ${videoStyle === 'player' ? 'btn-active' : ''}`}
+              onClick={() => setVideoStyle('player')}
+              disabled={isRecording}
+            >
+              🎵 Player Design
+            </button>
+          </div>
+          {videoStyle === 'player' && (
+            <p style={{fontSize:11,color:'var(--text-muted)',marginTop:6,lineHeight:1.4}}>
+              Renders a full-screen audio player aesthetic with artwork, waveform, and surah info. Background/video settings are ignored in this mode.
+            </p>
+          )}
+        </div>
+        <div className="form-group">
           <label htmlFor="watermark">{T('style.watermark')}</label>
           <input type="text" id="watermark" value={watermark} onChange={(e) => setWatermark(e.target.value.toUpperCase())} placeholder={T('style.watermarkPlaceholder')} maxLength="20" disabled={isRecording} />
         </div>
@@ -2647,7 +2763,8 @@ const TRANSITIONS = [
     introSubFontFamily, introSubTextColor,
     wordCustomColors, passageAyahs, currentAyahIndex,
     reverbMix, delayTime, delayFeedback, audioPreset, savedPresets,
-    activeTab
+    activeTab,
+    videoStyle
   ]);
 
   return (
@@ -3440,6 +3557,7 @@ const TRANSITIONS = [
               ref={audioRef}
               onTimeUpdate={handleTimeUpdate}
               onEnded={handleAudioEnded}
+              onLoadedMetadata={handleLoadedMetadata}
               preload="auto"
             />
             <audio 
@@ -3475,6 +3593,35 @@ const TRANSITIONS = [
               )}
             </button>
           </div>
+
+          {/* Premium Audio Player */}
+          {mode === 'quran' && passageAyahs.length > 0 && (
+            <div className={`audio-player-wrapper ${isPlaying ? 'is-playing' : ''}`}>
+              <AudioPlayer
+                isPlaying={isPlaying}
+                currentTime={currentTime}
+                duration={duration}
+                togglePlay={togglePlay}
+                onPrev={handlePrev}
+                onNext={handleNext}
+                hasPrev={currentAyahIndex > 0}
+                hasNext={currentAyahIndex < passageAyahs.length - 1}
+                surahName={selectedSurahDetails?.englishName || 'Surah'}
+                surahNameAr={selectedSurahDetails?.name || ''}
+                ayahRange={`Ayah ${passageAyahs[0]?.numberInSurah}${passageAyahs.length > 1 ? `–${passageAyahs[passageAyahs.length - 1]?.numberInSurah}` : ''} • QuranReel`}
+                volume={volume}
+                onVolumeChange={handleVolumeChange}
+                playbackSpeed={playbackSpeed}
+                onSpeedChange={handleSpeedChange}
+                onSeek={handleSeek}
+                audioRef={audioRef}
+                isFavorite={isFavorite}
+                onToggleFavorite={() => setIsFavorite(!isFavorite)}
+                onShare={() => {}}
+                onDownload={() => {}}
+              />
+            </div>
+          )}
         </section>
 
         {/* Right Sidebar Customization Panel */}

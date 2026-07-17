@@ -1190,6 +1190,452 @@ input[type="range"]::-moz-range-thumb {
   cursor: not-allowed;
 }
 
+/* ── Audio Player Wrapper ── */
+.audio-player-wrapper {
+  margin-top: 16px;
+  transition: all 0.3s ease;
+}
+
+/* ── Premium Audio Player ── */
+.audio-player {
+  position: relative;
+  overflow: hidden;
+  margin-top: 20px;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, rgba(11,61,46,0.85), rgba(0,0,0,0.75));
+  border: 1px solid rgba(212,175,55,0.2);
+  border-radius: 24px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 60px rgba(212,175,55,0.05);
+  transition: box-shadow 0.4s ease;
+}
+
+.audio-player:hover {
+  box-shadow: 0 8px 40px rgba(0,0,0,0.6), 0 0 80px rgba(212,175,55,0.08);
+}
+
+/* Floating orbs in player */
+.player-orb {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  filter: blur(60px);
+  opacity: 0.3;
+  z-index: 0;
+}
+.player-orb-1 {
+  width: 200px; height: 200px;
+  background: rgba(212,175,55,0.15);
+  top: -60px; right: 20%;
+  animation: orbFloat1 15s ease-in-out infinite;
+}
+.player-orb-2 {
+  width: 150px; height: 150px;
+  background: rgba(11,61,46,0.3);
+  bottom: -40px; left: 10%;
+  animation: orbFloat2 18s ease-in-out infinite;
+}
+
+.player-inner {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 24px;
+}
+
+/* Track info */
+.player-track {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.player-artwork {
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  animation: playerSpin 30s linear infinite;
+  animation-play-state: paused;
+}
+
+.audio-player-wrapper.is-playing .player-artwork {
+  animation-play-state: running;
+}
+
+.player-artwork-svg {
+  width: 100%;
+  height: 100%;
+  border-radius: 16px;
+  filter: drop-shadow(0 4px 12px rgba(212,175,55,0.2));
+}
+
+@keyframes playerSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.player-track-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.player-surah-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.player-surah-ar {
+  font-family: 'Amiri', serif;
+  font-size: 16px;
+  color: #D4AF37;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.player-surah-en {
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.player-ayah-range {
+  font-size: 12px;
+  color: rgba(255,255,255,0.5);
+  font-weight: 400;
+  letter-spacing: 0.2px;
+}
+
+/* Center controls */
+.player-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.player-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.player-btn {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.7);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.25s ease;
+  position: relative;
+}
+
+.player-btn:hover:not(:disabled) {
+  color: #D4AF37;
+  background: rgba(212,175,55,0.1);
+  transform: scale(1.1);
+}
+
+.player-btn:active:not(:disabled) {
+  transform: scale(0.92);
+}
+
+.player-btn:disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+}
+
+.player-play-btn {
+  width: 44px;
+  height: 44px;
+  background: linear-gradient(135deg, #D4AF37, #F5D76E) !important;
+  color: #0B3D2E !important;
+  border-radius: 50%;
+  box-shadow: 0 4px 16px rgba(212,175,55,0.3);
+  transition: all 0.3s ease;
+}
+
+.player-play-btn:hover {
+  transform: scale(1.08) !important;
+  box-shadow: 0 6px 24px rgba(212,175,55,0.45) !important;
+  color: #0B3D2E !important;
+}
+
+.player-play-btn:active {
+  transform: scale(0.95) !important;
+}
+
+/* Progress */
+.player-progress-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 480px;
+}
+
+.player-time {
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.5);
+  font-variant-numeric: tabular-nums;
+  min-width: 32px;
+  letter-spacing: 0.3px;
+}
+
+.player-progress {
+  flex: 1;
+  position: relative;
+  height: 40px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.player-progress-track {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 2px;
+  overflow: visible;
+  z-index: 2;
+}
+
+.player-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #D4AF37, #F5D76E);
+  border-radius: 2px;
+  position: relative;
+  transition: width 0.1s linear;
+  box-shadow: 0 0 8px rgba(212,175,55,0.3);
+}
+
+.player-progress-thumb {
+  position: absolute;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  background: #D4AF37;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 12px rgba(212,175,55,0.4);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.player-progress:hover .player-progress-thumb {
+  opacity: 1;
+}
+
+.player-waveform {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.25;
+  pointer-events: none;
+}
+
+/* Extra controls */
+.player-extra {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Speed */
+.player-speed-wrap {
+  position: relative;
+}
+
+.player-speed-btn {
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.6) !important;
+  letter-spacing: 0.5px;
+  padding: 4px 8px !important;
+  border: 1px solid rgba(255,255,255,0.1) !important;
+  border-radius: 8px;
+  min-width: 36px;
+}
+
+.player-speed-btn:hover {
+  border-color: #D4AF37 !important;
+  color: #D4AF37 !important;
+}
+
+.player-speed-menu {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 8px;
+  background: rgba(0,0,0,0.9);
+  border: 1px solid rgba(212,175,55,0.2);
+  border-radius: 12px;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 56px;
+  z-index: 100;
+  backdrop-filter: blur(16px);
+  animation: scaleIn 0.15s ease;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+}
+
+.player-speed-opt {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.5);
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+
+.player-speed-opt:hover {
+  background: rgba(212,175,55,0.1);
+  color: #D4AF37;
+}
+
+.player-speed-opt.active {
+  background: rgba(212,175,55,0.15);
+  color: #D4AF37;
+}
+
+/* Volume */
+.player-volume-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.player-volume-slider {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 8px;
+  background: rgba(0,0,0,0.9);
+  border: 1px solid rgba(212,175,55,0.2);
+  border-radius: 12px;
+  padding: 10px 8px;
+  z-index: 100;
+  backdrop-filter: blur(16px);
+  animation: scaleIn 0.15s ease;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+}
+
+.player-volume-slider input[type="range"] {
+  writing-mode: bt-lr;
+  -webkit-appearance: slider-vertical;
+  appearance: none;
+  width: 80px;
+  height: 4px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+
+.player-volume-slider input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #D4AF37;
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(212,175,55,0.3);
+}
+
+.player-volume-slider input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #D4AF37;
+  cursor: pointer;
+  border: none;
+}
+
+/* Actions */
+.player-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 4px;
+  padding-left: 10px;
+  border-left: 1px solid rgba(255,255,255,0.08);
+}
+
+.player-fav-btn.active {
+  color: #ef4444 !important;
+}
+
+.player-fav-btn.active:hover {
+  color: #ef4444 !important;
+  background: rgba(239,68,68,0.1) !important;
+}
+
+/* Responsive */
+@media (max-width: 1100px) {
+  .player-inner {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .player-track {
+    justify-content: center;
+  }
+  .player-extra {
+    justify-content: center;
+  }
+  .player-actions {
+    border-left: none;
+    margin-left: 0;
+    padding-left: 0;
+  }
+  .player-progress-wrap {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .audio-player {
+    padding: 14px 16px;
+    border-radius: 20px;
+    margin-top: 14px;
+  }
+  .player-artwork {
+    width: 44px;
+    height: 44px;
+  }
+  .player-surah-ar { font-size: 14px; }
+  .player-surah-en { font-size: 13px; }
+  .player-actions { display: none; }
+}
+
 /* ── Background Audio Player ── */
 .bg-audio-player {
   margin: 12px 0 16px 0;

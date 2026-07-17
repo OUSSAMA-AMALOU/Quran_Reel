@@ -1174,6 +1174,37 @@ export function drawFrame({
       ctx.restore();
     }
 
+    // Ayah start/end time overlay
+    if (config.ayahTimestamps && Array.isArray(config.ayahTimestamps) && config.ayahTimestamps.length > 0) {
+      const t = currentTime || 0;
+      let ayahIdx = 0;
+      for (let i = config.ayahTimestamps.length - 1; i >= 0; i--) {
+        if (t >= config.ayahTimestamps[i].start) { ayahIdx = i; break; }
+      }
+      const ts = config.ayahTimestamps[ayahIdx];
+      if (ts) {
+        const fmt = (s) => { const m = Math.floor(s / 60); const sec = Math.floor(s % 60); return `${m}:${sec.toString().padStart(2, '0')}`; };
+        ctx.save();
+        const boxW = 200, boxH = 32;
+        const boxX = width - boxW - 16, boxY = height - boxH - 16;
+        ctx.shadowColor = 'rgba(0,0,0,0.3)';
+        ctx.shadowBlur = 10;
+        ctx.shadowOffsetY = 2;
+        ctx.fillStyle = 'rgba(10,10,20,0.7)';
+        ctx.beginPath();
+        ctx.roundRect(boxX, boxY, boxW, boxH, 8);
+        ctx.fill();
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = 'rgba(255,255,255,0.85)';
+        ctx.font = '400 11px Outfit, Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(`Ayah ${ts.numberInSurah}  ·  Start ${fmt(ts.start)}  ·  End ${fmt(ts.end)}`, boxX + boxW / 2, boxY + boxH / 2);
+        ctx.restore();
+      }
+    }
+
     ctx.restore();
   }
 

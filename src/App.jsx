@@ -628,7 +628,7 @@ const TRANSITIONS = [
       revelationType: getRevelationType(selectedSurahDetails?.number || 1),
       ayahRange: items.length > 0 ? `Ayah ${items[0]?.numberInSurah}${items.length > 1 ? `–${items[items.length - 1]?.numberInSurah}` : ''}` : '',
       duration: durPerItem || 30,
-      playerArtwork, playerBgImage, showPlayerLyrics,
+      playerArtwork, playerBgImage, showPlayerLyrics, ayahTimestamps,
       backgroundType: 'upload', bgImage, highlightColor, arabicTextColor, wordCustomColors,
       showLikeBtn, likeText, likeIcon, likeTextPos, likeBtnX, likeBtnY, likeBtnSize, likeTextSize, showFollowBtn, followText, followIcon, followTextPos, followBtnX, followBtnY, followBtnSize, followTextSize, likeColor, likeEffect, likeEffectColor, likeTextEffect, followColor, followEffect, followEffectColor, followTextEffect,
       introVideoElement: introVideoRef.current,
@@ -677,7 +677,7 @@ const TRANSITIONS = [
     };
   }, [fontSize, translationFontSize, showTafsir, textPosition, textX, textY, translationX, translationY, vignetteOpacity, fontFamily,
       showTranslation, translationLang, showTransliteration, showTimer, showHijriDate, hijriDateX, hijriDateY, hijriDateColor, hijriDateFont, hijriDateSize, timerDuration, timerStyle, timerSize, timerColor, timerX, timerY, arabicTextColor, watermark,
-      visualizerStyle, visualizerColor, visualEffect, bgImage, highlightColor, wordCustomColors, showLikeBtn, likeText, likeIcon, likeTextPos, likeBtnX, likeBtnY, likeBtnSize, likeTextSize, showFollowBtn, followText, followIcon, followTextPos, followBtnX, followBtnY, followBtnSize, followTextSize, likeColor, likeEffect, likeEffectColor, likeTextEffect, followColor, followEffect, followEffectColor, followTextEffect, bgColor1, bgColor2, textAnim, videoStyle, playerArtwork, showPlayerLyrics, playerBgImage, surahNum, duration,
+      visualizerStyle, visualizerColor, visualEffect, bgImage, highlightColor, wordCustomColors, showLikeBtn, likeText, likeIcon, likeTextPos, likeBtnX, likeBtnY, likeBtnSize, likeTextSize, showFollowBtn, followText, followIcon, followTextPos, followBtnX, followBtnY, followBtnSize, followTextSize, likeColor, likeEffect, likeEffectColor, likeTextEffect, followColor, followEffect, followEffectColor, followTextEffect, bgColor1, bgColor2, textAnim, videoStyle, playerArtwork, showPlayerLyrics, playerBgImage, ayahTimestamps, surahNum, duration,
       introEnabled, introDuration, introBgType, introBgColor1, introBgColor2, introBgImage, introBgVideo,
       introText, introSubtext, introFontSize, introSubFontSize, introFontFamily, introTextColor,
       introSubFontFamily, introSubTextColor]);
@@ -1608,7 +1608,7 @@ const TRANSITIONS = [
           revelationType: getRevelationType(selectedSurahDetails?.number || 1),
           ayahRange: passageAyahs.length > 0 ? `Ayah ${passageAyahs[0]?.numberInSurah}${passageAyahs.length > 1 ? `–${passageAyahs[passageAyahs.length - 1]?.numberInSurah}` : ''}` : '',
           duration: duration || 30,
-          playerArtwork, playerBgImage, showPlayerLyrics,
+          playerArtwork, playerBgImage, showPlayerLyrics, ayahTimestamps,
           introVideoElement: introVideoRef.current,
           intro: introEnabled ? {
             enabled: true,

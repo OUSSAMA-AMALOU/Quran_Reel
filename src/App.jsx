@@ -300,6 +300,7 @@ function App() {
   const [canvasResolution, setCanvasResolution] = useState('720p');
   const [videoStyle, setVideoStyle] = useState('text'); // 'text' | 'player'
   const [playerArtwork, setPlayerArtwork] = useState(null);
+  const [playerBgImage, setPlayerBgImage] = useState(null);
   const [showPlayerLyrics, setShowPlayerLyrics] = useState(true);
   const [visualEffect, setVisualEffect] = useState('none');
   const [showLikeBtn, setShowLikeBtn] = useState(false);
@@ -412,7 +413,7 @@ function App() {
     introSubFontFamily, introSubTextColor, introTransitionEffect,
     showTimer, timerDuration, timerStyle, timerSize, timerColor, timerX, timerY,
     showHijriDate, hijriDateX, hijriDateY, hijriDateColor, hijriDateFont, hijriDateSize,
-    reverbMix, delayTime, delayFeedback, audioPreset, videoStyle, playerArtwork, showPlayerLyrics,
+    reverbMix, delayTime, delayFeedback, audioPreset, videoStyle, playerArtwork, showPlayerLyrics, playerBgImage,
   });
 
   const savePreset = () => {
@@ -438,7 +439,7 @@ function App() {
     setShowFollowBtn(p.showFollowBtn); setFollowText(p.followText); setFollowIcon(p.followIcon); setFollowTextPos(p.followTextPos);
     setFollowBtnX(p.followBtnX); setFollowBtnY(p.followBtnY); setFollowBtnSize(p.followBtnSize); setFollowTextSize(p.followTextSize ?? 11);
     setFollowColor(p.followColor ?? '#ffffff'); setFollowEffect(p.followEffect ?? 'none'); setFollowEffectColor(p.followEffectColor ?? '#60a5fa'); setFollowTextEffect(p.followTextEffect ?? 'none');
-    setBgColor1(p.bgColor1); setBgColor2(p.bgColor2); setTextAnim(p.textAnim); setVideoStyle(p.videoStyle || 'text'); setPlayerArtwork(p.playerArtwork || null); setShowPlayerLyrics(p.showPlayerLyrics !== false);
+    setBgColor1(p.bgColor1); setBgColor2(p.bgColor2); setTextAnim(p.textAnim); setVideoStyle(p.videoStyle || 'text'); setPlayerArtwork(p.playerArtwork || null); setShowPlayerLyrics(p.showPlayerLyrics !== false); setPlayerBgImage(p.playerBgImage || null);
     setIntroEnabled(p.introEnabled); setIntroDuration(p.introDuration); setIntroBgType(p.introBgType);
     setIntroBgColor1(p.introBgColor1); setIntroBgColor2(p.introBgColor2);
     setIntroText(p.introText); setIntroSubtext(p.introSubtext);
@@ -624,7 +625,7 @@ const TRANSITIONS = [
       revelationType: getRevelationType(selectedSurahDetails?.number || 1),
       ayahRange: items.length > 0 ? `Ayah ${items[0]?.numberInSurah}${items.length > 1 ? `–${items[items.length - 1]?.numberInSurah}` : ''}` : '',
       duration: durPerItem || 30,
-      playerArtwork, showPlayerLyrics,
+      playerArtwork, playerBgImage, showPlayerLyrics,
       backgroundType: 'upload', bgImage, highlightColor, arabicTextColor, wordCustomColors,
       showLikeBtn, likeText, likeIcon, likeTextPos, likeBtnX, likeBtnY, likeBtnSize, likeTextSize, showFollowBtn, followText, followIcon, followTextPos, followBtnX, followBtnY, followBtnSize, followTextSize, likeColor, likeEffect, likeEffectColor, likeTextEffect, followColor, followEffect, followEffectColor, followTextEffect,
       introVideoElement: introVideoRef.current,
@@ -673,7 +674,7 @@ const TRANSITIONS = [
     };
   }, [fontSize, translationFontSize, showTafsir, textPosition, textX, textY, translationX, translationY, vignetteOpacity, fontFamily,
       showTranslation, translationLang, showTransliteration, showTimer, showHijriDate, hijriDateX, hijriDateY, hijriDateColor, hijriDateFont, hijriDateSize, timerDuration, timerStyle, timerSize, timerColor, timerX, timerY, arabicTextColor, watermark,
-      visualizerStyle, visualizerColor, visualEffect, bgImage, highlightColor, wordCustomColors, showLikeBtn, likeText, likeIcon, likeTextPos, likeBtnX, likeBtnY, likeBtnSize, likeTextSize, showFollowBtn, followText, followIcon, followTextPos, followBtnX, followBtnY, followBtnSize, followTextSize, likeColor, likeEffect, likeEffectColor, likeTextEffect, followColor, followEffect, followEffectColor, followTextEffect, bgColor1, bgColor2, textAnim, videoStyle, playerArtwork, showPlayerLyrics, surahNum, duration,
+      visualizerStyle, visualizerColor, visualEffect, bgImage, highlightColor, wordCustomColors, showLikeBtn, likeText, likeIcon, likeTextPos, likeBtnX, likeBtnY, likeBtnSize, likeTextSize, showFollowBtn, followText, followIcon, followTextPos, followBtnX, followBtnY, followBtnSize, followTextSize, likeColor, likeEffect, likeEffectColor, likeTextEffect, followColor, followEffect, followEffectColor, followTextEffect, bgColor1, bgColor2, textAnim, videoStyle, playerArtwork, showPlayerLyrics, playerBgImage, surahNum, duration,
       introEnabled, introDuration, introBgType, introBgColor1, introBgColor2, introBgImage, introBgVideo,
       introText, introSubtext, introFontSize, introSubFontSize, introFontFamily, introTextColor,
       introSubFontFamily, introSubTextColor]);
@@ -1558,7 +1559,7 @@ const TRANSITIONS = [
           revelationType: getRevelationType(selectedSurahDetails?.number || 1),
           ayahRange: passageAyahs.length > 0 ? `Ayah ${passageAyahs[0]?.numberInSurah}${passageAyahs.length > 1 ? `–${passageAyahs[passageAyahs.length - 1]?.numberInSurah}` : ''}` : '',
           duration: duration || 30,
-          playerArtwork, showPlayerLyrics,
+          playerArtwork, playerBgImage, showPlayerLyrics,
           introVideoElement: introVideoRef.current,
           intro: introEnabled ? {
             enabled: true,
@@ -2747,6 +2748,14 @@ const TRANSITIONS = [
                 <input type="file" accept="image/*" onChange={(e) => { const f = e.target.files?.[0]; if (f) setPlayerArtwork(URL.createObjectURL(f)); }} disabled={isRecording} />
               </div>
               {playerArtwork && <button className="btn-ghost btn-xs" style={{marginTop:4,width:'auto'}} onClick={() => setPlayerArtwork(null)} disabled={isRecording}>Remove</button>}
+            </div>
+            <div className="form-group">
+              <label>Background Image (optional)</label>
+              <div className="file-upload" style={{padding:10,margin:0}}>
+                <span style={{fontSize:12}}>{playerBgImage ? '✓ Image Uploaded' : 'Upload Background'}</span>
+                <input type="file" accept="image/*" onChange={(e) => { const f = e.target.files?.[0]; if (f) setPlayerBgImage(URL.createObjectURL(f)); }} disabled={isRecording} />
+              </div>
+              {playerBgImage && <button className="btn-ghost btn-xs" style={{marginTop:4,width:'auto'}} onClick={() => setPlayerBgImage(null)} disabled={isRecording}>Remove</button>}
             </div>
             <div className="form-group">
               <label>Ayah Lyrics</label>

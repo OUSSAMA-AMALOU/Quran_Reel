@@ -5,6 +5,7 @@ const _wrapCache = new Map();
 const _WRAP_CACHE_MAX = 200;
 const _gradientCache = {};
 let _bgImageCache = null;
+let _playerBgCache = null;
 
 const FONT_MAP = {
   amiri: "'Amiri', serif",
@@ -1568,8 +1569,23 @@ function _drawPlayerDesign(ctx, width, height, config, currentTime, isPlaying, a
   };
 
   // --- BACKGROUND ---
-  ctx.fillStyle = c.bg;
-  ctx.fillRect(0, 0, width, height);
+  const bgSrc = config.playerBgImage;
+  if (bgSrc) {
+    if (_playerBgCache && _playerBgCache.url === bgSrc && _playerBgCache.img.complete && _playerBgCache.img.naturalWidth > 0) {
+      ctx.drawImage(_playerBgCache.img, 0, 0, width, height);
+    } else if (!_playerBgCache || _playerBgCache.url !== bgSrc) {
+      _playerBgCache = { url: bgSrc, img: new Image() };
+      _playerBgCache.img.src = bgSrc;
+      ctx.fillStyle = c.bg;
+      ctx.fillRect(0, 0, width, height);
+    } else {
+      ctx.fillStyle = c.bg;
+      ctx.fillRect(0, 0, width, height);
+    }
+  } else {
+    ctx.fillStyle = c.bg;
+    ctx.fillRect(0, 0, width, height);
+  }
 
   const margin = width * 0.04;
 

@@ -328,6 +328,7 @@ function App() {
   const [playerTimerSize, setPlayerTimerSize] = useState(100);
   const [playerTimerColor, setPlayerTimerColor] = useState('#999999');
   const [playerSurahNumColor, setPlayerSurahNumColor] = useState('#000000');
+  const [playerSurahNumOpacity, setPlayerSurahNumOpacity] = useState(6);
   const [ayahTimestamps, setAyahTimestamps] = useState(null);
   const [timestampsLoading, setTimestampsLoading] = useState(false);
   const [showPlayerLyrics, setShowPlayerLyrics] = useState(true);
@@ -446,7 +447,7 @@ function App() {
     showHijriDate, hijriDateX, hijriDateY, hijriDateColor, hijriDateFont, hijriDateSize,
     reverbMix, delayTime, delayFeedback, audioPreset, videoStyle, playerArtwork, playerArtworkIsVideo, showPlayerLyrics, playerBgImage, playerBgIsVideo,
     playerBgColor, playerTextPrimary, playerTextSecondary, playerTextMuted, playerAccentColor, playerCardColor,
-    playerArtworkSize, playerArtworkX, playerArtworkY, playerShowDecor, playerShowWave, playerShowProgress, playerArtworkShape, playerAccentSecondary, playerArtworkAccentSize, playerArtworkAccentPos, playerLyricsSize, playerLyricsY, playerLyricsCardWidth, playerLyricsCardX, playerLyricsCardPadding, playerLyricsCardPaddingTop, playerTimerSize, playerTimerColor, playerSurahNumColor,
+    playerArtworkSize, playerArtworkX, playerArtworkY, playerShowDecor, playerShowWave, playerShowProgress, playerArtworkShape, playerAccentSecondary, playerArtworkAccentSize, playerArtworkAccentPos, playerLyricsSize, playerLyricsY, playerLyricsCardWidth, playerLyricsCardX, playerLyricsCardPadding, playerLyricsCardPaddingTop, playerTimerSize, playerTimerColor, playerSurahNumColor, playerSurahNumOpacity,
   });
 
   const savePreset = () => {
@@ -475,7 +476,7 @@ function App() {
     setBgColor1(p.bgColor1); setBgColor2(p.bgColor2); setTextAnim(p.textAnim); setVideoStyle(p.videoStyle || 'text'); setPlayerArtwork(p.playerArtwork || null); setPlayerArtworkIsVideo(p.playerArtworkIsVideo || false); setShowPlayerLyrics(p.showPlayerLyrics !== false); setPlayerBgImage(p.playerBgImage || null); setPlayerBgIsVideo(p.playerBgIsVideo || false);
     setPlayerBgColor(p.playerBgColor || '#f5f3ed'); setPlayerTextPrimary(p.playerTextPrimary || '#1a1a1a'); setPlayerTextSecondary(p.playerTextSecondary || '#555555'); setPlayerTextMuted(p.playerTextMuted || '#999999'); setPlayerAccentColor(p.playerAccentColor || '#000000'); setPlayerCardColor(p.playerCardColor || '#ffffff');
     setPlayerArtworkSize(p.playerArtworkSize ?? 100); setPlayerArtworkX(p.playerArtworkX ?? 50); setPlayerArtworkY(p.playerArtworkY ?? 28); setPlayerShowDecor(p.playerShowDecor !== false); setPlayerShowWave(p.playerShowWave !== false); setPlayerShowProgress(p.playerShowProgress !== false); setPlayerArtworkShape(p.playerArtworkShape || 'circle'); setPlayerAccentSecondary(p.playerAccentSecondary || '#000000'); setPlayerArtworkAccentSize(p.playerArtworkAccentSize ?? 100); setPlayerArtworkAccentPos(p.playerArtworkAccentPos || 'outside');
-    setPlayerLyricsSize(p.playerLyricsSize ?? 100); setPlayerLyricsY(p.playerLyricsY ?? 65); setPlayerLyricsCardWidth(p.playerLyricsCardWidth ?? 72); setPlayerLyricsCardX(p.playerLyricsCardX ?? 50); setPlayerLyricsCardPadding(p.playerLyricsCardPadding ?? 16);     setPlayerLyricsCardPaddingTop(p.playerLyricsCardPaddingTop ?? 16); setPlayerTimerSize(p.playerTimerSize ?? 100); setPlayerTimerColor(p.playerTimerColor || '#999999'); setPlayerSurahNumColor(p.playerSurahNumColor || '#000000');
+    setPlayerLyricsSize(p.playerLyricsSize ?? 100); setPlayerLyricsY(p.playerLyricsY ?? 65); setPlayerLyricsCardWidth(p.playerLyricsCardWidth ?? 72); setPlayerLyricsCardX(p.playerLyricsCardX ?? 50); setPlayerLyricsCardPadding(p.playerLyricsCardPadding ?? 16);     setPlayerLyricsCardPaddingTop(p.playerLyricsCardPaddingTop ?? 16); setPlayerTimerSize(p.playerTimerSize ?? 100); setPlayerTimerColor(p.playerTimerColor || '#999999'); setPlayerSurahNumColor(p.playerSurahNumColor || '#000000'); setPlayerSurahNumOpacity(p.playerSurahNumOpacity ?? 6);
     setIntroEnabled(p.introEnabled); setIntroDuration(p.introDuration); setIntroBgType(p.introBgType);
     setIntroBgColor1(p.introBgColor1); setIntroBgColor2(p.introBgColor2);
     setIntroText(p.introText); setIntroSubtext(p.introSubtext);
@@ -664,7 +665,7 @@ const TRANSITIONS = [
       duration: durPerItem || 30,
       playerArtwork, playerArtworkIsVideo, playerBgImage, playerBgIsVideo, showPlayerLyrics, ayahTimestamps,
       playerBgColor, playerTextPrimary, playerTextSecondary, playerTextMuted, playerAccentColor, playerCardColor,
-      playerArtworkSize, playerArtworkX, playerArtworkY, playerShowDecor, playerShowWave, playerShowProgress, playerArtworkShape, playerAccentSecondary, playerArtworkAccentSize, playerArtworkAccentPos, playerLyricsSize, playerLyricsY, playerLyricsCardWidth, playerLyricsCardX, playerLyricsCardPadding, playerLyricsCardPaddingTop, playerTimerSize, playerTimerColor, playerSurahNumColor,
+      playerArtworkSize, playerArtworkX, playerArtworkY, playerShowDecor, playerShowWave, playerShowProgress, playerArtworkShape, playerAccentSecondary, playerArtworkAccentSize, playerArtworkAccentPos, playerLyricsSize, playerLyricsY, playerLyricsCardWidth, playerLyricsCardX, playerLyricsCardPadding, playerLyricsCardPaddingTop, playerTimerSize, playerTimerColor, playerSurahNumColor, playerSurahNumOpacity,
       backgroundType: 'upload', bgImage, highlightColor, arabicTextColor, wordCustomColors,
       showLikeBtn, likeText, likeIcon, likeTextPos, likeBtnX, likeBtnY, likeBtnSize, likeTextSize, showFollowBtn, followText, followIcon, followTextPos, followBtnX, followBtnY, followBtnSize, followTextSize, likeColor, likeEffect, likeEffectColor, likeTextEffect, followColor, followEffect, followEffectColor, followTextEffect,
       introVideoElement: introVideoRef.current,
@@ -1646,7 +1647,7 @@ const TRANSITIONS = [
           duration: duration || 30,
           playerArtwork, playerArtworkIsVideo, playerBgImage, playerBgIsVideo, showPlayerLyrics, ayahTimestamps,
           playerBgColor, playerTextPrimary, playerTextSecondary, playerTextMuted, playerAccentColor, playerCardColor,
-          playerArtworkSize, playerArtworkX, playerArtworkY, playerShowDecor, playerShowWave, playerShowProgress, playerArtworkShape, playerAccentSecondary, playerArtworkAccentSize, playerArtworkAccentPos, playerLyricsSize, playerLyricsY, playerLyricsCardWidth, playerLyricsCardX, playerLyricsCardPadding, playerLyricsCardPaddingTop, playerTimerSize, playerTimerColor, playerSurahNumColor,
+          playerArtworkSize, playerArtworkX, playerArtworkY, playerShowDecor, playerShowWave, playerShowProgress, playerArtworkShape, playerAccentSecondary, playerArtworkAccentSize, playerArtworkAccentPos, playerLyricsSize, playerLyricsY, playerLyricsCardWidth, playerLyricsCardX, playerLyricsCardPadding, playerLyricsCardPaddingTop, playerTimerSize, playerTimerColor, playerSurahNumColor, playerSurahNumOpacity,
           introVideoElement: introVideoRef.current,
           intro: introEnabled ? {
             enabled: true,
@@ -1730,7 +1731,7 @@ const TRANSITIONS = [
     videoStyle,
     playerArtwork, playerArtworkIsVideo, playerBgImage, playerBgIsVideo, showPlayerLyrics,
     playerBgColor, playerTextPrimary, playerTextSecondary, playerTextMuted, playerAccentColor, playerCardColor,
-    playerArtworkSize, playerArtworkX, playerArtworkY, playerShowDecor, playerShowWave, playerShowProgress, playerArtworkShape, playerAccentSecondary, playerArtworkAccentSize, playerArtworkAccentPos, playerLyricsSize, playerLyricsY, playerLyricsCardWidth, playerLyricsCardX, playerLyricsCardPadding, playerLyricsCardPaddingTop, playerTimerSize, playerTimerColor, playerSurahNumColor,
+    playerArtworkSize, playerArtworkX, playerArtworkY, playerShowDecor, playerShowWave, playerShowProgress, playerArtworkShape, playerAccentSecondary, playerArtworkAccentSize, playerArtworkAccentPos, playerLyricsSize, playerLyricsY, playerLyricsCardWidth, playerLyricsCardX, playerLyricsCardPadding, playerLyricsCardPaddingTop, playerTimerSize, playerTimerColor, playerSurahNumColor, playerSurahNumOpacity,
     showTimer,
     showHijriDate,
     hijriDateX,
@@ -2847,6 +2848,10 @@ const TRANSITIONS = [
               <label>Surah Number Color</label>
               <input type="color" value={playerSurahNumColor} onChange={(e) => setPlayerSurahNumColor(e.target.value)} disabled={isRecording} className="color-picker" />
             </div>
+            <div className="form-group">
+              <label>Surah Number Opacity: {playerSurahNumOpacity}%</label>
+              <div className="slider-group"><input type="range" min="0" max="100" value={playerSurahNumOpacity} onChange={(e) => setPlayerSurahNumOpacity(parseInt(e.target.value))} disabled={isRecording} /><span>{playerSurahNumOpacity}%</span></div>
+            </div>
             </>)}
 
             <div className="section-subtitle" style={{marginTop:12,cursor:'pointer'}} onClick={() => toggleSection('colors')}><span className="dot"></span> Colors {collapsedSections.colors ? '▶' : '▼'}</div>
@@ -2945,7 +2950,7 @@ const TRANSITIONS = [
     videoStyle,
     playerArtwork, playerArtworkIsVideo, playerBgImage, playerBgIsVideo, showPlayerLyrics,
     playerBgColor, playerTextPrimary, playerTextSecondary, playerTextMuted, playerAccentColor, playerCardColor,
-    playerArtworkSize, playerArtworkX, playerArtworkY, playerShowDecor, playerShowWave, playerShowProgress, playerArtworkShape, playerAccentSecondary, playerArtworkAccentSize, playerArtworkAccentPos, playerLyricsSize, playerLyricsY, playerLyricsCardWidth, playerLyricsCardX, playerLyricsCardPadding, playerLyricsCardPaddingTop, playerTimerSize, playerTimerColor, playerSurahNumColor,
+    playerArtworkSize, playerArtworkX, playerArtworkY, playerShowDecor, playerShowWave, playerShowProgress, playerArtworkShape, playerAccentSecondary, playerArtworkAccentSize, playerArtworkAccentPos, playerLyricsSize, playerLyricsY, playerLyricsCardWidth, playerLyricsCardX, playerLyricsCardPadding, playerLyricsCardPaddingTop, playerTimerSize, playerTimerColor, playerSurahNumColor, playerSurahNumOpacity,
     collapsedSections,
   ]);
 

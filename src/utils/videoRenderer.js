@@ -1724,7 +1724,7 @@ function _drawPlayerDesign(ctx, width, height, config, currentTime, isPlaying, a
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
     ctx.fillStyle = config.playerSurahNumColor || config.playerAccentColor || '#000000';
-    ctx.globalAlpha = 0.06;
+    ctx.globalAlpha = (config.playerSurahNumOpacity ?? 6) / 100;
     ctx.font = `800 ${Math.min(width, height) * 0.1}px Outfit, Inter, sans-serif`;
     ctx.fillText(`#${surahNum}`, margin + 20, margin + 20);
     ctx.globalAlpha = 1;

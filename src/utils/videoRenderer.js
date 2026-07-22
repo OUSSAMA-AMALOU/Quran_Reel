@@ -2017,8 +2017,9 @@ function _drawPlayerDesign(ctx, width, height, config, currentTime, isPlaying, a
   // --- PROGRESS BAR ---
   if (showProg) {
     const progY = height * 0.87;
-    const progH = 2;
-    const progW = width * 0.55;
+    const tScale = (config.playerTimerSize ?? 100) / 100;
+    const progH = 2 * tScale;
+    const progW = width * 0.55 * tScale;
     const progX = (width - progW) / 2 + width * 0.04;
     const progress = totalDuration > 0 ? Math.min(t / totalDuration, 1) : 0;
 
@@ -2037,14 +2038,14 @@ function _drawPlayerDesign(ctx, width, height, config, currentTime, isPlaying, a
     if (fillW > 0) {
       ctx.fillStyle = c.accent;
       ctx.beginPath();
-      ctx.arc(progX + fillW, progY + progH / 2, 4, 0, Math.PI * 2);
+      ctx.arc(progX + fillW, progY + progH / 2, 4 * tScale, 0, Math.PI * 2);
       ctx.fill();
     }
     ctx.restore();
 
     // --- TIME ---
     ctx.save();
-    const timeFs = Math.min(width * 0.013, 12) * ((config.playerTimerSize ?? 100) / 100);
+    const timeFs = Math.min(width * 0.013, 12) * tScale;
     ctx.font = `500 ${timeFs}px Outfit, Inter, sans-serif`;
     ctx.fillStyle = c.timerColor;
     const fmtTime = (s) => {
@@ -2054,9 +2055,9 @@ function _drawPlayerDesign(ctx, width, height, config, currentTime, isPlaying, a
       return `${m}:${sec.toString().padStart(2, '0')}`;
     };
     ctx.textAlign = 'left';
-    ctx.fillText(fmtTime(t), progX, progY + progH + 9);
+    ctx.fillText(fmtTime(t), progX, progY + progH + 9 * tScale);
     ctx.textAlign = 'right';
-    ctx.fillText(fmtTime(totalDuration), progX + progW, progY + progH + 9);
+    ctx.fillText(fmtTime(totalDuration), progX + progW, progY + progH + 9 * tScale);
     ctx.restore();
   }
 

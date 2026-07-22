@@ -1864,12 +1864,13 @@ details[open] > summary::before {
 .tabs-bar {
   display: flex;
   gap: 3px;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
   padding: 4px;
   background: var(--bg-surface-elevated);
-  border-radius: 10px;
+  border-radius: 12px;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.06);
 }
 
 .tab-btn {
@@ -1884,9 +1885,10 @@ details[open] > summary::before {
   background: transparent;
   color: var(--text-muted);
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   font-family: var(--font-primary);
   white-space: nowrap;
+  position: relative;
 }
 
 .tab-btn:hover {
@@ -1897,7 +1899,7 @@ details[open] > summary::before {
 .tab-btn.active {
   background: var(--bg-surface);
   color: var(--text-primary);
-  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08), 0 0 0 1px var(--primary-subtle);
 }
 
 .tab-btn .tab-icon {
@@ -1918,7 +1920,12 @@ details[open] > summary::before {
 
 .tab-panel {
   padding: 0;
-  animation: fadeIn 0.15s ease;
+  animation: tabFadeIn 0.2s ease;
+}
+
+@keyframes tabFadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .tab-panel .form-group {
@@ -1954,6 +1961,11 @@ details[open] > summary::before {
   border: none;
   padding: 0;
   cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.tab-panel .slider-group input[type="range"]:hover {
+  opacity: 0.85;
 }
 
 .tab-panel .slider-group input[type="range"]::-webkit-slider-thumb {
@@ -1965,11 +1977,11 @@ details[open] > summary::before {
   cursor: pointer;
   border: 3px solid var(--bg-base);
   box-shadow: 0 1px 4px rgba(0,0,0,0.2);
-  transition: transform 0.15s, box-shadow 0.15s;
+  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.15s;
 }
 
 .tab-panel .slider-group input[type="range"]::-webkit-slider-thumb:hover {
-  transform: scale(1.15);
+  transform: scale(1.2);
   box-shadow: 0 2px 8px rgba(0,0,0,0.25);
 }
 
@@ -2144,4 +2156,169 @@ details[open] > summary::before {
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+
+/* ── Switch Toggle ── */
+.switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.switch input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.switch .slider {
+  position: relative;
+  width: 38px;
+  height: 22px;
+  background: var(--bg-surface-elevated);
+  border-radius: 11px;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+.switch .slider::before {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  left: 3px;
+  top: 3px;
+  background: var(--text-muted);
+  border-radius: 50%;
+  transition: transform 0.2s, background 0.2s;
+}
+.switch input:checked + .slider {
+  background: var(--primary);
+}
+.switch input:checked + .slider::before {
+  transform: translateX(16px);
+  background: #fff;
+}
+.switch input:focus-visible + .slider {
+  box-shadow: 0 0 0 3px var(--primary-subtle);
+}
+.form-group > .switch {
+  justify-content: space-between;
+}
+
+/* ── Section Divider ── */
+.section-divider {
+  height: 1px;
+  background: var(--border-color);
+  margin: 16px 0;
+  border: none;
+}
+
+/* ── Section Subtitle ── */
+.section-subtitle {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.8px;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.section-subtitle::before {
+  content: '';
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  flex-shrink: 0;
+}
+.section-subtitle:first-child {
+  margin-top: 0;
+  border-top: none;
+  padding-top: 0;
+}
+
+/* ── Color Picker ── */
+.color-picker {
+  width: 100% !important;
+  height: 38px !important;
+  padding: 3px !important;
+  border: 1.5px solid var(--border-color) !important;
+  border-radius: 8px !important;
+  background: none !important;
+  cursor: pointer !important;
+  transition: border-color 0.2s !important;
+}
+.color-picker:hover {
+  border-color: var(--primary) !important;
+}
+.color-picker::-webkit-color-swatch-wrapper { padding: 0; }
+.color-picker::-webkit-color-swatch { border: none; border-radius: 5px; }
+
+/* ── Small note text ── */
+.note-text {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  padding: 8px 0;
+}
+
+/* ── Button group pill (for video style toggle) ── */
+.btn-group-pill {
+  display: flex;
+  gap: 4px;
+  background: var(--bg-base);
+  padding: 3px;
+  border-radius: 10px;
+}
+.btn-group-pill .btn-sm {
+  flex: 1;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  font-family: var(--font-primary);
+}
+.btn-group-pill .btn-sm:hover {
+  color: var(--text-secondary);
+  background: var(--bg-card);
+}
+.btn-group-pill .btn-sm.btn-active {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+
+/* ── File upload compact ── */
+.file-upload-compact {
+  padding: 10px 12px;
+  font-size: 12px;
+}
+
+/* ── Form row improvements ── */
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.form-row .form-group {
+  margin-bottom: 0;
+}
+
+/* ── Button group inline ── */
+.btn-group-inline {
+  display: flex;
+  gap: 4px;
 }

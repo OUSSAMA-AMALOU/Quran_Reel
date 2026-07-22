@@ -300,10 +300,38 @@ function App() {
   const [canvasResolution, setCanvasResolution] = useState('720p');
   const [videoStyle, setVideoStyle] = useState('text'); // 'text' | 'player'
   const [playerArtwork, setPlayerArtwork] = useState(null);
+  const [playerArtworkIsVideo, setPlayerArtworkIsVideo] = useState(false);
   const [playerBgImage, setPlayerBgImage] = useState(null);
+  const [playerBgIsVideo, setPlayerBgIsVideo] = useState(false);
+  const [playerBgColor, setPlayerBgColor] = useState('#f5f3ed');
+  const [playerTextPrimary, setPlayerTextPrimary] = useState('#1a1a1a');
+  const [playerTextSecondary, setPlayerTextSecondary] = useState('#555555');
+  const [playerTextMuted, setPlayerTextMuted] = useState('#999999');
+  const [playerAccentColor, setPlayerAccentColor] = useState('#000000');
+  const [playerCardColor, setPlayerCardColor] = useState('#ffffff');
+  const [playerArtworkSize, setPlayerArtworkSize] = useState(100);
+  const [playerArtworkX, setPlayerArtworkX] = useState(50);
+  const [playerArtworkY, setPlayerArtworkY] = useState(28);
+  const [playerShowDecor, setPlayerShowDecor] = useState(true);
+  const [playerShowWave, setPlayerShowWave] = useState(true);
+  const [playerShowProgress, setPlayerShowProgress] = useState(true);
+  const [playerArtworkShape, setPlayerArtworkShape] = useState('circle');
+  const [playerAccentSecondary, setPlayerAccentSecondary] = useState('#000000');
+  const [playerArtworkAccentSize, setPlayerArtworkAccentSize] = useState(100);
+  const [playerArtworkAccentPos, setPlayerArtworkAccentPos] = useState('outside');
+  const [playerLyricsSize, setPlayerLyricsSize] = useState(100);
+  const [playerLyricsY, setPlayerLyricsY] = useState(65);
+  const [playerLyricsCardWidth, setPlayerLyricsCardWidth] = useState(72);
+  const [playerLyricsCardX, setPlayerLyricsCardX] = useState(50);
+  const [playerLyricsCardPadding, setPlayerLyricsCardPadding] = useState(16);
+  const [playerLyricsCardPaddingTop, setPlayerLyricsCardPaddingTop] = useState(16);
+  const [playerTimerSize, setPlayerTimerSize] = useState(100);
+  const [playerTimerColor, setPlayerTimerColor] = useState('#999999');
   const [ayahTimestamps, setAyahTimestamps] = useState(null);
   const [timestampsLoading, setTimestampsLoading] = useState(false);
   const [showPlayerLyrics, setShowPlayerLyrics] = useState(true);
+  const [collapsedSections, setCollapsedSections] = useState({});
+  const toggleSection = (key) => setCollapsedSections(prev => ({...prev, [key]: !prev[key]}));
   const [visualEffect, setVisualEffect] = useState('none');
   const [showLikeBtn, setShowLikeBtn] = useState(false);
   const [likeText, setLikeText] = useState('');
@@ -415,7 +443,9 @@ function App() {
     introSubFontFamily, introSubTextColor, introTransitionEffect,
     showTimer, timerDuration, timerStyle, timerSize, timerColor, timerX, timerY,
     showHijriDate, hijriDateX, hijriDateY, hijriDateColor, hijriDateFont, hijriDateSize,
-    reverbMix, delayTime, delayFeedback, audioPreset, videoStyle, playerArtwork, showPlayerLyrics, playerBgImage,
+    reverbMix, delayTime, delayFeedback, audioPreset, videoStyle, playerArtwork, playerArtworkIsVideo, showPlayerLyrics, playerBgImage, playerBgIsVideo,
+    playerBgColor, playerTextPrimary, playerTextSecondary, playerTextMuted, playerAccentColor, playerCardColor,
+    playerArtworkSize, playerArtworkX, playerArtworkY, playerShowDecor, playerShowWave, playerShowProgress, playerArtworkShape, playerAccentSecondary, playerArtworkAccentSize, playerArtworkAccentPos, playerLyricsSize, playerLyricsY, playerLyricsCardWidth, playerLyricsCardX, playerLyricsCardPadding, playerLyricsCardPaddingTop, playerTimerSize, playerTimerColor,
   });
 
   const savePreset = () => {
@@ -441,7 +471,10 @@ function App() {
     setShowFollowBtn(p.showFollowBtn); setFollowText(p.followText); setFollowIcon(p.followIcon); setFollowTextPos(p.followTextPos);
     setFollowBtnX(p.followBtnX); setFollowBtnY(p.followBtnY); setFollowBtnSize(p.followBtnSize); setFollowTextSize(p.followTextSize ?? 11);
     setFollowColor(p.followColor ?? '#ffffff'); setFollowEffect(p.followEffect ?? 'none'); setFollowEffectColor(p.followEffectColor ?? '#60a5fa'); setFollowTextEffect(p.followTextEffect ?? 'none');
-    setBgColor1(p.bgColor1); setBgColor2(p.bgColor2); setTextAnim(p.textAnim); setVideoStyle(p.videoStyle || 'text'); setPlayerArtwork(p.playerArtwork || null); setShowPlayerLyrics(p.showPlayerLyrics !== false); setPlayerBgImage(p.playerBgImage || null);
+    setBgColor1(p.bgColor1); setBgColor2(p.bgColor2); setTextAnim(p.textAnim); setVideoStyle(p.videoStyle || 'text'); setPlayerArtwork(p.playerArtwork || null); setPlayerArtworkIsVideo(p.playerArtworkIsVideo || false); setShowPlayerLyrics(p.showPlayerLyrics !== false); setPlayerBgImage(p.playerBgImage || null); setPlayerBgIsVideo(p.playerBgIsVideo || false);
+    setPlayerBgColor(p.playerBgColor || '#f5f3ed'); setPlayerTextPrimary(p.playerTextPrimary || '#1a1a1a'); setPlayerTextSecondary(p.playerTextSecondary || '#555555'); setPlayerTextMuted(p.playerTextMuted || '#999999'); setPlayerAccentColor(p.playerAccentColor || '#000000'); setPlayerCardColor(p.playerCardColor || '#ffffff');
+    setPlayerArtworkSize(p.playerArtworkSize ?? 100); setPlayerArtworkX(p.playerArtworkX ?? 50); setPlayerArtworkY(p.playerArtworkY ?? 28); setPlayerShowDecor(p.playerShowDecor !== false); setPlayerShowWave(p.playerShowWave !== false); setPlayerShowProgress(p.playerShowProgress !== false); setPlayerArtworkShape(p.playerArtworkShape || 'circle'); setPlayerAccentSecondary(p.playerAccentSecondary || '#000000'); setPlayerArtworkAccentSize(p.playerArtworkAccentSize ?? 100); setPlayerArtworkAccentPos(p.playerArtworkAccentPos || 'outside');
+    setPlayerLyricsSize(p.playerLyricsSize ?? 100); setPlayerLyricsY(p.playerLyricsY ?? 65); setPlayerLyricsCardWidth(p.playerLyricsCardWidth ?? 72); setPlayerLyricsCardX(p.playerLyricsCardX ?? 50); setPlayerLyricsCardPadding(p.playerLyricsCardPadding ?? 16); setPlayerLyricsCardPaddingTop(p.playerLyricsCardPaddingTop ?? 16); setPlayerTimerSize(p.playerTimerSize ?? 100); setPlayerTimerColor(p.playerTimerColor || '#999999');
     setIntroEnabled(p.introEnabled); setIntroDuration(p.introDuration); setIntroBgType(p.introBgType);
     setIntroBgColor1(p.introBgColor1); setIntroBgColor2(p.introBgColor2);
     setIntroText(p.introText); setIntroSubtext(p.introSubtext);
@@ -628,7 +661,9 @@ const TRANSITIONS = [
       revelationType: getRevelationType(selectedSurahDetails?.number || 1),
       ayahRange: items.length > 0 ? `Ayah ${items[0]?.numberInSurah}${items.length > 1 ? `–${items[items.length - 1]?.numberInSurah}` : ''}` : '',
       duration: durPerItem || 30,
-      playerArtwork, playerBgImage, showPlayerLyrics, ayahTimestamps,
+      playerArtwork, playerArtworkIsVideo, playerBgImage, playerBgIsVideo, showPlayerLyrics, ayahTimestamps,
+      playerBgColor, playerTextPrimary, playerTextSecondary, playerTextMuted, playerAccentColor, playerCardColor,
+      playerArtworkSize, playerArtworkX, playerArtworkY, playerShowDecor, playerShowWave, playerShowProgress, playerArtworkShape, playerAccentSecondary, playerArtworkAccentSize, playerArtworkAccentPos, playerLyricsSize, playerLyricsY, playerLyricsCardWidth, playerLyricsCardX, playerLyricsCardPadding, playerLyricsCardPaddingTop, playerTimerSize, playerTimerColor,
       backgroundType: 'upload', bgImage, highlightColor, arabicTextColor, wordCustomColors,
       showLikeBtn, likeText, likeIcon, likeTextPos, likeBtnX, likeBtnY, likeBtnSize, likeTextSize, showFollowBtn, followText, followIcon, followTextPos, followBtnX, followBtnY, followBtnSize, followTextSize, likeColor, likeEffect, likeEffectColor, likeTextEffect, followColor, followEffect, followEffectColor, followTextEffect,
       introVideoElement: introVideoRef.current,
@@ -1608,7 +1643,9 @@ const TRANSITIONS = [
           revelationType: getRevelationType(selectedSurahDetails?.number || 1),
           ayahRange: passageAyahs.length > 0 ? `Ayah ${passageAyahs[0]?.numberInSurah}${passageAyahs.length > 1 ? `–${passageAyahs[passageAyahs.length - 1]?.numberInSurah}` : ''}` : '',
           duration: duration || 30,
-          playerArtwork, playerBgImage, showPlayerLyrics, ayahTimestamps,
+          playerArtwork, playerArtworkIsVideo, playerBgImage, playerBgIsVideo, showPlayerLyrics, ayahTimestamps,
+          playerBgColor, playerTextPrimary, playerTextSecondary, playerTextMuted, playerAccentColor, playerCardColor,
+          playerArtworkSize, playerArtworkX, playerArtworkY, playerShowDecor, playerShowWave, playerShowProgress, playerArtworkShape, playerAccentSecondary, playerArtworkAccentSize, playerArtworkAccentPos, playerLyricsSize, playerLyricsY, playerLyricsCardWidth, playerLyricsCardX, playerLyricsCardPadding, playerLyricsCardPaddingTop, playerTimerSize, playerTimerColor,
           introVideoElement: introVideoRef.current,
           intro: introEnabled ? {
             enabled: true,
@@ -1690,8 +1727,9 @@ const TRANSITIONS = [
     bgColor2,
     textAnim,
     videoStyle,
-    playerArtwork,
-    showPlayerLyrics,
+    playerArtwork, playerArtworkIsVideo, playerBgImage, playerBgIsVideo, showPlayerLyrics,
+    playerBgColor, playerTextPrimary, playerTextSecondary, playerTextMuted, playerAccentColor, playerCardColor,
+    playerArtworkSize, playerArtworkX, playerArtworkY, playerShowDecor, playerShowWave, playerShowProgress, playerArtworkShape, playerAccentSecondary, playerArtworkAccentSize, playerArtworkAccentPos, playerLyricsSize, playerLyricsY, playerLyricsCardWidth, playerLyricsCardX, playerLyricsCardPadding, playerLyricsCardPaddingTop, playerTimerSize, playerTimerColor,
     showTimer,
     showHijriDate,
     hijriDateX,
@@ -2738,32 +2776,132 @@ const TRANSITIONS = [
           </div>
           {videoStyle === 'player' && (
             <>
-            <div className="form-group" style={{marginTop:8}}>
-              <label>Artwork Image (optional)</label>
+            <div className="section-subtitle" onClick={() => toggleSection('artwork')} style={{cursor:'pointer'}}><span className="dot"></span> Artwork {collapsedSections.artwork ? '▶' : '▼'}</div>
+            {!collapsedSections.artwork && (<>
+            <div className="form-group">
+              <label>Artwork Image / Video</label>
               <div className="file-upload" style={{padding:10,margin:0}}>
-                <span style={{fontSize:12}}>{playerArtwork ? '✓ Image Uploaded' : 'Upload Artwork'}</span>
-                <input type="file" accept="image/*" onChange={(e) => { const f = e.target.files?.[0]; if (f) setPlayerArtwork(URL.createObjectURL(f)); }} disabled={isRecording} />
+                <span style={{fontSize:12}}>{playerArtwork ? `✓ ${playerArtworkIsVideo ? 'Video' : 'Image'} Uploaded` : 'Upload Artwork'}</span>
+                <input type="file" accept="image/*,video/*" onChange={(e) => { const f = e.target.files?.[0]; if (f) { setPlayerArtwork(URL.createObjectURL(f)); setPlayerArtworkIsVideo(f.type.startsWith('video/')); } }} disabled={isRecording} />
               </div>
-              {playerArtwork && <button className="btn-ghost btn-xs" style={{marginTop:4,width:'auto'}} onClick={() => setPlayerArtwork(null)} disabled={isRecording}>Remove</button>}
+              {playerArtwork && <button className="btn-ghost btn-xs" style={{marginTop:4,width:'auto'}} onClick={() => { setPlayerArtwork(null); setPlayerArtworkIsVideo(false); }} disabled={isRecording}>Remove</button>}
             </div>
             <div className="form-group">
-              <label>Background Image (optional)</label>
+              <label>Background Image / Video</label>
               <div className="file-upload" style={{padding:10,margin:0}}>
-                <span style={{fontSize:12}}>{playerBgImage ? '✓ Image Uploaded' : 'Upload Background'}</span>
-                <input type="file" accept="image/*" onChange={(e) => { const f = e.target.files?.[0]; if (f) setPlayerBgImage(URL.createObjectURL(f)); }} disabled={isRecording} />
+                <span style={{fontSize:12}}>{playerBgImage ? `✓ ${playerBgIsVideo ? 'Video' : 'Image'} Uploaded` : 'Upload Background'}</span>
+                <input type="file" accept="image/*,video/*" onChange={(e) => { const f = e.target.files?.[0]; if (f) { setPlayerBgImage(URL.createObjectURL(f)); setPlayerBgIsVideo(f.type.startsWith('video/')); } }} disabled={isRecording} />
               </div>
-              {playerBgImage && <button className="btn-ghost btn-xs" style={{marginTop:4,width:'auto'}} onClick={() => setPlayerBgImage(null)} disabled={isRecording}>Remove</button>}
+              {playerBgImage && <button className="btn-ghost btn-xs" style={{marginTop:4,width:'auto'}} onClick={() => { setPlayerBgImage(null); setPlayerBgIsVideo(false); }} disabled={isRecording}>Remove</button>}
+            </div>
+            </>)}
+
+            <div className="section-subtitle" style={{marginTop:12,cursor:'pointer'}} onClick={() => toggleSection('decoration')}><span className="dot"></span> Decoration {collapsedSections.decoration ? '▶' : '▼'}</div>
+            {!collapsedSections.decoration && (<>
+            <div className="form-group">
+              <label>Show Monogram</label>
+              <label className="switch"><input type="checkbox" checked={playerShowDecor} onChange={(e) => setPlayerShowDecor(e.target.checked)} disabled={isRecording} /><span className="slider"></span></label>
             </div>
             <div className="form-group">
-              <label>Ayah Lyrics</label>
-              <label className="switch">
-                <input type="checkbox" checked={showPlayerLyrics} onChange={(e) => setShowPlayerLyrics(e.target.checked)} disabled={isRecording} />
-                <span className="slider"></span>
-              </label>
+              <label>Show Waveform</label>
+              <label className="switch"><input type="checkbox" checked={playerShowWave} onChange={(e) => setPlayerShowWave(e.target.checked)} disabled={isRecording} /><span className="slider"></span></label>
             </div>
-            <p style={{fontSize:11,color:'var(--text-muted)',marginTop:6,lineHeight:1.4}}>
-              Modern black & white player design with custom artwork, waveform, and ayah lyrics. Background/video settings are ignored in this mode.
-            </p>
+            <div className="form-group">
+              <label>Show Progress Bar</label>
+              <label className="switch"><input type="checkbox" checked={playerShowProgress} onChange={(e) => setPlayerShowProgress(e.target.checked)} disabled={isRecording} /><span className="slider"></span></label>
+            </div>
+            <div className="form-group">
+              <label>Artwork Size: {playerArtworkSize}%</label>
+              <div className="slider-group"><input type="range" min="20" max="200" value={playerArtworkSize} onChange={(e) => setPlayerArtworkSize(parseInt(e.target.value))} disabled={isRecording} /><span>{playerArtworkSize}%</span></div>
+            </div>
+            <div className="form-group">
+              <label>Artwork X: {playerArtworkX}%</label>
+              <div className="slider-group"><input type="range" min="0" max="100" value={playerArtworkX} onChange={(e) => setPlayerArtworkX(parseInt(e.target.value))} disabled={isRecording} /><span>{playerArtworkX}%</span></div>
+            </div>
+            <div className="form-group">
+              <label>Artwork Y: {playerArtworkY}%</label>
+              <div className="slider-group"><input type="range" min="0" max="100" value={playerArtworkY} onChange={(e) => setPlayerArtworkY(parseInt(e.target.value))} disabled={isRecording} /><span>{playerArtworkY}%</span></div>
+            </div>
+            <div className="form-group">
+              <label>Artwork Shape</label>
+              <select value={playerArtworkShape} onChange={(e) => setPlayerArtworkShape(e.target.value)} disabled={isRecording}>
+                <option value="circle">Circle</option>
+                <option value="square">Square</option>
+                <option value="rounded-square">Rounded Square</option>
+                <option value="diamond">Diamond</option>
+              </select>
+            </div>
+            <div className="form-group">
+              <label>Accent Ring Size: {playerArtworkAccentSize}%</label>
+              <div className="slider-group"><input type="range" min="0" max="200" value={playerArtworkAccentSize} onChange={(e) => setPlayerArtworkAccentSize(parseInt(e.target.value))} disabled={isRecording} /><span>{playerArtworkAccentSize}%</span></div>
+            </div>
+            <div className="form-group">
+              <label>Accent Position</label>
+              <select value={playerArtworkAccentPos} onChange={(e) => setPlayerArtworkAccentPos(e.target.value)} disabled={isRecording}>
+                <option value="outside">Outside</option>
+                <option value="inside">Inside</option>
+              </select>
+            </div>
+            </>)}
+
+            <div className="section-subtitle" style={{marginTop:12,cursor:'pointer'}} onClick={() => toggleSection('colors')}><span className="dot"></span> Colors {collapsedSections.colors ? '▶' : '▼'}</div>
+            {!collapsedSections.colors && (<>
+            <div className="form-group"><label>Background</label><input type="color" value={playerBgColor} onChange={(e) => setPlayerBgColor(e.target.value)} disabled={isRecording} className="color-picker" /></div>
+            <div className="form-group"><label>Card</label><input type="color" value={playerCardColor} onChange={(e) => setPlayerCardColor(e.target.value)} disabled={isRecording} className="color-picker" /></div>
+            <div className="form-group"><label>Text Primary</label><input type="color" value={playerTextPrimary} onChange={(e) => setPlayerTextPrimary(e.target.value)} disabled={isRecording} className="color-picker" /></div>
+            <div className="form-group"><label>Text Secondary</label><input type="color" value={playerTextSecondary} onChange={(e) => setPlayerTextSecondary(e.target.value)} disabled={isRecording} className="color-picker" /></div>
+            <div className="form-group"><label>Text Muted</label><input type="color" value={playerTextMuted} onChange={(e) => setPlayerTextMuted(e.target.value)} disabled={isRecording} className="color-picker" /></div>
+            <div className="form-group"><label>Accent Color</label><input type="color" value={playerAccentColor} onChange={(e) => setPlayerAccentColor(e.target.value)} disabled={isRecording} className="color-picker" /></div>
+            <div className="form-group"><label>Secondary Accent</label><input type="color" value={playerAccentSecondary} onChange={(e) => setPlayerAccentSecondary(e.target.value)} disabled={isRecording} className="color-picker" /></div>
+            </>)}
+
+            <div className="section-subtitle" style={{marginTop:12,cursor:'pointer'}} onClick={() => toggleSection('toggles')}><span className="dot"></span> Toggles {collapsedSections.toggles ? '▶' : '▼'}</div>
+            {!collapsedSections.toggles && (<>
+            <div className="form-group">
+              <label>Show Ayah Lyrics</label>
+              <label className="switch"><input type="checkbox" checked={showPlayerLyrics} onChange={(e) => setShowPlayerLyrics(e.target.checked)} disabled={isRecording} /><span className="slider"></span></label>
+            </div>
+            </>)}
+
+            <div className="section-subtitle" style={{marginTop:12,cursor:'pointer'}} onClick={() => toggleSection('timer')}><span className="dot"></span> Progress & Timer {collapsedSections.timer ? '▶' : '▼'}</div>
+            {!collapsedSections.timer && (<>
+            <div className="form-group">
+              <label>Timer Size: {playerTimerSize}%</label>
+              <div className="slider-group"><input type="range" min="50" max="200" value={playerTimerSize} onChange={(e) => setPlayerTimerSize(parseInt(e.target.value))} disabled={isRecording} /><span>{playerTimerSize}%</span></div>
+            </div>
+            <div className="form-group">
+              <label>Timer Color</label>
+              <input type="color" value={playerTimerColor} onChange={(e) => setPlayerTimerColor(e.target.value)} disabled={isRecording} className="color-picker" />
+            </div>
+            </>)}
+
+            <div className="section-subtitle" style={{marginTop:12,cursor:'pointer'}} onClick={() => toggleSection('lyrics')}><span className="dot"></span> Lyrics Card {collapsedSections.lyrics ? '▶' : '▼'}</div>
+            {!collapsedSections.lyrics && (<>
+            <div className="form-group">
+              <label>Lyrics Size: {playerLyricsSize}%</label>
+              <div className="slider-group"><input type="range" min="50" max="200" value={playerLyricsSize} onChange={(e) => setPlayerLyricsSize(parseInt(e.target.value))} disabled={isRecording} /><span>{playerLyricsSize}%</span></div>
+            </div>
+            <div className="form-group">
+              <label>Lyrics Y: {playerLyricsY}%</label>
+              <div className="slider-group"><input type="range" min="0" max="100" value={playerLyricsY} onChange={(e) => setPlayerLyricsY(parseInt(e.target.value))} disabled={isRecording} /><span>{playerLyricsY}%</span></div>
+            </div>
+            <div className="form-group">
+              <label>Card Width: {playerLyricsCardWidth}%</label>
+              <div className="slider-group"><input type="range" min="30" max="100" value={playerLyricsCardWidth} onChange={(e) => setPlayerLyricsCardWidth(parseInt(e.target.value))} disabled={isRecording} /><span>{playerLyricsCardWidth}%</span></div>
+            </div>
+            <div className="form-group">
+              <label>Card X: {playerLyricsCardX}%</label>
+              <div className="slider-group"><input type="range" min="0" max="100" value={playerLyricsCardX} onChange={(e) => setPlayerLyricsCardX(parseInt(e.target.value))} disabled={isRecording} /><span>{playerLyricsCardX}%</span></div>
+            </div>
+            <div className="form-group">
+              <label>Card Padding: {playerLyricsCardPadding}px</label>
+              <div className="slider-group"><input type="range" min="0" max="60" value={playerLyricsCardPadding} onChange={(e) => setPlayerLyricsCardPadding(parseInt(e.target.value))} disabled={isRecording} /><span>{playerLyricsCardPadding}px</span></div>
+            </div>
+            <div className="form-group">
+              <label>Card Padding Top: {playerLyricsCardPaddingTop}px</label>
+              <div className="slider-group"><input type="range" min="0" max="80" value={playerLyricsCardPaddingTop} onChange={(e) => setPlayerLyricsCardPaddingTop(parseInt(e.target.value))} disabled={isRecording} /><span>{playerLyricsCardPaddingTop}px</span></div>
+            </div>
+            </>)}
             </>
           )}
         </div>
@@ -2800,8 +2938,10 @@ const TRANSITIONS = [
     reverbMix, delayTime, delayFeedback, audioPreset, savedPresets,
     activeTab,
     videoStyle,
-    playerArtwork,
-    showPlayerLyrics
+    playerArtwork, playerArtworkIsVideo, playerBgImage, playerBgIsVideo, showPlayerLyrics,
+    playerBgColor, playerTextPrimary, playerTextSecondary, playerTextMuted, playerAccentColor, playerCardColor,
+    playerArtworkSize, playerArtworkX, playerArtworkY, playerShowDecor, playerShowWave, playerShowProgress, playerArtworkShape, playerAccentSecondary, playerArtworkAccentSize, playerArtworkAccentPos, playerLyricsSize, playerLyricsY, playerLyricsCardWidth, playerLyricsCardX, playerLyricsCardPadding, playerLyricsCardPaddingTop, playerTimerSize, playerTimerColor,
+    collapsedSections,
   ]);
 
   return (

@@ -2030,13 +2030,13 @@ function _drawPlayerDesign(ctx, width, height, config, currentTime, isPlaying, a
     ctx.fill();
 
     const fillW = progress * progW;
-    ctx.fillStyle = c.accent;
+    ctx.fillStyle = c.timerColor;
     ctx.beginPath();
     ctx.roundRect(progX, progY, fillW, progH, 1);
     ctx.fill();
 
     if (fillW > 0) {
-      ctx.fillStyle = c.accent;
+      ctx.fillStyle = c.timerColor;
       ctx.beginPath();
       ctx.arc(progX + fillW, progY + progH / 2, 4 * tScale, 0, Math.PI * 2);
       ctx.fill();
